@@ -1,5 +1,7 @@
 package com.example.xedaythongminh.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -121,7 +123,7 @@ fun CartDetailScreen(
                     Column(
                         modifier = Modifier
                             .padding(16.dp)
-                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                            .verticalScroll(rememberScrollState())
                     ) {
                         Text(
                             text = "Tổng đơn hàng",

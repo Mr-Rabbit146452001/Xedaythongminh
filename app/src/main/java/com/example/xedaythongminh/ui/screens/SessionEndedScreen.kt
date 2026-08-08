@@ -1,5 +1,7 @@
 package com.example.xedaythongminh.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -69,7 +71,7 @@ fun SessionEndedScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp)
-                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                            .verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -132,7 +134,7 @@ fun SessionEndedScreen(
             rightContent = { modifier ->
                 Column(
                     modifier = modifier
-                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Security Box

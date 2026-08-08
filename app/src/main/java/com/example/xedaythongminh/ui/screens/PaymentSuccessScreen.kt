@@ -1,5 +1,7 @@
 package com.example.xedaythongminh.ui.screens
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -59,7 +61,7 @@ fun PaymentSuccessScreen(
             leftContent = { modifier ->
                 Column(
                     modifier = modifier
-                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Main Success Card
@@ -203,7 +205,7 @@ fun PaymentSuccessScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp)
-                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                            .verticalScroll(rememberScrollState())
                     ) {
                         // Header
                         Row(

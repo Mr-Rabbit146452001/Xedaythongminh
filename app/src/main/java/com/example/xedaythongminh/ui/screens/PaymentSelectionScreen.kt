@@ -3,6 +3,8 @@ package com.example.xedaythongminh.ui.screens
 import androidx.compose.ui.res.stringResource
 import com.example.xedaythongminh.R
 import com.example.xedaythongminh.ui.theme.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -74,7 +76,7 @@ fun PaymentSelectionScreen(
                     modifier = modifier
                         .background(BackgroundGray, RoundedCornerShape(16.dp))
                         .padding(16.dp)
-                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                        .verticalScroll(rememberScrollState())
                 ) {
                     Text(
                         text = "Tóm tắt hóa đơn",
@@ -193,7 +195,7 @@ fun PaymentSelectionScreen(
             rightContent = { modifier ->
                 Column(
                     modifier = modifier
-                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                        .verticalScroll(rememberScrollState())
                 ) {
                     Text(
                         text = stringResource(R.string.payment_selection_title),

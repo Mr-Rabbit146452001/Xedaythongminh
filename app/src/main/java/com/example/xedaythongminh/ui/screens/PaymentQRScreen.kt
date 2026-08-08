@@ -3,6 +3,8 @@ package com.example.xedaythongminh.ui.screens
 import androidx.compose.ui.res.stringResource
 import com.example.xedaythongminh.R
 import com.example.xedaythongminh.ui.theme.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -71,7 +73,7 @@ fun PaymentQRScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(16.dp)
-                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
+                            .verticalScroll(rememberScrollState())
                     ) {
                         // Header
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -222,7 +224,7 @@ fun PaymentQRScreen(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(16.dp)
-                                .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                                .verticalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
