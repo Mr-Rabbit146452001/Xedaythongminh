@@ -13,7 +13,12 @@ data class ProductDto(
 
 fun ProductDto.toDomainModel(): Product {
     val baseUrl = com.example.xedaythongminh.data.remote.RetrofitClient.getBaseUrl()
-    val fullImageUrl = if (!this.imageUrl.isNullOrBlank()) "${baseUrl}images/${this.imageUrl}" else ""
+    val rawImage = this.imageUrl ?: ""
+    val fullImageUrl = when {
+        rawImage.isBlank() -> ""
+        rawImage.startsWith("http://") || rawImage.startsWith("https://") -> rawImage
+        else -> "${baseUrl}images/${rawImage}"
+    }
     return Product(
         id = this.id.toString(),
         sku = this.barcode,
