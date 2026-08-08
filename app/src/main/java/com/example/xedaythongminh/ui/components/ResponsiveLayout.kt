@@ -37,22 +37,16 @@ fun ResponsiveLayout(
                 .padding(12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Box(
-                modifier = Modifier
+            leftContent(
+                Modifier
                     .weight(leftWeight)
                     .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                leftContent(Modifier.fillMaxWidth().wrapContentHeight())
-            }
-            Box(
-                modifier = Modifier
+            )
+            rightContent(
+                Modifier
                     .weight(rightWeight)
                     .fillMaxHeight()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                rightContent(Modifier.fillMaxWidth().wrapContentHeight())
-            }
+            )
         }
     }
 }
