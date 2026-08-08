@@ -180,8 +180,7 @@ fun ScanProductScannerSection(
 
     Column(
         modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 1. Dòng thông báo tự động quét sản phẩm với quầng sáng neon nhấp nháy tinh tế
@@ -482,8 +481,7 @@ fun CartSidebar(
     Column(
         modifier = modifier
             .background(Color(0xFFF1F3F4))
-            .padding(16.dp)
-            .fillMaxHeight(),
+            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Header
