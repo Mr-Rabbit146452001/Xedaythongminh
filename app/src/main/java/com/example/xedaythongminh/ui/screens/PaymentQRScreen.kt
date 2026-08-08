@@ -214,7 +214,7 @@ fun PaymentQRScreen(
                             verticalArrangement = Arrangement.spacedBy(32.dp)
                         ) {
                             PaymentQRScannerBox(modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f))
-                            PaymentQRInstructionsBox(navController = navController, modifier = Modifier.fillMaxWidth())
+                            PaymentQRInstructionsBox(appViewModel = appViewModel, navController = navController, modifier = Modifier.fillMaxWidth())
                         }
                     } else {
                         Row(
@@ -225,7 +225,7 @@ fun PaymentQRScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             PaymentQRScannerBox(modifier = Modifier.weight(1f).aspectRatio(1f))
-                            PaymentQRInstructionsBox(navController = navController, modifier = Modifier.weight(1f))
+                            PaymentQRInstructionsBox(appViewModel = appViewModel, navController = navController, modifier = Modifier.weight(1f))
                         }
                     }
                 }
@@ -260,7 +260,7 @@ fun PaymentQRScannerBox(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun PaymentQRInstructionsBox(navController: NavController, modifier: Modifier = Modifier) {
+fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavController, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center
@@ -338,7 +338,11 @@ fun PaymentQRInstructionsBox(navController: NavController, modifier: Modifier = 
             }
             
             Button(
-                onClick = { navController.navigate("payment_success") }, // FOR TESTING, nav to success
+                onClick = {
+                    appViewModel.checkoutCart {
+                        navController.navigate("payment_success")
+                    }
+                },
                 modifier = Modifier
                     .weight(1f)
                     .height(56.dp),

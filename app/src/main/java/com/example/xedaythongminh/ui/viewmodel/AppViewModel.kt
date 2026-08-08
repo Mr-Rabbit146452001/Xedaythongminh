@@ -155,6 +155,54 @@ class AppViewModel constructor(
                 kotlinx.coroutines.delay(2000)
             }
         }
+
+        // Real-time PostgreSQL Cart Items Sync Poller (polls every 1.5 seconds)
+        // Giúp tự động nảy sản phẩm khi Raspberry Pi hoặc ThingsBoard ghi nhận sản phẩm mới
+        viewModelScope.launch {
+            while (true) {
+                if (_isServerConnected.value) {
+                    try {
+                        val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartItems("SESSION_DEFAULT")
+                        if (response.isSuccessful && response.body()?.status == "Thành công") {
+                            val remoteData = response.body()?.data
+                            if (remoteData != null) {
+                                val domainItems = remoteData.items.map { remoteItem ->
+                                    val dto = remoteItem.product
+                                    com.example.xedaythongminh.data.models.CartItem(
+                                        product = dto.toDomainModel(),
+                                        quantity = remoteItem.quantity
+                                    )
+                                }
+                                _cartItemsState.value = domainItems
+                            }
+                        }
+                    } catch (e: Exception) {
+                        // ignore transient error
+                    }
+                }
+                kotlinx.coroutines.delay(1500)
+            }
+        }
+    }
+
+    fun checkoutCart(onSuccess: () -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val req = com.example.xedaythongminh.data.remote.dto.CheckoutRequest(
+                    sessionId = "SESSION_DEFAULT",
+                    customerId = _userState.value?.id ?: "CUSTOMER_888"
+                )
+                val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.checkoutCart(req)
+                if (response.isSuccessful) {
+                    cartRepository.clearCart()
+                    _cartItemsState.value = emptyList()
+                    _userState.value?.id?.let { loginCustomerWithId(it) }
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                _errorState.value = "Lỗi thanh toán: ${e.message}"
+            }
+        }
     }
 
     fun startQrLoginSession() {
