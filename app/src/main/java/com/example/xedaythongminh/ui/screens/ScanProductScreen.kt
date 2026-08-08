@@ -71,11 +71,14 @@ fun ScanProductScreen(
         }
     }
 
+    val userState by appViewModel.userState.collectAsState()
+    val statusText = if (userState != null) "KH: ${userState?.name} | Wi-Fi | 85%" else "Khách Vãng Lai | Wi-Fi | 85%"
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = BackgroundGray,
-            topBar = { TopBar(statusText = "KH: Nguyễn Văn A | Wi-Fi | 85% | 14:30", appViewModel = appViewModel) }
+            topBar = { TopBar(statusText = statusText, appViewModel = appViewModel) }
         ) { innerPadding ->
             ResponsiveLayout(
                 windowSize = windowSize,

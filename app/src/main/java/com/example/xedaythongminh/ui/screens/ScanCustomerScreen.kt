@@ -46,11 +46,14 @@ fun ScanCustomerScreen(
         appViewModel.startQrLoginSession()
     }
 
-    // 2. Tự động chuyển trang khi đăng nhập thành công qua QR
+    // 2. Tự động chuyển trang khi đăng nhập thành công qua QR (chỉ chuyển khi đang ở đúng màn hình này)
     LaunchedEffect(userState) {
         if (userState != null) {
-            navController.navigate("customer_info") {
-                popUpTo("scan_customer") { inclusive = true }
+            val currentRoute = navController.currentBackStackEntry?.destination?.route
+            if (currentRoute == "scan_customer") {
+                navController.navigate("customer_info") {
+                    popUpTo("scan_customer") { inclusive = true }
+                }
             }
         }
     }
@@ -228,7 +231,10 @@ fun ScanCustomerInstructionBox(
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                onClick = { navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } } },
+                onClick = {
+                    appViewModel.stopQrLoginSession()
+                    navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } }
+                },
                 modifier = Modifier.weight(1f).height(48.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                 shape = RoundedCornerShape(8.dp)
@@ -238,7 +244,11 @@ fun ScanCustomerInstructionBox(
             
             OutlinedButton(
                 onClick = {
-                    navController.navigate("scan_product")
+                    // Dừng phiên polling đăng nhập QR trước khi chuyển màn hình
+                    appViewModel.stopQrLoginSession()
+                    navController.navigate("scan_product") {
+                        popUpTo("scan_customer") { inclusive = true }
+                    }
                 },
                 modifier = Modifier.weight(1f).height(48.dp),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
