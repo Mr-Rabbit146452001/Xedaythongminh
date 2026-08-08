@@ -34,11 +34,25 @@ fun ResponsiveLayout(
         Row(
             modifier = modifier
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            leftContent(Modifier.weight(leftWeight).fillMaxHeight())
-            rightContent(Modifier.weight(rightWeight).fillMaxHeight())
+            Box(
+                modifier = Modifier
+                    .weight(leftWeight)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                leftContent(Modifier.fillMaxWidth().wrapContentHeight())
+            }
+            Box(
+                modifier = Modifier
+                    .weight(rightWeight)
+                    .fillMaxHeight()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                rightContent(Modifier.fillMaxWidth().wrapContentHeight())
+            }
         }
     }
 }

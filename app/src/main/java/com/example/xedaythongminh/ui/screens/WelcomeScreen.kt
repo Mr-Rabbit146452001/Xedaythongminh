@@ -67,11 +67,12 @@ fun WelcomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                    .padding(horizontal = 48.dp, vertical = 24.dp),
+                    .padding(horizontal = 24.dp, vertical = 12.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                WelcomeTextAndActionSection(navController = navController, modifier = Modifier.weight(1f).padding(end = 32.dp))
-                WelcomeImageSection(modifier = Modifier.weight(1f).fillMaxHeight())
+                WelcomeTextAndActionSection(navController = navController, modifier = Modifier.weight(1.2f).padding(end = 16.dp))
+                WelcomeImageSection(modifier = Modifier.weight(0.8f))
             }
         }
     }
