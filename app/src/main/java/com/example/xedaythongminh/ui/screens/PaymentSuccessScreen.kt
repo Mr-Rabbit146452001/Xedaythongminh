@@ -58,8 +58,9 @@ fun PaymentSuccessScreen(
             rightWeight = 0.45f,
             leftContent = { modifier ->
                 Column(
-                    modifier = modifier,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    modifier = modifier
+                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Main Success Card
                     Card(
@@ -200,8 +201,9 @@ fun PaymentSuccessScreen(
                 ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxSize()
-                            .padding(24.dp)
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
                     ) {
                         // Header
                         Row(

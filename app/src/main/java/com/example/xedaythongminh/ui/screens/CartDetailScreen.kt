@@ -92,10 +92,10 @@ fun CartDetailScreen(
                     
                     Spacer(modifier = Modifier.height(24.dp))
                     
-                    // Product List (Fixed height on mobile to allow scrolling inside)
+                    // Product List
                     LazyColumn(
-                        modifier = if (windowSize == WindowWidthSizeClass.Compact) Modifier.heightIn(max = 400.dp) else Modifier.fillMaxHeight(),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.weight(1f, fill = false).heightIn(max = 280.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(cartItems.size) { index ->
                             val item = cartItems[index]
@@ -114,12 +114,14 @@ fun CartDetailScreen(
             rightContent = { modifier ->
                 Card(
                     modifier = modifier,
-                    shape = RoundedCornerShape(24.dp),
+                    shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(4.dp)
+                    elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp)
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
                     ) {
                         Text(
                             text = "Tổng đơn hàng",

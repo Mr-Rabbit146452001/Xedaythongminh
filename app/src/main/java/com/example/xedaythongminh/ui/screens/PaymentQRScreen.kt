@@ -70,7 +70,8 @@ fun PaymentQRScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(24.dp)
+                            .padding(16.dp)
+                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
                     ) {
                         // Header
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -220,8 +221,9 @@ fun PaymentQRScreen(
                         Row(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(32.dp),
-                            horizontalArrangement = Arrangement.spacedBy(32.dp),
+                                .padding(16.dp)
+                                .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             PaymentQRScannerBox(modifier = Modifier.weight(1f).aspectRatio(1f))
@@ -328,13 +330,13 @@ fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavContr
                 onClick = { navController.popBackStack() },
                 modifier = Modifier
                     .weight(1f)
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(46.dp),
+                shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(1.dp, PrimaryBlue)
             ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.btn_back), color = PrimaryBlue, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(stringResource(R.string.btn_back), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
             
             Button(
@@ -345,13 +347,13 @@ fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavContr
                 },
                 modifier = Modifier
                     .weight(1f)
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(46.dp),
+                shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Xong", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                Text("Xong", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

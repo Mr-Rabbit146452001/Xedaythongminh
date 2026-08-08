@@ -244,22 +244,22 @@ fun CustomerInfoScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // 3. Các nút điều hướng dưới cùng
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
                             onClick = { navController.navigate("scan_product") },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(46.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Text("Mua sắm ngay", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("Mua sắm ngay", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Shop Now", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Shop Now", tint = Color.White, modifier = Modifier.size(18.dp))
                         }
 
                         OutlinedButton(
@@ -267,14 +267,14 @@ fun CustomerInfoScreen(
                                 appViewModel.logoutUser()
                                 navController.popBackStack()
                             },
-                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            modifier = Modifier.fillMaxWidth().height(46.dp),
                             colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
                             border = androidx.compose.foundation.BorderStroke(1.5.dp, PrimaryBlue),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(10.dp)
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Quay lại trang trước", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                            Text("Quay lại trang trước", fontSize = 15.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }

@@ -66,7 +66,10 @@ fun SessionEndedScreen(
                     elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().padding(32.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
@@ -128,8 +131,9 @@ fun SessionEndedScreen(
             },
             rightContent = { modifier ->
                 Column(
-                    modifier = modifier,
-                    verticalArrangement = Arrangement.SpaceBetween
+                    modifier = modifier
+                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Security Box
                     Card(
@@ -159,45 +163,45 @@ fun SessionEndedScreen(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
                     // Next Session Call-to-Action
                     Card(
-                        modifier = Modifier.fillMaxWidth().weight(1f, fill = false),
+                        modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(containerColor = PrimaryBlue),
                         shape = RoundedCornerShape(16.dp),
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(32.dp),
+                            modifier = Modifier.fillMaxWidth().padding(24.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = "Sẵn sàng cho lượt tiếp theo?",
-                                fontSize = 24.sp,
+                                fontSize = 22.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = "Hệ thống đã sẵn sàng để phục vụ khách hàng mới.",
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 color = Color(0xCCFFFFFF)
                             )
-                            Spacer(modifier = Modifier.height(32.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
                             Button(
                                 onClick = { 
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     } 
                                 },
-                                modifier = Modifier.fillMaxWidth().height(56.dp),
-                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().height(46.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null, tint = PrimaryBlue)
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Text("Bắt đầu phiên mới", color = PrimaryBlue, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                                Icon(Icons.Default.Refresh, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Bắt đầu phiên mới", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }

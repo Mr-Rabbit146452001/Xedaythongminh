@@ -74,18 +74,19 @@ fun PaymentSelectionScreen(
                     modifier = modifier
                         .background(BackgroundGray, RoundedCornerShape(16.dp))
                         .padding(16.dp)
+                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
                 ) {
                     Text(
                         text = "Tóm tắt hóa đơn",
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextDark
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     
                     // Product List
                     LazyColumn(
-                        modifier = if (windowSize == WindowWidthSizeClass.Compact) Modifier.heightIn(max = 300.dp) else Modifier.weight(1f)
+                        modifier = Modifier.heightIn(max = 180.dp)
                     ) {
                         items(cartItems.size) { index ->
                             val item = cartItems[index]
@@ -192,22 +193,23 @@ fun PaymentSelectionScreen(
             rightContent = { modifier ->
                 Column(
                     modifier = modifier
+                        .androidx.compose.foundation.verticalScroll(androidx.compose.foundation.rememberScrollState())
                 ) {
                     Text(
                         text = stringResource(R.string.payment_selection_title),
-                        fontSize = 20.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextDark
                     )
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     
                     // Grid of Payment Methods
                     LazyVerticalGrid(
                         columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = if (windowSize == WindowWidthSizeClass.Compact) Modifier.heightIn(max = 300.dp) else Modifier.weight(1f)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.heightIn(max = 220.dp)
                     ) {
                         items(paymentMethods) { method ->
                             val isSelected = method.name == selectedPaymentMethod
@@ -215,16 +217,16 @@ fun PaymentSelectionScreen(
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(120.dp)
+                                    .height(90.dp)
                                     .clickable { selectedPaymentMethod = method.name }
                                     .border(
                                         width = if (isSelected) 2.dp else 1.dp,
                                         color = if (isSelected) PrimaryBlue else BorderGray,
-                                        shape = RoundedCornerShape(16.dp)
+                                        shape = RoundedCornerShape(12.dp)
                                     ),
                                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                                shape = RoundedCornerShape(16.dp),
-                                elevation = CardDefaults.cardElevation(if (isSelected) 4.dp else 0.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = CardDefaults.cardElevation(if (isSelected) 2.dp else 0.dp)
                             ) {
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     Column(
@@ -236,14 +238,14 @@ fun PaymentSelectionScreen(
                                             imageVector = method.icon,
                                             contentDescription = method.name,
                                             tint = if (isSelected) PrimaryBlue else TextGray,
-                                            modifier = Modifier.size(40.dp)
+                                            modifier = Modifier.size(32.dp)
                                         )
-                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Spacer(modifier = Modifier.height(6.dp))
                                         Text(
                                             text = method.name,
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                             color = if (isSelected) PrimaryBlue else TextDark,
-                                            fontSize = 16.sp
+                                            fontSize = 14.sp
                                         )
                                     }
                                     
@@ -251,8 +253,8 @@ fun PaymentSelectionScreen(
                                         Box(
                                             modifier = Modifier
                                                 .align(Alignment.TopEnd)
-                                                .padding(12.dp)
-                                                .size(24.dp)
+                                                .padding(8.dp)
+                                                .size(20.dp)
                                                 .background(PrimaryBlue, CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -260,7 +262,7 @@ fun PaymentSelectionScreen(
                                                 imageVector = Icons.Default.Check,
                                                 contentDescription = "Selected",
                                                 tint = Color.White,
-                                                modifier = Modifier.size(16.dp)
+                                                modifier = Modifier.size(14.dp)
                                             )
                                         }
                                     }
@@ -269,7 +271,7 @@ fun PaymentSelectionScreen(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     
                     // Action Buttons
                     Column(
@@ -280,27 +282,27 @@ fun PaymentSelectionScreen(
                             onClick = { navController.navigate("payment_qr") },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(64.dp),
-                            shape = RoundedCornerShape(16.dp),
+                                .height(46.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                         ) {
-                            Icon(Icons.Default.CheckCircleOutline, contentDescription = "Confirm", tint = Color.White)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(stringResource(R.string.btn_confirm_payment), fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Icon(Icons.Default.CheckCircleOutline, contentDescription = "Confirm", tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.btn_confirm_payment), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
                         
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
                         
                         TextButton(
                             onClick = { navController.popBackStack() },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(56.dp)
-                                .background(Color(0xFFEEEEEE), RoundedCornerShape(12.dp))
+                                .height(42.dp)
+                                .background(Color(0xFFEEEEEE), RoundedCornerShape(10.dp))
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.btn_back_to_cart), fontSize = 16.sp, fontWeight = FontWeight.Medium, color = TextDark)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(stringResource(R.string.btn_back_to_cart), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextDark)
                         }
                     }
                 }
