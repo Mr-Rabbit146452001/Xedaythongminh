@@ -37,7 +37,15 @@ import com.example.xedaythongminh.R
 import com.example.xedaythongminh.data.models.CartItem
 import com.example.xedaythongminh.data.models.CartSummary
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
-import com.example.xedaythongminh.ui.theme.*
+import com.example.xedaythongminh.ui.theme.PrimaryBlue
+import com.example.xedaythongminh.ui.theme.LightBlueBg
+import com.example.xedaythongminh.ui.theme.BackgroundGray
+import com.example.xedaythongminh.ui.theme.TextDark
+import com.example.xedaythongminh.ui.theme.TextGray
+import com.example.xedaythongminh.ui.theme.BorderGray
+import com.example.xedaythongminh.ui.theme.GreenAccent
+import com.example.xedaythongminh.ui.theme.ErrorRed
+import com.example.xedaythongminh.ui.theme.ErrorLightBg
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import kotlinx.coroutines.Dispatchers
