@@ -180,8 +180,9 @@ fun ScanProductScannerSection(
 
     Column(
         modifier = modifier
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         // 1. Dòng thông báo tự động quét sản phẩm với quầng sáng neon nhấp nháy tinh tế
         Card(
@@ -191,20 +192,20 @@ fun ScanProductScannerSection(
             border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF00E5FF).copy(alpha = 0.5f))
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Đốm sáng Neon Pulsing giả lập quét tự động
                 Box(
                     modifier = Modifier
-                        .size(12.dp)
+                        .size(10.dp)
                         .clip(CircleShape)
                         .background(Color(0xFF00E5FF))
                 )
-                Spacer(modifier = Modifier.width(16.dp))
+                Spacer(modifier = Modifier.width(12.dp))
                 Text(
                     text = "Đang tự động quét sản phẩm...",
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryBlue,
                     letterSpacing = 0.5.sp
@@ -222,7 +223,7 @@ fun ScanProductScannerSection(
                     text = errorMsg ?: "",
                     color = Color.Red,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(10.dp)
                 )
             }
         }
@@ -231,34 +232,33 @@ fun ScanProductScannerSection(
         Text(
             text = "Chi tiết sản phẩm",
             fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
+            fontSize = 16.sp,
             color = TextDark
         )
 
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
-                .shadow(4.dp, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp))
+                .shadow(2.dp, RoundedCornerShape(12.dp))
+                .clip(RoundedCornerShape(12.dp))
                 .background(Color.White)
-                .border(1.dp, BorderGray, RoundedCornerShape(16.dp)),
+                .border(1.dp, BorderGray, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
             if (selectedCartItem != null) {
                 val product = selectedCartItem.product
                 Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
+                        .fillMaxWidth()
+                        .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Hình ảnh sản phẩm lớn
+                    // Hình ảnh sản phẩm
                     Box(
                         modifier = Modifier
-                            .size(160.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .size(110.dp)
+                            .clip(RoundedCornerShape(10.dp))
                             .background(LightBlueBg),
                         contentAlignment = Alignment.Center
                     ) {
@@ -541,19 +541,19 @@ fun CartSidebar(
         // Bottom Actions
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
                 onClick = { navController.navigate("cart_detail") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(12.dp),
+                    .height(46.dp),
+                shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
-                Text("Xem chi tiết giỏ hàng", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward", modifier = Modifier.size(20.dp), tint = Color.White)
+                Text("Xem chi tiết giỏ hàng", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward", modifier = Modifier.size(18.dp), tint = Color.White)
             }
         }
     }
