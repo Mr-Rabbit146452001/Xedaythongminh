@@ -1,5 +1,6 @@
 package com.example.xedaythongminh.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -122,54 +123,77 @@ fun QrLoginBox(qrUrl: String?, modifier: Modifier = Modifier) {
             .clip(RoundedCornerShape(24.dp))
             .border(1.dp, BorderGray, RoundedCornerShape(24.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp),
+                .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
             if (qrUrl != null) {
-                val bitmapState = remember(qrUrl) { mutableStateOf<android.graphics.Bitmap?>(null) }
-                
-                LaunchedEffect(qrUrl) {
-                    withContext(Dispatchers.IO) {
-                        try {
-                            val writer = com.google.zxing.qrcode.QRCodeWriter()
-                            val bitMatrix = writer.encode(
-                                qrUrl,
-                                com.google.zxing.BarcodeFormat.QR_CODE,
-                                512,
-                                512
-                            )
-                            val width = bitMatrix.width
-                            val height = bitMatrix.height
-                            val bmp = android.graphics.Bitmap.createBitmap(width, height, android.graphics.Bitmap.Config.RGB_565)
-                            for (x in 0 until width) {
-                                for (y in 0 until height) {
-                                    bmp.setPixel(x, y, if (bitMatrix.get(x, y)) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
-                                }
-                            }
-                            bitmapState.value = bmp
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-
-                if (bitmapState.value != null) {
-                    Image(
-                        bitmap = bitmapState.value!!.asImageBitmap(),
-                        contentDescription = "Mã QR Đăng Nhập",
-                        modifier = Modifier.fillMaxSize()
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    QrCodeImage(
+                        qrContent = qrUrl,
+                        modifier = Modifier.weight(1f).aspectRatio(1f)
                     )
-                } else {
-                    CircularProgressIndicator(color = PrimaryBlue)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "QUÉT MÃ ĐỂ ĐĂNG NHẬP",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlue,
+                        letterSpacing = 1.5.sp
+                    )
                 }
             } else {
-                CircularProgressIndicator(color = PrimaryBlue)
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryBlue, strokeWidth = 3.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Đang tạo phiên đăng nhập...",
+                        color = TextGray,
+                        fontSize = 14.sp
+                    )
+                }
             }
+        }
+    }
+}
+
+@Composable
+fun QrCodeImage(qrContent: String, modifier: Modifier = Modifier) {
+    var bitmap by remember(qrContent) { mutableStateOf<android.graphics.Bitmap?>(null) }
+    
+    LaunchedEffect(qrContent) {
+        withContext(Dispatchers.IO) {
+            try {
+                val encoded = java.net.URLEncoder.encode(qrContent, "UTF-8")
+                val url = java.net.URL("https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=$encoded")
+                val bytes = url.readBytes()
+                val bmp = android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                bitmap = bmp
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+    
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap!!.asImageBitmap(),
+                contentDescription = "QR Code Login",
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            CircularProgressIndicator(color = PrimaryBlue)
         }
     }
 }
@@ -185,49 +209,44 @@ fun ScanCustomerInstructionBox(
         verticalArrangement = Arrangement.Center
     ) {
         Text(
-            text = "Quét mã để\nđăng nhập",
-            fontSize = 36.sp,
+            text = "Đăng nhập quét QR",
+            fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = PrimaryBlue,
-            lineHeight = 44.sp
+            color = PrimaryBlue
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Dùng ứng dụng di động Siêu Thị / Zalo để quét mã QR trên màn hình xe đẩy và bắt đầu phiên mua sắm.",
+            text = "Vui lòng mở ứng dụng quét mã QR trên điện thoại di động để quét mã QR bên trái và xác nhận liên kết tài khoản mua sắm của bạn.",
             fontSize = 16.sp,
             color = TextGray,
             lineHeight = 24.sp
         )
-        
         Spacer(modifier = Modifier.height(32.dp))
         
-        Button(
-            onClick = {
-                // Giả lập quét QR thành công để test đăng nhập
-                appViewModel.simulateQrScanSuccess()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = Color.White)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Giả lập Đăng nhập (Demo Test)", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
-        
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-            onClick = { navController.navigate("scan_product") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(12.dp),
-            border = BorderStroke(1.dp, PrimaryBlue)
-        ) {
-            Text("Bỏ qua đăng nhập -> Mua hàng ngay", color = PrimaryBlue, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = { navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } } },
+                modifier = Modifier.weight(1f).height(48.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Quay lại", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+            
+            OutlinedButton(
+                onClick = {
+                    navController.navigate("scan_product")
+                },
+                modifier = Modifier.weight(1f).height(48.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
+                border = BorderStroke(1.dp, PrimaryBlue),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(stringResource(R.string.btn_skip_login), fontWeight = FontWeight.Bold)
+            }
         }
     }
 }
