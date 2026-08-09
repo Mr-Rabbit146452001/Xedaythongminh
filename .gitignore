@@ -8,8 +8,13 @@
 .externalNativeBuild
 .cxx
 local.properties
+.kotlin/
+
+# Python temporary scratch scripts
+*.py
 
 # Node.js server ignored
 server/node_modules/
 node_modules/
 *.log
+.env
