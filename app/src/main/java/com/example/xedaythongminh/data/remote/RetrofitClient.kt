@@ -2,19 +2,23 @@ package com.example.xedaythongminh.data.remote
 
 import android.content.Context
 import android.content.SharedPreferences
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
-    private var currentBaseUrl = "https://recede-scalded-turret.ngrok-free.dev/"
+    // URL Ngrok chính thức kết nối máy chủ từ xa cách 20km
+    private const val DEFAULT_REMOTE_URL = "https://reflex-swipe-placidly.ngrok-free.dev/"
+    private var currentBaseUrl = DEFAULT_REMOTE_URL
     private var _apiService: ApiService? = null
     private var sharedPrefs: SharedPreferences? = null
 
     fun initialize(context: Context) {
         sharedPrefs = context.getSharedPreferences("smartcart_prefs", Context.MODE_PRIVATE)
-        // Cập nhật URL Ngrok công khai (Kết nối xuyên suốt mọi mạng Wi-Fi và 4G)
-        val targetUrl = "https://recede-scalded-turret.ngrok-free.dev/"
-        updateBaseUrl(targetUrl)
+        val savedUrl = sharedPrefs?.getString("server_base_url", null)
+        val targetUrl = if (!savedUrl.isNullOrBlank()) savedUrl else DEFAULT_REMOTE_URL
+        setBaseUrl(targetUrl)
     }
 
     private fun isEmulator(): Boolean {
@@ -45,30 +49,42 @@ object RetrofitClient {
     private fun setBaseUrl(newUrl: String): String {
         var url = newUrl.trim()
         if (url.isBlank()) {
-            url = "http://10.0.2.2:3000/"
+            url = DEFAULT_REMOTE_URL
         }
         
-        // Add protocol if missing
+        // Thêm protocol nếu thiếu
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            url = "http://$url"
+            url = "https://$url"
         }
         
-        // Ensure trailing slash
+        // Đảm bảo có dấu gạch chéo cuối
         if (!url.endsWith("/")) {
             url = "$url/"
         }
         
         if (currentBaseUrl != url) {
             currentBaseUrl = url
-            // Re-create the Retrofit service with the new base URL
             _apiService = buildRetrofit(currentBaseUrl).create(ApiService::class.java)
         }
         return currentBaseUrl
     }
 
     private fun buildRetrofit(baseUrl: String): Retrofit {
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val newRequest = chain.request().newBuilder()
+                    .addHeader("ngrok-skip-browser-warning", "true")
+                    .addHeader("User-Agent", "SmartCartApp")
+                    .build()
+                chain.proceed(newRequest)
+            }
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .build()
+
         return Retrofit.Builder()
             .baseUrl(baseUrl)
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
     }

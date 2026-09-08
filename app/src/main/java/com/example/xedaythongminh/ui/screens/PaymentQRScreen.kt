@@ -37,7 +37,12 @@ import com.example.xedaythongminh.data.models.CartSummary
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import kotlinx.coroutines.delay
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
+import com.example.xedaythongminh.ui.components.QrCodeImage
 
 @Composable
 fun PaymentQRScreen(
@@ -46,7 +51,58 @@ fun PaymentQRScreen(
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
+    val qrContent by appViewModel.paymentQrContent.collectAsState()
+    val qrSessionData by appViewModel.qrSessionData.collectAsState()
+    val isQrExpiredServer by appViewModel.isQrExpired.collectAsState()
     val summary = CartSummary(cartItems)
+    val context = LocalContext.current
+
+    var lockRemainingSeconds by remember { mutableIntStateOf(60) }
+    var expiryRemainingSeconds by remember { mutableIntStateOf(300) }
+
+    LaunchedEffect(qrSessionData?.orderId) {
+        lockRemainingSeconds = qrSessionData?.lockSeconds ?: 60
+        expiryRemainingSeconds = qrSessionData?.validitySeconds ?: 300
+        while (expiryRemainingSeconds > 0) {
+            delay(1000)
+            if (lockRemainingSeconds > 0) {
+                lockRemainingSeconds--
+            }
+            if (expiryRemainingSeconds > 0) {
+                expiryRemainingSeconds--
+            }
+        }
+    }
+
+    val isExpired = isQrExpiredServer || (expiryRemainingSeconds <= 0)
+
+    // Khóa phím Back trong 1 phút đầu để server đồng bộ
+    BackHandler(enabled = true) {
+        if (lockRemainingSeconds > 0) {
+            Toast.makeText(
+                context,
+                "Hệ thống đang khóa 1 phút đầu để đồng bộ máy chủ (còn ${lockRemainingSeconds}s), vui lòng đợi!",
+                Toast.LENGTH_SHORT
+            ).show()
+        } else {
+            navController.popBackStack()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        appViewModel.startQrPaymentSession {
+            // Tiến thẳng luồng đến payment_success và xóa sạch backstack
+            navController.navigate("payment_success") {
+                popUpTo(0) { inclusive = true }
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            appViewModel.stopQrPaymentSession()
+        }
+    }
     
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + " VNĐ"
@@ -216,8 +272,33 @@ fun PaymentQRScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(32.dp)
                         ) {
-                            PaymentQRScannerBox(modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f))
-                            PaymentQRInstructionsBox(appViewModel = appViewModel, navController = navController, modifier = Modifier.fillMaxWidth())
+                            PaymentQRScannerBox(
+                                qrContent = qrContent,
+                                isExpired = isExpired,
+                                onRefresh = {
+                                    appViewModel.startQrPaymentSession {
+                                        navController.navigate("payment_success") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(0.8f).aspectRatio(1f)
+                            )
+                            PaymentQRInstructionsBox(
+                                appViewModel = appViewModel,
+                                navController = navController,
+                                lockRemainingSeconds = lockRemainingSeconds,
+                                expiryRemainingSeconds = expiryRemainingSeconds,
+                                isExpired = isExpired,
+                                onRefresh = {
+                                    appViewModel.startQrPaymentSession {
+                                        navController.navigate("payment_success") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                     } else {
                         Row(
@@ -228,8 +309,33 @@ fun PaymentQRScreen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            PaymentQRScannerBox(modifier = Modifier.weight(1f).aspectRatio(1f))
-                            PaymentQRInstructionsBox(appViewModel = appViewModel, navController = navController, modifier = Modifier.weight(1f))
+                            PaymentQRScannerBox(
+                                qrContent = qrContent,
+                                isExpired = isExpired,
+                                onRefresh = {
+                                    appViewModel.startQrPaymentSession {
+                                        navController.navigate("payment_success") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f).aspectRatio(1f)
+                            )
+                            PaymentQRInstructionsBox(
+                                appViewModel = appViewModel,
+                                navController = navController,
+                                lockRemainingSeconds = lockRemainingSeconds,
+                                expiryRemainingSeconds = expiryRemainingSeconds,
+                                isExpired = isExpired,
+                                onRefresh = {
+                                    appViewModel.startQrPaymentSession {
+                                        navController.navigate("payment_success") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
                         }
                     }
                 }
@@ -239,32 +345,84 @@ fun PaymentQRScreen(
 }
 
 @Composable
-fun PaymentQRScannerBox(modifier: Modifier = Modifier) {
+fun PaymentQRScannerBox(
+    qrContent: String?,
+    isExpired: Boolean = false,
+    onRefresh: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(24.dp))
-            .border(4.dp, PrimaryBlue, RoundedCornerShape(24.dp))
-            .padding(12.dp)
+            .border(4.dp, if (isExpired) Color(0xFFFF5252) else PrimaryBlue, RoundedCornerShape(24.dp))
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(RoundedCornerShape(16.dp))
-                .background(Color(0xFF111111)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.QrCode2,
-                contentDescription = "QR Code",
-                tint = Color.White,
-                modifier = Modifier.size(160.dp)
-            )
+        QrCodeImage(
+            content = qrContent,
+            modifier = Modifier.fillMaxSize()
+        )
+        if (isExpired) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Black.copy(alpha = 0.88f))
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFFF5252),
+                        modifier = Modifier.size(48.dp)
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "MÃ QR ĐÃ HẾT HẠN",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Đã quá 5 phút hiệu lực.\nVui lòng tạo mã QR mới.",
+                        color = Color(0xFFCCCCCC),
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 16.sp
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(
+                        onClick = onRefresh,
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Tạo mã QR mới", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavController, modifier: Modifier = Modifier) {
+fun PaymentQRInstructionsBox(
+    appViewModel: AppViewModel,
+    navController: NavController,
+    lockRemainingSeconds: Int = 0,
+    expiryRemainingSeconds: Int = 300,
+    isExpired: Boolean = false,
+    onRefresh: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.Center
@@ -276,15 +434,45 @@ fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavContr
             color = PrimaryBlue,
             lineHeight = 44.sp
         )
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "Sử dụng ứng dụng Ngân hàng hoặc Ví điện tử của bạn để quét mã QR.",
-            fontSize = 16.sp,
+            text = "Sử dụng ứng dụng Ngân hàng (MockBank) của bạn để quét mã QR chuyển Token.",
+            fontSize = 15.sp,
             color = TextGray,
-            lineHeight = 24.sp
+            lineHeight = 22.sp
         )
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // Banner khóa 1 phút đầu để đồng bộ máy chủ
+        if (lockRemainingSeconds > 0) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = Color(0xFFFFF8E1),
+                border = BorderStroke(1.dp, Color(0xFFFFB300)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = Color(0xFFE65100),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "1 phút đầu: Khóa màn hình để đồng bộ máy chủ (${lockRemainingSeconds}s)",
+                        color = Color(0xFFBF360C),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
         
         // Status & Timer
         Row(
@@ -294,34 +482,44 @@ fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavContr
             // Waiting Status
             Row(
                 modifier = Modifier
-                    .background(LightBlueBg, RoundedCornerShape(24.dp))
+                    .background(if (isExpired) Color(0xFFFFEBEE) else LightBlueBg, RoundedCornerShape(24.dp))
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.HourglassTop, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                Icon(
+                    imageVector = if (isExpired) Icons.Default.ErrorOutline else Icons.Default.HourglassTop,
+                    contentDescription = null,
+                    tint = if (isExpired) Color(0xFFFF1744) else PrimaryBlue,
+                    modifier = Modifier.size(20.dp)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Đang chờ\nthanh toán...",
-                    color = PrimaryBlue,
+                    text = if (isExpired) "Mã QR\nhết hạn" else "Đang chờ\nthanh toán...",
+                    color = if (isExpired) Color(0xFFFF1744) else PrimaryBlue,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )
             }
             
-            // Timer
+            // Timer đếm ngược 5 phút
+            val minutes = expiryRemainingSeconds / 60
+            val seconds = expiryRemainingSeconds % 60
+            val timeFormatted = String.format("%02d:%02d", minutes, seconds)
+            val timerColor = if (expiryRemainingSeconds <= 60) Color(0xFFFF1744) else Color(0xFFE74C3C)
+
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Timer, contentDescription = null, tint = Color(0xFFE74C3C))
+                Icon(Icons.Default.Timer, contentDescription = null, tint = timerColor)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "04:59",
+                    text = timeFormatted,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFFE74C3C)
+                    color = timerColor
                 )
             }
         }
         
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(36.dp))
         
         // Action Buttons
         Row(
@@ -329,33 +527,61 @@ fun PaymentQRInstructionsBox(appViewModel: AppViewModel, navController: NavContr
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier
-                    .weight(1f)
-                    .height(46.dp),
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, PrimaryBlue)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(stringResource(R.string.btn_back), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-            }
-            
-            Button(
-                onClick = {
-                    appViewModel.checkoutCart {
-                        navController.navigate("payment_success")
+                onClick = { 
+                    if (lockRemainingSeconds <= 0) {
+                        navController.popBackStack() 
                     }
                 },
+                enabled = lockRemainingSeconds <= 0,
                 modifier = Modifier
                     .weight(1f)
-                    .height(46.dp),
+                    .height(48.dp),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                border = BorderStroke(1.dp, if (lockRemainingSeconds > 0) Color.LightGray else PrimaryBlue)
             ) {
-                Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Xong", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                if (lockRemainingSeconds > 0) {
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Khóa (${lockRemainingSeconds}s)", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                } else {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(stringResource(R.string.btn_back), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+            
+            if (isExpired) {
+                Button(
+                    onClick = onRefresh,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Làm mới QR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
+            } else {
+                Button(
+                    onClick = {
+                        appViewModel.checkoutCart {
+                            navController.navigate("payment_success") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                ) {
+                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Xong", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.R
 import androidx.compose.ui.res.stringResource
+import androidx.activity.compose.BackHandler
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +39,11 @@ fun SessionEndedScreen(
     navController: NavController,
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
+    // Khóa phím Back tuyệt đối: Không cho phép quay lại
+    BackHandler(enabled = true) {
+        // Chặn phím Back
+    }
+
     // Logic to clear all local session variables when this screen is initialized
     LaunchedEffect(Unit) {
         appViewModel.clearSession()

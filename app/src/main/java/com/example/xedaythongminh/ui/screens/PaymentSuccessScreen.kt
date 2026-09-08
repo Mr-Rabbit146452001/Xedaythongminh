@@ -11,10 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
-import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
@@ -33,6 +31,8 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.R
 import androidx.compose.ui.res.stringResource
+import androidx.activity.compose.BackHandler
+import kotlinx.coroutines.delay
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 
 @Composable
@@ -43,6 +43,25 @@ fun PaymentSuccessScreen(
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
     val summary = CartSummary(cartItems)
+
+    var autoEndCountdown by remember { mutableIntStateOf(8) }
+
+    // Khóa phím Back tuyệt đối: Không cho quay lại các trang trước sau khi đã thanh toán thành công
+    BackHandler(enabled = true) {
+        // Chặn phím Back
+    }
+
+    // Tự động tiến thẳng luồng sang kết thúc phiên sau 8 giây
+    LaunchedEffect(Unit) {
+        while (autoEndCountdown > 0) {
+            delay(1000)
+            autoEndCountdown--
+        }
+        appViewModel.clearSession()
+        navController.navigate("session_ended") {
+            popUpTo(0) { inclusive = true }
+        }
+    }
     
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
@@ -120,7 +139,9 @@ fun PaymentSuccessScreen(
                                 OutlinedButton(
                                     onClick = { 
                                         appViewModel.clearSession()
-                                        navController.navigate("session_ended") 
+                                        navController.navigate("session_ended") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
                                     },
                                     modifier = Modifier
                                         .weight(1f)
@@ -136,7 +157,9 @@ fun PaymentSuccessScreen(
                                 OutlinedButton(
                                     onClick = { 
                                         appViewModel.clearSession()
-                                        navController.navigate("session_ended") 
+                                        navController.navigate("session_ended") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
                                     },
                                     modifier = Modifier
                                         .weight(1f)
@@ -155,7 +178,9 @@ fun PaymentSuccessScreen(
                             Button(
                                 onClick = { 
                                     appViewModel.clearSession()
-                                    navController.navigate("session_ended") 
+                                    navController.navigate("session_ended") {
+                                        popUpTo(0) { inclusive = true }
+                                    }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth(0.8f)
@@ -167,6 +192,14 @@ fun PaymentSuccessScreen(
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(stringResource(R.string.btn_end_session), color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "Tự động kết thúc phiên sau ${autoEndCountdown}s...",
+                                fontSize = 13.sp,
+                                color = TextGray,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                     

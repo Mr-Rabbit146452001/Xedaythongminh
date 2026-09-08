@@ -15,5 +15,13 @@ object AppViewModelProvider {
                 productRepository = application.container.productRepository
             )
         }
+        initializer {
+            val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as StrollerApplication)
+            com.example.xedaythongminh.ui.autopayment.AutoPaymentViewModel(
+                cartRepository = application.container.cartRepository,
+                getLinkedPaymentMethodsUseCase = application.container.getLinkedPaymentMethodsUseCase,
+                processAutoPaymentUseCase = application.container.processAutoPaymentUseCase
+            )
+        }
     }
 }

@@ -1,20 +1,44 @@
+# Build and Cache
+build/
+**/build/
+.gradle/
+**/.gradle/
+.kotlin/
+**/.kotlin/
+.idea/
+**/.idea/
 *.iml
-.gradle
+**/*.iml
+local.properties
 /local.properties
-/.idea
 .DS_Store
-/build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
-.kotlin/
 
-# Python temporary scratch scripts
-*.py
+# Archives & Binaries (>50MB/100MB blocked by GitHub)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+*.apk
+*.aab
 
-# Node.js server ignored
-server/node_modules/
+# Node.js & Web Admin
 node_modules/
+**/node_modules/
+.next/
+**/.next/
+out/
+**/out/
+
+# Python temporary & bytecode
+*.py
+*.pyc
+__pycache__/
+**/__pycache__/
+
+# Environment & Logs
 *.log
 .env
+**/.env

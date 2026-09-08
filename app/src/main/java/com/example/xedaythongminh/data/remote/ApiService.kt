@@ -37,4 +37,52 @@ interface ApiService {
 
     @POST("api/cart/checkout")
     suspend fun checkoutCart(@Body request: CheckoutRequest): Response<Map<String, Any>>
+
+    // ==========================================
+    // CÁC API THANH TOÁN TỰ ĐỘNG (AUTO-PAYMENT)
+    // ==========================================
+    @GET("api/payment/methods")
+    suspend fun getPaymentMethods(@Query("customerId") customerId: String): Response<PaymentMethodsResponseDto>
+
+    // ==========================================
+    // CÁC API THANH TOÁN MÃ QR (QR PAYMENT)
+    // ==========================================
+    @POST("api/payment/create-qr-session")
+    suspend fun createQrPaymentSession(@Body request: Map<String, String>): Response<QrPaymentSessionResponseDto>
+
+    @GET("api/payment/qr-status/{orderId}")
+    suspend fun checkQrPaymentStatus(@Path("orderId") orderId: String): Response<QrPaymentStatusResponseDto>
+
+    @POST("api/payment/auto-checkout")
+    suspend fun autoCheckout(@Body request: AutoPaymentRequestDto): Response<AutoPaymentResponseDto>
+
+    // ==========================================
+    // CÁC API THEO TÀI LIỆU BÀN GIAO FASTAPI & POSTGRESQL (CỔNG 8001 & 8000)
+    // ==========================================
+    @GET(".")
+    suspend fun rootCheck(): Response<Map<String, Any>>
+
+    @POST("product")
+    suspend fun getProductByQr(@Body request: QrProductRequest): Response<QrProductResponseDto>
+
+    @GET("health")
+    suspend fun healthCheckV1(): Response<Map<String, Any>>
+
+    @GET("api/v1/products")
+    suspend fun getProductsV1(): Response<List<HandoverProductDto>>
+
+    @POST("api/v1/sessions")
+    suspend fun createSessionV1(@Body body: Map<String, String> = emptyMap()): Response<SessionResponseDto>
+
+    @POST("api/v1/sessions/{sessionId}/complete")
+    suspend fun completeSessionV1(
+        @Path("sessionId") sessionId: String,
+        @Body body: Map<String, String> = emptyMap()
+    ): Response<SessionResponseDto>
+
+    @GET("api/v1/cart/{sessionId}")
+    suspend fun getCartV1(@Path("sessionId") sessionId: String): Response<HandoverCartResponseDto>
+
+    @POST("api/v1/cart/decisions")
+    suspend fun sendCartDecisionV1(@Body request: CartDecisionRequestDto): Response<Map<String, Any>>
 }

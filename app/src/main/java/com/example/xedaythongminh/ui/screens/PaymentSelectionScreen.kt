@@ -52,9 +52,10 @@ fun PaymentSelectionScreen(
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
     }
 
-    var selectedPaymentMethod by remember { mutableStateOf("QR Banking") }
+    var selectedPaymentMethod by remember { mutableStateOf("⚡ Tự động (Auto-Pay)") }
 
     val paymentMethods = listOf(
+        PaymentMethodItem("⚡ Tự động (Auto-Pay)", Icons.Default.Bolt),
         PaymentMethodItem("QR Banking", Icons.Default.QrCode2),
         PaymentMethodItem("Ví điện tử", Icons.Default.AccountBalanceWallet),
         PaymentMethodItem("Thẻ thành viên", Icons.Default.Badge),
@@ -281,7 +282,13 @@ fun PaymentSelectionScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Button(
-                            onClick = { navController.navigate("payment_qr") },
+                            onClick = {
+                                if (selectedPaymentMethod.contains("Tự động")) {
+                                    navController.navigate("auto_payment")
+                                } else {
+                                    navController.navigate("payment_qr")
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(46.dp),

@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.xedaythongminh.data.models.User
 import com.example.xedaythongminh.data.remote.dto.toDomainModel
+import com.example.xedaythongminh.data.remote.dto.toDomainCartItem
 
 class AppViewModel constructor(
     private val cartRepository: CartRepository,
@@ -37,6 +38,9 @@ class AppViewModel constructor(
     private val _sessionQrUrl = MutableStateFlow<String?>(null)
     val sessionQrUrl: StateFlow<String?> = _sessionQrUrl.asStateFlow()
 
+    private val _activeSessionId = MutableStateFlow<String?>("SESSION_DEFAULT")
+    val activeSessionId: StateFlow<String?> = _activeSessionId.asStateFlow()
+
     private var qrPollingJob: kotlinx.coroutines.Job? = null
 
     init {
@@ -47,6 +51,7 @@ class AppViewModel constructor(
             }
         }
         fetchAllProducts()
+        createShoppingSession()
         startNetworkAndCartMonitoring()
     }
 
@@ -70,18 +75,35 @@ class AppViewModel constructor(
                 val product = result.getOrNull()
                 if (product != null) {
                     // Cập nhật giỏ hàng nếu tìm thấy sản phẩm
-                    val existingItem = _cartItemsState.value.find { it.product.sku == barcode }
+                    val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
                         increaseQuantity(existingItem)
                     } else {
                         cartRepository.addCartItem(CartItem(product = product, quantity = 1))
                     }
+
+                    // Đồng bộ quyết định lên server cổng 8000
+                    val sId = _activeSessionId.value
+                    if (!sId.isNullOrBlank()) {
+                        try {
+                            val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
+                                sessionId = sId,
+                                action = "add",
+                                barcode = product.id,
+                                aiClass = product.sku,
+                                aiConfidence = 1.0f,
+                                deltaWeightG = 500.0f,
+                                weightSource = "simulated"
+                            )
+                            com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendCartDecisionV1(req)
+                        } catch (ignored: Exception) {}
+                    }
                 } else {
-                    _errorState.value = "Bancode bạn nhập không đúng"
+                    _errorState.value = "Mã vạch không đúng hoặc không tồn tại"
                 }
             } else {
                 val errorMsg = result.exceptionOrNull()?.message ?: "Lỗi kết nối máy chủ"
-                _errorState.value = "Lỗi mạng: $errorMsg"
+                _errorState.value = errorMsg
             }
         }
     }
@@ -93,45 +115,157 @@ class AppViewModel constructor(
             if (result.isSuccess) {
                 val product = result.getOrNull()
                 if (product != null) {
-                    val existingItem = _cartItemsState.value.find { it.product.sku == barcode }
+                    val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
                         cartRepository.updateQuantity(existingItem, existingItem.quantity + quantity)
                     } else {
                         cartRepository.addCartItem(CartItem(product = product, quantity = quantity))
                     }
                 } else {
-                    _errorState.value = "Bancode bạn nhập không đúng"
+                    _errorState.value = "Mã vạch không đúng hoặc không tồn tại"
                 }
             } else {
                 val errorMsg = result.exceptionOrNull()?.message ?: "Lỗi kết nối máy chủ"
-                _errorState.value = "Lỗi mạng: $errorMsg"
+                _errorState.value = errorMsg
             }
         }
     }
 
     fun removeCartItem(item: CartItem) {
+        // 1. Cập nhật UI giỏ hàng ngay lập tức
+        val currentList = _cartItemsState.value.toMutableList()
+        currentList.removeAll { it.product.id == item.product.id || it.product.sku == item.product.sku }
+        _cartItemsState.value = currentList
+
+        // 2. Cập nhật Repository
         cartRepository.removeCartItem(item)
+
+        // 3. Đồng bộ quyết định xóa lên server cổng 8000
+        val sId = _activeSessionId.value
+        if (!sId.isNullOrBlank()) {
+            viewModelScope.launch {
+                try {
+                    val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
+                        sessionId = sId,
+                        action = "remove",
+                        barcode = item.product.id,
+                        aiClass = item.product.sku,
+                        aiConfidence = 1.0f,
+                        deltaWeightG = -500.0f,
+                        weightSource = "simulated"
+                    )
+                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendCartDecisionV1(req)
+                } catch (ignored: Exception) {}
+            }
+        }
     }
 
     fun increaseQuantity(item: CartItem) {
+        val currentList = _cartItemsState.value.toMutableList()
+        val idx = currentList.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
+        if (idx != -1) {
+            currentList[idx] = currentList[idx].copy(quantity = currentList[idx].quantity + 1)
+            _cartItemsState.value = currentList
+        }
         cartRepository.updateQuantity(item, item.quantity + 1)
+
+        val sId = _activeSessionId.value
+        if (!sId.isNullOrBlank()) {
+            viewModelScope.launch {
+                try {
+                    val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
+                        sessionId = sId,
+                        action = "add",
+                        barcode = item.product.id,
+                        aiClass = item.product.sku,
+                        aiConfidence = 1.0f,
+                        deltaWeightG = 500.0f,
+                        weightSource = "simulated"
+                    )
+                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendCartDecisionV1(req)
+                } catch (ignored: Exception) {}
+            }
+        }
     }
 
     fun decreaseQuantity(item: CartItem) {
         if (item.quantity > 1) {
+            val currentList = _cartItemsState.value.toMutableList()
+            val idx = currentList.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
+            if (idx != -1) {
+                currentList[idx] = currentList[idx].copy(quantity = currentList[idx].quantity - 1)
+                _cartItemsState.value = currentList
+            }
             cartRepository.updateQuantity(item, item.quantity - 1)
+
+            val sId = _activeSessionId.value
+            if (!sId.isNullOrBlank()) {
+                viewModelScope.launch {
+                    try {
+                        val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
+                            sessionId = sId,
+                            action = "remove",
+                            barcode = item.product.id,
+                            aiClass = item.product.sku,
+                            aiConfidence = 1.0f,
+                            deltaWeightG = -500.0f,
+                            weightSource = "simulated"
+                        )
+                        com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendCartDecisionV1(req)
+                    } catch (ignored: Exception) {}
+                }
+            }
         } else {
-            cartRepository.removeCartItem(item)
+            removeCartItem(item)
+        }
+    }
+
+    fun createShoppingSession(onSuccess: (String) -> Unit = {}) {
+        viewModelScope.launch {
+            try {
+                val res = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.createSessionV1()
+                if (res.isSuccessful && res.body() != null) {
+                    val sId = res.body()!!.id
+                    _activeSessionId.value = sId
+                    onSuccess(sId)
+                    return@launch
+                }
+            } catch (e: Exception) {
+                // Fallback
+            }
+            val localSessionId = "SESSION_${System.currentTimeMillis()}"
+            _activeSessionId.value = localSessionId
+            onSuccess(localSessionId)
+        }
+    }
+
+    fun completeShoppingSession(onSuccess: () -> Unit = {}) {
+        val sId = _activeSessionId.value ?: "SESSION_DEFAULT"
+        viewModelScope.launch {
+            try {
+                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(sId)
+            } catch (e: Exception) {
+                // ignore
+            } finally {
+                _cartItemsState.value = emptyList()
+                cartRepository.clearCart()
+                onSuccess()
+            }
         }
     }
 
     private fun startNetworkAndCartMonitoring() {
-        // Network monitor (pings server every 3 seconds)
+        // Network monitor (kiểm tra trạng thái server cổng 8000 qua /health hoặc /)
         viewModelScope.launch {
             while (true) {
                 try {
-                    val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.healthCheck()
-                    _isServerConnected.value = response.isSuccessful
+                    val resHealth = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.healthCheckV1()
+                    if (resHealth.isSuccessful) {
+                        _isServerConnected.value = true
+                    } else {
+                        val resRoot = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.rootCheck()
+                        _isServerConnected.value = resRoot.isSuccessful
+                    }
                 } catch (e: Exception) {
                     _isServerConnected.value = false
                 }
@@ -139,45 +273,25 @@ class AppViewModel constructor(
             }
         }
 
-        // Cart unscanned status poller (polls every 2 seconds)
+        // Real-time Cart Items Sync Poller (đồng bộ giỏ hàng từ /api/v1/cart/{sessionId})
         viewModelScope.launch {
             while (true) {
                 if (_isServerConnected.value) {
-                    try {
-                        val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartStatus()
-                        if (response.isSuccessful) {
-                            _hasUnscannedProduct.value = response.body()?.data?.hasUnscannedProduct ?: false
-                        }
-                    } catch (e: Exception) {
-                        // ignore error
-                    }
-                }
-                kotlinx.coroutines.delay(2000)
-            }
-        }
-
-        // Real-time PostgreSQL Cart Items Sync Poller (polls every 1.5 seconds)
-        // Giúp tự động nảy sản phẩm khi Raspberry Pi hoặc ThingsBoard ghi nhận sản phẩm mới
-        viewModelScope.launch {
-            while (true) {
-                if (_isServerConnected.value) {
-                    try {
-                        val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartItems("SESSION_DEFAULT")
-                        if (response.isSuccessful && response.body()?.status == "Thành công") {
-                            val remoteData = response.body()?.data
-                            if (remoteData != null) {
-                                val domainItems = remoteData.items.map { remoteItem ->
-                                    val dto = remoteItem.product
-                                    com.example.xedaythongminh.data.models.CartItem(
-                                        product = dto.toDomainModel(),
-                                        quantity = remoteItem.quantity
-                                    )
-                                }
+                    val currentSession = _activeSessionId.value
+                    if (!currentSession.isNullOrBlank()) {
+                        try {
+                            val v1Response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartV1(currentSession)
+                            if (v1Response.isSuccessful && v1Response.body() != null) {
+                                val v1Data = v1Response.body()!!
+                                val domainItems = v1Data.items.map { it.toDomainCartItem() }
                                 _cartItemsState.value = domainItems
+                            } else if (v1Response.code() == 404) {
+                                // Nếu session chưa có trên server (ví dụ SESSION_DEFAULT) hoặc đã đóng, tự tạo session mới
+                                createShoppingSession()
                             }
+                        } catch (e: Exception) {
+                            // ignore transient error
                         }
-                    } catch (e: Exception) {
-                        // ignore transient error
                     }
                 }
                 kotlinx.coroutines.delay(1500)
@@ -189,7 +303,7 @@ class AppViewModel constructor(
         viewModelScope.launch {
             try {
                 val req = com.example.xedaythongminh.data.remote.dto.CheckoutRequest(
-                    sessionId = "SESSION_DEFAULT",
+                    sessionId = _activeSessionId.value ?: "SESSION_DEFAULT",
                     customerId = _userState.value?.id ?: "CUSTOMER_888"
                 )
                 val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.checkoutCart(req)
@@ -283,6 +397,89 @@ class AppViewModel constructor(
                 onFailure("Lỗi kết nối máy chủ: ${e.message}")
             }
         }
+    }
+
+    // ==========================================
+    // QUẢN LÝ THANH TOÁN QR XE ĐẨY (STROLLER QR PAYMENT)
+    // ==========================================
+    // THANH TOÁN QR ĐỘC LẬP VỚI MOCK BANK (1 TOKEN = 10 VNĐ)
+    // ==========================================
+    private val _paymentQrContent = MutableStateFlow<String?>(null)
+    val paymentQrContent: StateFlow<String?> = _paymentQrContent.asStateFlow()
+
+    private val _qrSessionData = MutableStateFlow<com.example.xedaythongminh.data.remote.dto.QrPaymentSessionData?>(null)
+    val qrSessionData: StateFlow<com.example.xedaythongminh.data.remote.dto.QrPaymentSessionData?> = _qrSessionData.asStateFlow()
+
+    private val _isQrExpired = MutableStateFlow<Boolean>(false)
+    val isQrExpired: StateFlow<Boolean> = _isQrExpired.asStateFlow()
+
+    private val _isPaymentCompleted = MutableStateFlow<Boolean>(false)
+    val isPaymentCompleted: StateFlow<Boolean> = _isPaymentCompleted.asStateFlow()
+
+    private var paymentPollingJob: kotlinx.coroutines.Job? = null
+
+    fun startQrPaymentSession(onPaymentSuccess: () -> Unit) {
+        paymentPollingJob?.cancel()
+        _paymentQrContent.value = null
+        _qrSessionData.value = null
+        _isPaymentCompleted.value = false
+        _isQrExpired.value = false
+
+        viewModelScope.launch {
+            try {
+                val req = mapOf(
+                    "sessionId" to "SESSION_DEFAULT",
+                    "customerId" to (_userState.value?.id ?: "CUSTOMER_888")
+                )
+                val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.createQrPaymentSession(req)
+                if (response.isSuccessful && response.body()?.status == "Thành công") {
+                    val sessionData = response.body()?.data
+                    if (sessionData != null) {
+                        _qrSessionData.value = sessionData
+                        _paymentQrContent.value = sessionData.qrContent
+                        startPaymentPolling(sessionData.orderId, onPaymentSuccess)
+                    }
+                }
+            } catch (e: Exception) {
+                _errorState.value = "Lỗi khởi tạo thanh toán QR: ${e.message}"
+            }
+        }
+    }
+
+    private fun startPaymentPolling(orderId: String, onPaymentSuccess: () -> Unit) {
+        paymentPollingJob = viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(1500)
+                try {
+                    val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.checkQrPaymentStatus(orderId)
+                    if (response.isSuccessful && response.body()?.status == "Thành công") {
+                        val statusData = response.body()?.data
+                        if (statusData != null) {
+                            if (statusData.isPaid) {
+                                _isPaymentCompleted.value = true
+                                clearSession()
+                                paymentPollingJob?.cancel()
+                                onPaymentSuccess()
+                                break
+                            } else if (statusData.paymentStatus == "EXPIRED") {
+                                _isQrExpired.value = true
+                                paymentPollingJob?.cancel()
+                                break
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    // Bỏ qua lỗi mạng chập chờn khi polling
+                }
+            }
+        }
+    }
+
+    fun stopQrPaymentSession() {
+        paymentPollingJob?.cancel()
+        _paymentQrContent.value = null
+        _qrSessionData.value = null
+        _isQrExpired.value = false
     }
 
     fun logoutUser() {

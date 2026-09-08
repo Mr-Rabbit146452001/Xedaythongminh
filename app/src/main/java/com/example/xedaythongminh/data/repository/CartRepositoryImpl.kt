@@ -22,17 +22,17 @@ class CartRepositoryImpl constructor() : CartRepository {
 
     override fun removeCartItem(item: CartItem) {
         val current = _cartItems.value.toMutableList()
-        current.remove(item)
+        current.removeAll { it.product.id == item.product.id || it.product.sku == item.product.sku }
         _cartItems.value = current
     }
 
     override fun updateQuantity(item: CartItem, newQuantity: Int) {
         val current = _cartItems.value.toMutableList()
-        val index = current.indexOf(item)
+        val index = current.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
         if (index != -1 && newQuantity > 0) {
-            current[index] = item.copy(quantity = newQuantity)
+            current[index] = current[index].copy(quantity = newQuantity)
             _cartItems.value = current
-        } else if (index != -1 && newQuantity == 0) {
+        } else if (index != -1 && newQuantity <= 0) {
             current.removeAt(index)
             _cartItems.value = current
         }

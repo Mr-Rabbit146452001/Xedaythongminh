@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "xedaythongminh"
 include(":app")
+include(":mock-bank-app")
  

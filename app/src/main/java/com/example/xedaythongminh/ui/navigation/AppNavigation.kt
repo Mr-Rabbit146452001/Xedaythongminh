@@ -86,6 +86,15 @@ fun AppNavigation(
             composable("payment_selection") {
                 PaymentSelectionScreen(appViewModel = appViewModel, navController = navController, windowSize = windowSize)
             }
+            composable("auto_payment") {
+                val autoPaymentViewModel: com.example.xedaythongminh.ui.autopayment.AutoPaymentViewModel = viewModel(factory = AppViewModelProvider.Factory)
+                com.example.xedaythongminh.ui.autopayment.AutoPaymentScreen(
+                    autoPaymentViewModel = autoPaymentViewModel,
+                    appViewModel = appViewModel,
+                    navController = navController,
+                    windowSize = windowSize
+                )
+            }
             composable("payment_qr") {
                 PaymentQRScreen(appViewModel = appViewModel, navController = navController, windowSize = windowSize)
             }

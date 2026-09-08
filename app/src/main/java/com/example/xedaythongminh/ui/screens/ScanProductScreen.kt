@@ -5,8 +5,10 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -153,13 +155,7 @@ fun ScanProductScreen(
                             // Giả lập gửi tín hiệu giải quyết lỗi về server để xóa cảnh báo
                             scope.launch {
                                 try {
-                                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.healthCheck() // test connection
-                                    // Gọi API giả lập tắt trạng thái chưa quét
-                                    val baseUrl = com.example.xedaythongminh.data.remote.RetrofitClient.getBaseUrl()
-                                    val url = java.net.URL("${baseUrl}api/cart/unscanned-simulation?status=false")
-                                    withContext(Dispatchers.IO) {
-                                        url.readBytes() // Trigger API
-                                    }
+                                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.rootCheck() // test connection
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                 }
@@ -486,9 +482,25 @@ fun CartSidebar(
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
     val summary = CartSummary(cartItems)
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
+    }
+
+    // Tự động cuộn đến sản phẩm mới nhất khi giỏ hàng có thêm sản phẩm
+    LaunchedEffect(cartItems.size) {
+        if (cartItems.isNotEmpty()) {
+            listState.animateScrollToItem(cartItems.size - 1)
+        }
+    }
+
+    // Trạng thái kiểm tra xem danh sách có đang bị cuộn xuống không
+    val showScrollUp by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex > 0 || listState.firstVisibleItemScrollOffset > 20
+        }
     }
 
     Column(
@@ -509,8 +521,46 @@ fun CartSidebar(
                 fontWeight = FontWeight.Bold,
                 color = TextDark
             )
-            TextButton(onClick = { appViewModel.clearSession() }) {
-                Text("Xóa hết", color = Color.Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Nút cuộn nhanh trên thanh tiêu đề
+                if (cartItems.size >= 2) {
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                listState.animateScrollToItem(0)
+                            }
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowUp,
+                            contentDescription = "Cuộn lên",
+                            tint = if (showScrollUp) PrimaryBlue else TextGray.copy(alpha = 0.4f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = {
+                            scope.launch {
+                                listState.animateScrollToItem(cartItems.size - 1)
+                            }
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = "Cuộn xuống",
+                            tint = if (listState.canScrollForward) PrimaryBlue else TextGray.copy(alpha = 0.4f),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
+
+                TextButton(onClick = { appViewModel.clearSession() }) {
+                    Text("Xóa hết", color = Color.Red, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                }
             }
         }
         
@@ -529,25 +579,67 @@ fun CartSidebar(
             )
         }
         
-        // Product List (Fixed height inside Sidebar)
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+        // Product List (Fixed height inside Sidebar) with floating "Cuộn lên" button
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
         ) {
-            items(cartItems.size) { index ->
-                val item = cartItems[index]
-                val isSelected = selectedCartItem?.product?.sku == item.product.sku
-                CartItem(
-                    title = item.product.name,
-                    price = formatVnd(item.product.unitPrice),
-                    quantity = item.quantity,
-                    isSelected = isSelected,
-                    imageUrl = item.product.imageUrl,
-                    onClick = { onItemSelect(item) },
-                    onIncrease = { appViewModel.increaseQuantity(item) },
-                    onDecrease = { appViewModel.decreaseQuantity(item) },
-                    onRemove = { appViewModel.removeCartItem(item) }
-                )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(cartItems.size) { index ->
+                    val item = cartItems[index]
+                    val isSelected = selectedCartItem?.product?.sku == item.product.sku
+                    CartItem(
+                        title = item.product.name,
+                        price = formatVnd(item.product.unitPrice),
+                        quantity = item.quantity,
+                        isSelected = isSelected,
+                        imageUrl = item.product.imageUrl,
+                        onClick = { onItemSelect(item) },
+                        onIncrease = { appViewModel.increaseQuantity(item) },
+                        onDecrease = { appViewModel.decreaseQuantity(item) },
+                        onRemove = { appViewModel.removeCartItem(item) }
+                    )
+                }
+            }
+
+            // Nút nổi "Cuộn lên" hiển thị linh hoạt khi danh sách cuộn xuống
+            if (showScrollUp) {
+                FilledTonalButton(
+                    onClick = {
+                        scope.launch {
+                            listState.animateScrollToItem(0)
+                        }
+                    },
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = PrimaryBlue,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.KeyboardArrowUp,
+                        contentDescription = "Cuộn lên",
+                        modifier = Modifier.size(18.dp),
+                        tint = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Cuộn lên",
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                }
             }
         }
         
