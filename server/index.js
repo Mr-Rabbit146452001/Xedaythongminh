@@ -9,6 +9,39 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
+
+// FastAPI Proxy (Đặt trước express.json() để body stream nguyên vẹn sang FastAPI cổng 8000)
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const fastapiProxy = createProxyMiddleware({
+  target: 'http://127.0.0.1:8000',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.warn('⚠️ [FastAPI Proxy] Chưa kết nối được tới FastAPI (port 8000):', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({
+          status: 'error',
+          message: 'FastAPI server trên cổng 8000 chưa sẵn sàng: ' + err.message
+        });
+      }
+    }
+  }
+});
+
+app.use((req, res, next) => {
+  if (
+    req.path.startsWith('/api/v1') || 
+    req.path.startsWith('/docs') || 
+    req.path.startsWith('/openapi.json') || 
+    req.path.startsWith('/redoc') || 
+    req.path === '/health' ||
+    req.path.startsWith('/health/')
+  ) {
+    return fastapiProxy(req, res, next);
+  }
+  next();
+});
+
 app.use(express.json());
 
 // Phục vụ các tệp hình ảnh sản phẩm tĩnh từ thư mục public/images
@@ -166,10 +199,11 @@ app.post('/api/cart/items', async (req, res) => {
   }
 
   try {
-    const pResult = await pool.query('SELECT id FROM Products WHERE barcode = $1', [barcode]);
+    const pResult = await pool.query('SELECT id, price, price_vnd FROM Products WHERE barcode = $1', [barcode]);
     if (pResult.rows.length === 0) {
       return res.status(404).json({ status: 'Lỗi', message: 'Sản phẩm không tồn tại' });
     }
+    const productId = pResult.rows[0].id;
     const nowMs = Date.now();
     await pool.query(
       `INSERT INTO shopping_sessions (id, status, started_at_ms) VALUES ($1, 'active', $2) ON CONFLICT (id) DO NOTHING`,
@@ -760,26 +794,7 @@ app.use('/api/bank', async (req, res) => {
   }
 });
 
-// 12.5. Proxy chuyển tiếp các yêu cầu /api/v1, /docs, /openapi.json, /redoc, /health sang FastAPI Backend (Cổng 8000)
-const { createProxyMiddleware } = require('http-proxy-middleware');
 
-const fastapiProxy = createProxyMiddleware({
-  target: 'http://127.0.0.1:8000',
-  changeOrigin: true,
-  on: {
-    error: (err, req, res) => {
-      console.warn('⚠️ [FastAPI Proxy] Chưa kết nối được tới FastAPI (port 8000):', err.message);
-      if (!res.headersSent) {
-        res.status(502).json({
-          status: 'error',
-          message: 'FastAPI server trên cổng 8000 chưa sẵn sàng hoặc đang khởi động: ' + err.message
-        });
-      }
-    }
-  }
-});
-
-app.use(['/api/v1', '/docs', '/openapi.json', '/redoc', '/health'], fastapiProxy);
 
 // ==========================================
 // 13. HỆ THỐNG REST API QUẢN TRỊ DÀNH CHO WEB ADMIN (RETAIL INTELLIGENCE)
