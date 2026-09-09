@@ -8,7 +8,7 @@ require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const app = express();
 const PORT = process.env.BANK_PORT || 4000;
 const SHOP_SERVER_URL = process.env.SHOP_SERVER_URL || 'http://127.0.0.1:3000';
-const BANK_SECRET_KEY = process.env.BANK_SECRET_KEY || 'stroller_mock_bank_secret_2026';
+const BANK_SECRET_KEY = process.env.BANK_SECRET_KEY || 'stroller_mock_bank_secret_2026_super_secure_key_x89f21';
 
 app.use(cors());
 app.use(express.json());
@@ -70,12 +70,42 @@ app.post('/api/bank/faucet', async (req, res) => {
   }
 });
 
+// Helper: Xác thực PIN an toàn với Timing-Safe so sánh
+function verifyPin(inputPin, storedPin) {
+  if (!inputPin || !storedPin) return false;
+  const inputStr = String(inputPin).trim();
+  const storedStr = String(storedPin).trim();
+  
+  if (storedStr.startsWith('$pbkdf2$')) {
+    const parts = storedStr.split('$');
+    const salt = parts[2];
+    const hash = parts[3];
+    const testHash = crypto.pbkdf2Sync(inputStr, salt, 10000, 32, 'sha256').toString('hex');
+    const bufA = Buffer.from(hash, 'hex');
+    const bufB = Buffer.from(testHash, 'hex');
+    return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+  }
+  
+  // Hỗ trợ mã PIN plain text ban đầu (ví dụ: '123456') an toàn bằng timingSafeEqual
+  const bufA = Buffer.from(storedStr, 'utf8');
+  const bufB = Buffer.from(inputStr, 'utf8');
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+}
+
 // 4. API Thanh toán quét mã QR (Core Payment Transaction with Row Lock)
 app.post('/api/bank/pay-qr', async (req, res) => {
   const { fromAccount, toAccount, amount, orderId, idempotencyKey, pin } = req.body;
 
   if (!fromAccount || !toAccount || !amount || !orderId) {
     return res.status(400).json({ success: false, message: 'Thiếu thông tin thanh toán bắt buộc' });
+  }
+
+  // BẢO MẬT: Bắt buộc mã PIN phải có và đúng định dạng 4-6 chữ số
+  if (!pin || typeof pin !== 'string' || !/^\d{4,6}$/.test(pin.trim())) {
+    return res.status(400).json({ 
+      success: false, 
+      message: 'Mã PIN bắt buộc phải cung cấp và phải là chuỗi từ 4 đến 6 chữ số' 
+    });
   }
 
   const numAmount = parseFloat(amount);
@@ -119,7 +149,7 @@ app.post('/api/bank/pay-qr', async (req, res) => {
 
     // 2. Khóa dòng tài khoản người gửi (Row-level lock chống Race Condition)
     const senderRes = await client.query(
-      'SELECT account_number, owner_name, token_balance, pin, is_active FROM bank_accounts WHERE account_number = $1 FOR UPDATE',
+      'SELECT account_number, owner_name, token_balance, pin, is_active, failed_attempts, locked_until FROM bank_accounts WHERE account_number = $1 FOR UPDATE',
       [fromAccount]
     );
     if (senderRes.rows.length === 0) {
@@ -133,10 +163,39 @@ app.post('/api/bank/pay-qr', async (req, res) => {
       return res.status(403).json({ success: false, message: 'Tài khoản người gửi đang bị khóa' });
     }
 
-    // Kiểm tra PIN nếu có
-    if (pin && sender.pin !== pin) {
+    // Kiểm tra tài khoản có đang bị tạm khóa do nhập sai PIN quá nhiều lần không
+    const now = new Date();
+    if (sender.locked_until && new Date(sender.locked_until) > now) {
       await client.query('ROLLBACK');
-      return res.status(401).json({ success: false, message: 'Mã PIN ngân hàng không chính xác' });
+      const waitMinutes = Math.ceil((new Date(sender.locked_until) - now) / 60000);
+      return res.status(423).json({ 
+        success: false, 
+        message: `Tài khoản bị tạm khóa do nhập sai PIN quá 5 lần. Vui lòng thử lại sau ${waitMinutes} phút.` 
+      });
+    }
+
+    // Xác thực PIN an toàn (Constant-time comparison)
+    const cleanPin = pin.trim();
+    if (!verifyPin(cleanPin, sender.pin)) {
+      const attempts = (parseInt(sender.failed_attempts) || 0) + 1;
+      if (attempts >= 5) {
+        const lockUntilDate = new Date(Date.now() + 15 * 60 * 1000); // Khóa 15 phút
+        await client.query('UPDATE bank_accounts SET failed_attempts = 0, locked_until = $1 WHERE account_number = $2', [lockUntilDate, fromAccount]);
+      } else {
+        await client.query('UPDATE bank_accounts SET failed_attempts = $1 WHERE account_number = $2', [attempts, fromAccount]);
+      }
+      await client.query('COMMIT');
+      return res.status(401).json({ 
+        success: false, 
+        message: attempts >= 5 
+          ? 'Bạn đã nhập sai mã PIN 5 lần liên tiếp. Tài khoản bị tạm khóa 15 phút.' 
+          : `Mã PIN không chính xác. Bạn còn ${5 - attempts} lần thử.` 
+      });
+    }
+
+    // Reset số lần sai nếu nhập đúng
+    if (sender.failed_attempts > 0 || sender.locked_until) {
+      await client.query('UPDATE bank_accounts SET failed_attempts = 0, locked_until = NULL WHERE account_number = $1', [fromAccount]);
     }
 
     // Kiểm tra số dư Token

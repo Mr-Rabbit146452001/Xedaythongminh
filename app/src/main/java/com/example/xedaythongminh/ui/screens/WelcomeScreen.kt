@@ -18,6 +18,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.example.xedaythongminh.ui.theme.*
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.Alignment
@@ -149,7 +152,10 @@ fun TopBar(
     statusText: String = stringResource(R.string.status_text_default),
     appViewModel: AppViewModel? = null
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    var showPinDialog by remember { mutableStateOf(false) }
+    var showConfigDialog by remember { mutableStateOf(false) }
+    var tapCount by remember { mutableIntStateOf(0) }
+    var lastTapTime by remember { mutableLongStateOf(0L) }
     
     Row(
         modifier = Modifier
@@ -158,8 +164,21 @@ fun TopBar(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Cử chỉ ẩn: Kỹ thuật viên chạm 5 lần liên tiếp vào logo để kích hoạt bảng quản trị
         Row(
-            modifier = Modifier.clickable { showDialog = true },
+            modifier = Modifier.clickable { 
+                val now = System.currentTimeMillis()
+                if (now - lastTapTime < 500) {
+                    tapCount++
+                    if (tapCount >= 5) {
+                        tapCount = 0
+                        showPinDialog = true
+                    }
+                } else {
+                    tapCount = 1
+                }
+                lastTapTime = now
+            },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -186,10 +205,11 @@ fun TopBar(
                 color = TextDark,
                 fontWeight = FontWeight.Medium
             )
-            IconButton(onClick = { showDialog = true }) {
+            // Nút cài đặt yêu cầu xác thực PIN quản trị viên trước khi mở
+            IconButton(onClick = { showPinDialog = true }) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Cấu hình Server IP",
+                    contentDescription = "Cấu hình Server IP (Bảo vệ bởi PIN)",
                     tint = PrimaryBlue,
                     modifier = Modifier.size(20.dp)
                 )
@@ -197,9 +217,108 @@ fun TopBar(
         }
     }
 
-    if (showDialog) {
-        ServerSettingsDialog(appViewModel = appViewModel, onDismiss = { showDialog = false })
+    if (showPinDialog) {
+        AdminPinDialog(
+            onAuthenticated = {
+                showPinDialog = false
+                showConfigDialog = true
+            },
+            onDismiss = { showPinDialog = false }
+        )
     }
+
+    if (showConfigDialog) {
+        ServerSettingsDialog(appViewModel = appViewModel, onDismiss = { showConfigDialog = false })
+    }
+}
+
+@Composable
+fun AdminPinDialog(
+    onAuthenticated: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    var pinInput by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var failedAttempts by remember { mutableIntStateOf(0) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    tint = PrimaryBlue,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Xác thực Quản trị viên", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Vui lòng nhập mã PIN Kỹ thuật viên để cấu hình hệ thống.",
+                    fontSize = 13.sp,
+                    color = TextGray
+                )
+                OutlinedTextField(
+                    value = pinInput,
+                    onValueChange = { 
+                        if (it.length <= 6 && it.all { char -> char.isDigit() }) {
+                            pinInput = it 
+                            errorMessage = null
+                        }
+                    },
+                    label = { Text("Mã PIN (6 chữ số)") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
+                    isError = errorMessage != null,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                if (errorMessage != null) {
+                    Text(
+                        text = errorMessage ?: "",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    // PIN kỹ thuật: 886622 hoặc 123456
+                    if (pinInput == "886622" || pinInput == "123456") {
+                        onAuthenticated()
+                    } else {
+                        failedAttempts++
+                        errorMessage = if (failedAttempts >= 5) {
+                            "Đã nhập sai 5 lần. Thao tác bị khóa tạm thời."
+                        } else {
+                            "Mã PIN không đúng. Bạn còn ${5 - failedAttempts} lần thử."
+                        }
+                    }
+                },
+                enabled = pinInput.length >= 4 && failedAttempts < 5,
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) {
+                Text("Xác nhận", color = Color.White)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Hủy", color = TextGray)
+            }
+        },
+        shape = RoundedCornerShape(16.dp),
+        containerColor = Color.White
+    )
 }
 
 @Composable

@@ -59,6 +59,7 @@ fun PaymentSuccessScreen(
             delay(1000)
             autoEndCountdown--
         }
+        appViewModel.terminateSessionImmediately()
         navController.navigate("session_ended") {
             popUpTo(0) { inclusive = true }
         }

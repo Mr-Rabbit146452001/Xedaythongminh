@@ -43,6 +43,7 @@ fun ScanCustomerScreen(
 
     // 1. Khởi động phiên đăng nhập QR Zalo-style khi vào màn hình
     LaunchedEffect(Unit) {
+        appViewModel.logoutUser()
         appViewModel.startQrLoginSession()
     }
 

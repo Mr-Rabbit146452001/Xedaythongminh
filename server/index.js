@@ -580,13 +580,11 @@ app.post('/api/auth/logout', (req, res) => {
 
 // ==========================================
 // 12. HỆ THỐNG THANH TOÁN MÃ QR & WEBHOOK NGÂN HÀNG ẢO
-// ==========================================
 const crypto = require('crypto');
-const BANK_SECRET_KEY = process.env.BANK_SECRET_KEY || 'stroller_mock_bank_secret_2026';
-
-// 12.1. API Tạo phiên thanh toán QR cho Tablet Xe Đẩy
+const BANK_SECRET_KEY = process.env.BANK_SECRET_KEY || 'stroller_mock_bank_secret_2026_super_secure_key_x89f21';
+const processedBankTransactions = new Set();
 app.post('/api/payment/create-qr-session', async (req, res) => {
-  const { sessionId, customerId } = req.body;
+  const { sessionId, customerId, totalAmount: reqTotalAmount, finalAmount: reqFinalAmount } = req.body;
   const targetSession = sessionId || 'SESSION_DEFAULT';
   const targetCustomer = customerId || 'CUSTOMER_888';
 
@@ -598,15 +596,28 @@ app.post('/api/payment/create-qr-session', async (req, res) => {
       WHERE c.session_id = $1
     `;
     const totalRes = await pool.query(totalQuery, [targetSession]);
-    let totalAmount = parseFloat(totalRes.rows[0]?.total || 0);
+    let dbTotal = parseFloat(totalRes.rows[0]?.total || 0);
 
-    if (totalAmount <= 0) {
+    // Ưu tiên số tiền thực tế từ app xe đẩy gửi lên nếu CSDL chưa có dữ liệu giỏ hàng
+    let totalAmount = dbTotal;
+    if (totalAmount <= 0 && reqTotalAmount && parseFloat(reqTotalAmount) > 0) {
+      totalAmount = parseFloat(reqTotalAmount);
+    } else if (totalAmount <= 0 && reqFinalAmount && parseFloat(reqFinalAmount) > 0) {
+      totalAmount = parseFloat(reqFinalAmount);
+    } else if (totalAmount <= 0) {
+      // Chỉ fallback giá mẫu nếu cả CSDL và Client đều không có sản phẩm
       totalAmount = 150000;
     }
 
-    const finalAmount = Math.round(totalAmount * 0.9);
-    // Tỷ giá quy đổi: 1 Token = 10 VNĐ
-    const tokenAmount = Math.round(finalAmount / 10);
+    let finalAmount;
+    if (reqFinalAmount && parseFloat(reqFinalAmount) > 0) {
+      finalAmount = Math.round(parseFloat(reqFinalAmount));
+    } else {
+      finalAmount = Math.round(totalAmount * 0.9);
+    }
+
+    // Tỷ giá quy đổi: 1 Token = 10 VNĐ (tối thiểu 1 Token)
+    const tokenAmount = Math.max(1, Math.round(finalAmount / 10));
 
     const now = Date.now();
     const expiresAt = now + QR_VALIDITY_MS;   // 5 phút
@@ -662,56 +673,121 @@ app.post('/api/webhooks/bank-payment', async (req, res) => {
   const signature = req.headers['x-bank-signature'];
   const payload = req.body;
 
+  // 1. Kiểm tra chữ ký HMAC an toàn với constant-time comparison
+  if (!signature || typeof signature !== 'string') {
+    console.warn('⚠️ [Shop Webhook] Chữ ký bảo mật bị thiếu!');
+    return res.status(401).json({ success: false, message: 'Missing signature header' });
+  }
+
   const expectedSig = crypto.createHmac('sha256', BANK_SECRET_KEY)
     .update(JSON.stringify(payload))
     .digest('hex');
 
-  if (signature !== expectedSig) {
-    console.warn('⚠️ [Shop Webhook] Chữ ký bảo mật không hợp lệ!');
+  const sigBuf = Buffer.from(signature, 'utf8');
+  const expBuf = Buffer.from(expectedSig, 'utf8');
+
+  if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+    console.warn('⚠️ [Shop Webhook] Chữ ký bảo mật HMAC không hợp lệ!');
     return res.status(403).json({ success: false, message: 'Invalid signature' });
   }
 
-  const { orderId, transactionId, amount, status } = payload;
-  console.log(`🔔 [Shop Webhook] Nhận thông báo thanh toán thành công cho đơn: ${orderId} (${amount} Token)`);
+  const { orderId, transactionId, amount, status, timestamp, toAccount } = payload;
 
+  // 2. Chống Replay Attack: Kiểm tra thời hạn gói tin (hạn 5 phút)
+  if (timestamp && Math.abs(Date.now() - Number(timestamp)) > 5 * 60 * 1000) {
+    console.warn(`⚠️ [Shop Webhook] Payload timestamp đã quá hạn: ${timestamp}`);
+    return res.status(400).json({ success: false, message: 'Webhook timestamp expired' });
+  }
+
+  // 3. Chống Replay Attack: Kiểm tra tính duy nhất của giao dịch (Idempotency)
+  if (transactionId && processedBankTransactions.has(transactionId)) {
+    console.log(`ℹ️ [Shop Webhook] Giao dịch ${transactionId} đã được xử lý trước đó.`);
+    return res.json({ success: true, message: 'Transaction already processed' });
+  }
+
+  // 4. Kiểm tra tài khoản thụ hưởng
+  if (toAccount && toAccount !== 'ACC_STORE_MAIN') {
+    console.warn(`⚠️ [Shop Webhook] Tài khoản nhận không khớp với cửa hàng: ${toAccount}`);
+    return res.status(400).json({ success: false, message: 'Recipient account mismatch' });
+  }
+
+  // 5. Kiểm tra đơn hàng có tồn tại trong hệ thống không (KHÔNG tự tạo đơn ảo)
   const order = qrPaymentOrders.get(orderId);
-  if (order) {
-    order.status = 'PAID';
-    order.transactionId = transactionId;
-    order.paidAt = Date.now();
+  if (!order) {
+    console.warn(`⚠️ [Shop Webhook] Nhận thông báo cho đơn hàng không tồn tại: ${orderId}`);
+    return res.status(404).json({ success: false, message: 'Order not found in pending orders' });
+  }
 
-    try {
-      await pool.query('UPDATE ShoppingSessions SET status = \'completed\', endtime = NOW() WHERE id = $1', [order.sessionId]);
-      await pool.query('DELETE FROM cart_items WHERE session_id = $1', [order.sessionId]);
+  // 6. Kiểm tra trạng thái đơn hàng
+  if (order.status === 'PAID') {
+    return res.json({ success: true, message: 'Order already marked as PAID' });
+  }
+  if (order.status !== 'PENDING') {
+    console.warn(`⚠️ [Shop Webhook] Đơn hàng ${orderId} đang ở trạng thái: ${order.status}`);
+    return res.status(400).json({ success: false, message: `Order is not PENDING (Current: ${order.status})` });
+  }
 
-      // Đồng bộ sang bảng shopping_sessions (chuẩn IoT) và đẩy ThingsBoard Outbox
-      const nowMs = Date.now();
-      await pool.query('UPDATE shopping_sessions SET status = \'completed\', ended_at_ms = $1 WHERE id = $2', [nowMs, order.sessionId]);
-      const tbTelemetry = {
-        event: 'qr_payment_completed',
-        order_id: orderId,
-        session_id: order.sessionId,
-        amount_tokens: order.amountTokens,
-        transaction_id: transactionId,
-        completed_at_ms: nowMs
-      };
-      await pool.query(`
-        INSERT INTO thingsboard_outbox (reference_type, reference_id, telemetry_json, status, created_at_ms)
-        VALUES ('qr_payment', $1, $2, 'pending', $3)
-      `, [orderId, JSON.stringify(tbTelemetry), nowMs]);
-    } catch (dbErr) {
-      console.error('Lỗi cập nhật DB khi thanh toán:', dbErr.message);
-    }
-  } else {
-    qrPaymentOrders.set(orderId, {
-      orderId,
-      status: 'PAID',
-      transactionId,
-      paidAt: Date.now()
+  // 7. BẢO MẬT: Kiểm tra số tiền thanh toán nghiêm ngặt (Chống gian lận trả thiếu tiền)
+  const paidAmount = parseFloat(amount);
+  const requiredAmount = parseFloat(order.amountTokens);
+
+  if (isNaN(paidAmount) || isNaN(requiredAmount)) {
+    return res.status(400).json({ success: false, message: 'Invalid amount format' });
+  }
+
+  // Nếu trả thiếu tiền (cho phép sai số làm tròn tối đa 0.001 Token)
+  if (paidAmount < (requiredAmount - 0.001)) {
+    console.error(`🚨 [Shop Webhook - CẢNH BÁO GIAN LẬN] Đơn ${orderId}: Yêu cầu ${requiredAmount} Token, nhưng chỉ nhận được ${paidAmount} Token!`);
+    order.status = 'SUSPICIOUS_UNDERPAID';
+    order.underpaidAmount = paidAmount;
+    order.flaggedAt = Date.now();
+    return res.status(422).json({
+      success: false,
+      errorCode: 'UNDERPAYMENT_DETECTED',
+      message: `Số tiền thanh toán (${paidAmount} Token) không đủ so với giá trị đơn hàng (${requiredAmount} Token)`
     });
   }
 
-  res.json({ success: true, message: 'Webhook processed' });
+  // 8. Kiểm tra trạng thái từ ngân hàng
+  if (status !== 'SUCCESS') {
+    console.warn(`⚠️ [Shop Webhook] Trạng thái ngân hàng không phải SUCCESS: ${status}`);
+    return res.status(400).json({ success: false, message: 'Bank transaction status is not SUCCESS' });
+  }
+
+  // 9. Xác nhận thanh toán thành công
+  console.log(`✅ [Shop Webhook] Thanh toán thành công và đủ tiền cho đơn: ${orderId} (${paidAmount} Token)`);
+  order.status = 'PAID';
+  order.transactionId = transactionId;
+  order.paidTokens = paidAmount;
+  order.paidAt = Date.now();
+  if (transactionId) {
+    processedBankTransactions.add(transactionId);
+  }
+
+  try {
+    await pool.query('UPDATE ShoppingSessions SET status = \'completed\', endtime = NOW() WHERE id = $1', [order.sessionId]);
+    await pool.query('DELETE FROM cart_items WHERE session_id = $1', [order.sessionId]);
+
+    // Đồng bộ sang bảng shopping_sessions (chuẩn IoT) và đẩy ThingsBoard Outbox
+    const nowMs = Date.now();
+    await pool.query('UPDATE shopping_sessions SET status = \'completed\', ended_at_ms = $1 WHERE id = $2', [nowMs, order.sessionId]);
+    const tbTelemetry = {
+      event: 'qr_payment_completed',
+      order_id: orderId,
+      session_id: order.sessionId,
+      amount_tokens: order.amountTokens,
+      transaction_id: transactionId,
+      completed_at_ms: nowMs
+    };
+    await pool.query(`
+      INSERT INTO thingsboard_outbox (reference_type, reference_id, telemetry_json, status, created_at_ms)
+      VALUES ('qr_payment', $1, $2, 'pending', $3)
+    `, [orderId, JSON.stringify(tbTelemetry), nowMs]);
+  } catch (dbErr) {
+    console.error('Lỗi cập nhật DB khi thanh toán:', dbErr.message);
+  }
+
+  res.json({ success: true, message: 'Webhook processed successfully' });
 });
 
 // 12.3. API Polling cho Tablet Xe Đẩy kiểm tra trạng thái thanh toán & đồng bộ khóa

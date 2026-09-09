@@ -357,6 +357,7 @@ class AppViewModel constructor(
         // Cancel existing job if running
         qrPollingJob?.cancel()
         _sessionQrUrl.value = null
+        _userState.value = null // BẢO MẬT: Luôn reset trạng thái khách hàng khi bắt đầu phiên quét mới
         
         viewModelScope.launch {
             try {
@@ -470,9 +471,15 @@ class AppViewModel constructor(
 
         viewModelScope.launch {
             try {
+                val currentItems = _cartItemsState.value
+                val summary = com.example.xedaythongminh.data.models.CartSummary(currentItems)
+                val finalPayAmount = (summary.subtotal - summary.memberDiscount).coerceAtLeast(0L)
+
                 val req = mapOf(
-                    "sessionId" to "SESSION_DEFAULT",
-                    "customerId" to (_userState.value?.id ?: "CUSTOMER_888")
+                    "sessionId" to (_activeSessionId.value ?: "SESSION_DEFAULT"),
+                    "customerId" to (_userState.value?.id ?: "CUSTOMER_888"),
+                    "totalAmount" to summary.subtotal.toString(),
+                    "finalAmount" to (if (finalPayAmount > 0L) finalPayAmount.toString() else summary.subtotal.toString())
                 )
                 val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.createQrPaymentSession(req)
                 if (response.isSuccessful && response.body()?.status == "Thành công") {
@@ -531,12 +538,28 @@ class AppViewModel constructor(
 
     fun logoutUser() {
         _userState.value = null
+        _sessionQrUrl.value = null
+        qrPollingJob?.cancel()
     }
 
-    fun resetSessionAfterPayment() {
+    fun terminateSessionImmediately() {
+        // BẢO MẬT: Xóa trắng RAM ngay lập tức trên UI Thread để tránh rò rỉ phiên
+        _userState.value = null
+        _cartItemsState.value = emptyList()
+        _isPaymentCompleted.value = false
+        _hasUnscannedProduct.value = false
+        _paymentQrContent.value = null
+        _qrSessionData.value = null
+        _isQrExpired.value = false
+        _lastCompletedCartItems.value = emptyList()
+        _sessionQrUrl.value = null
+        qrPollingJob?.cancel()
+        paymentPollingJob?.cancel()
+
         val sId = _activeSessionId.value
         viewModelScope.launch {
             try {
+                cartRepository.clearCart()
                 if (!sId.isNullOrBlank()) {
                     com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(sId)
                     com.example.xedaythongminh.data.remote.RetrofitClient.apiService.logoutAuthSession(mapOf("sessionId" to sId))
@@ -544,22 +567,17 @@ class AppViewModel constructor(
             } catch (e: Exception) {
                 // ignore
             } finally {
-                cartRepository.clearCart()
-                _cartItemsState.value = emptyList()
-                _userState.value = null
-                _isPaymentCompleted.value = false
-                _hasUnscannedProduct.value = false
-                _paymentQrContent.value = null
-                _qrSessionData.value = null
-                _isQrExpired.value = false
-                _lastCompletedCartItems.value = emptyList()
                 createShoppingSession()
             }
         }
     }
 
+    fun resetSessionAfterPayment() {
+        terminateSessionImmediately()
+    }
+
     fun clearSession() {
-        resetSessionAfterPayment()
+        terminateSessionImmediately()
     }
 
     fun clearError() {

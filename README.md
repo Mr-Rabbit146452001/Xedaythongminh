@@ -1,75 +1,90 @@
 # 🛒 HỆ THỐNG XE ĐẨY BÁN LẺ THÔNG MINH (SMART SHOPPING STROLLER & RETAIL INTELLIGENCE)
 
-Hệ thống **Xe Đẩy Bán Lẻ Thông Minh (Smart Shopping Stroller Ecosystem)** là giải pháp toàn diện cho siêu thị thế hệ mới, kết hợp giữa **Phần cứng IoT & Cảm biến trên Xe đẩy**, **Ứng dụng di động Android Jetpack Compose**, **Hệ sinh thái Thanh toán Ngân hàng Mock Bank**, **Cơ sở dữ liệu PostgreSQL & Node.js Backend**, cùng **Nền tảng Web Quản trị Bán lẻ Thông minh (Web Admin Next.js 14)**.
+Hệ thống **Xe Đẩy Bán Lẻ Thông Minh (Smart Shopping Stroller Ecosystem)** là giải pháp toàn diện cho mô hình siêu thị và trung tâm thương mại thế hệ mới. Dự án tích hợp xuyên suốt giữa **Phần cứng IoT & Cảm biến trên Xe đẩy**, **Ứng dụng di động Android Jetpack Compose**, **Hệ thống Web Quản trị Bán lẻ Next.js 14**, **Cơ sở dữ liệu PostgreSQL**, **Máy chủ Backend Node.js & FastAPI Python**, cùng **Hệ sinh thái Ngân hàng Giả lập Mock Bank**.
 
 ---
 
-## 🌟 TỔNG QUAN CÁC PHÂN HỆ HỆ THỐNG
-
-Dự án gồm **4 phân hệ chính** hoạt động đồng bộ theo thời gian thực:
+## 🌟 SƠ ĐỒ KIẾN TRÚC TOÀN HỆ THỐNG
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           KIẾN TRÚC TOÀN HỆ THỐNG                               │
-└─────────────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────────┐
+│                              KIẾN TRÚC TOÀN DIỆN HỆ THỐNG                                 │
+└───────────────────────────────────────────────────────────────────────────────────────────┘
 
-   [📷 Camera & Cảm Biến Cân Nặng IoT]
-                   │
-                   ▼ (Điều khiển bởi Raspberry Pi)
-   [📱 Stroller App - Android Tablet / Mobile] ◄──┐
-   (Jetpack Compose, Sensor Landscape, Coil)      │
-                   │                              │
-                   ▼ (RESTful API & Ngrok Tunnel) │
-   [⚙️ Node.js Backend & PostgreSQL] ─────────────┼──────────────┐
-   (Port 3000: /api/cart, /api/products, /api/iot)│              │
-                   ▲                              │              │
-                   │ (Tích hợp Thanh toán QR)     │              ▼
-   [🏦 Mock Bank App & Server] ───────────────────┘    [🌐 Web Admin Dashboard]
-   (Port 4000: Ngân hàng số giả lập QR)                (Port 3001: Next.js 14)
-                                                       (Kho, Đơn hàng, Live Cart)
+   [📷 Camera AI Barcode]       [⚖️ Cảm Biến Cân Nặng Loadcell HX711]
+              │                                      │
+              └───────────────────┬──────────────────┘
+                                  ▼
+                     [🤖 Raspberry Pi 4 Controller]
+                                  │
+                                  ├──────────────────────────────┐
+                    (Telemetry)   │                              │ (HTTP/WebSocket)
+                                  ▼                              ▼
+                     [☁️ ThingsBoard Cloud Gateway]    [📱 Stroller App - Tablet / Phone]
+                                  │                     (Android Jetpack Compose, Landscape,
+                                  ▼                      Coil, Cuộn cảm ứng 100%, AutoPay)
+               [⚡ FastAPI Server (Port 8000)]                   │
+               (ThingsBoard, AI Vision Class,                     │ (RESTful API & Ngrok Tunnel)
+                Weight Tolerance, Swagger UI)                     │
+                                  │                               ▼
+                                  └──────────────► [⚙️ Node.js Shop Server (Port 3000)]
+                                                   (Quản lý Giỏ hàng, Checkout, Reverse Proxy)
+                                                                  │
+                                   ┌──────────────────────────────┼──────────────────────────────┐
+                                   ▼                              ▼                              ▼
+                        [🗄️ PostgreSQL Database]      [🌐 Web Admin Dashboard]        [🏦 Mock Bank Ecosystem]
+                        (Bảng: products, carts,       (Next.js 14 - Port 3001)        (Server Port 4000 & App)
+                         cart_items, transactions,    (Kho hàng, Đơn hàng,            (Quét VietQR thời gian thực,
+                         smart_carts, customers)       Bản đồ 2D Live Stroller Map)    Webhook thanh toán tự động)
 ```
 
 ---
 
-## 🚀 CHI TIẾT TỪNG PHÂN HỆ
+## 🚀 CHI TIẾT CÁC PHÂN HỆ CHÍNH
 
 ### 1. 📱 Ứng Dụng Xe Đẩy Thông Minh (`app/` - Android Jetpack Compose)
-* **Khóa màn hình ngang (Sensor Landscape)**: Tương thích hoàn hảo trên cả máy tính bảng gắn trên xe đẩy và điện thoại di động cầm tay.
+* **Khóa màn hình xoay ngang (`sensorLandscape`)**: Tương thích hoàn hảo trên cả máy tính bảng đặt trên xe đẩy lẫn điện thoại thông minh cá nhân.
 * **Quy trình mua sắm 8 màn hình khép kín**:
-  1. `WelcomeScreen`: Chào mừng và giới thiệu tính năng.
-  2. `ScanCustomerScreen`: Đăng nhập quét mã QR liên kết tài khoản thành viên.
-  3. `CustomerInfoScreen`: Tra cứu hạng thẻ, voucher ưu đãi và điểm tích lũy.
-  4. `ScanProductScreen`: Tự động nhận diện sản phẩm qua IoT, hiển thị ảnh sản phẩm, cảnh báo lệch trọng lượng.
-  5. `CartDetailScreen`: Chi tiết giỏ hàng và danh sách sản phẩm.
-  6. `PaymentSelectionScreen`: Lựa chọn phương thức thanh toán linh hoạt.
-  7. `PaymentQRScreen`: Quét mã QR thanh toán ngân hàng thời gian thực.
-  8. `PaymentSuccessScreen` & `SessionEndedScreen`: In hóa đơn điện tử, tích điểm và kết thúc phiên mua sắm.
-* **Tự động tải ảnh sản phẩm tĩnh** qua thư viện Coil.
-* **Hỗ trợ cuộn dọc cảm ứng mượt mà 100%** không bị xung đột layout.
+  1. `WelcomeScreen`: Chào mừng khách hàng, lựa chọn ngôn ngữ và bắt đầu phiên mua sắm.
+  2. `ScanCustomerScreen`: Đăng nhập nhanh qua mã QR thành viên kiểu Zalo hoặc bỏ qua đăng nhập.
+  3. `CustomerInfoScreen`: Hiển thị thông tin hội viên, điểm thưởng tích lũy và voucher ưu đãi.
+  4. `ScanProductScreen`: Tự động nhận diện sản phẩm qua IoT, hiển thị hình ảnh từ server, kiểm tra trọng lượng và cảnh báo lệch cân.
+  5. `CartDetailScreen`: Danh sách giỏ hàng chi tiết, tăng/giảm số lượng và tính tổng tiền tự động.
+  6. `PaymentSelectionScreen`: Lựa chọn phương thức thanh toán (VietQR, Thẻ thông minh, Tự động Auto Payment).
+  7. `PaymentQRScreen`: Hiển thị mã VietQR động từ Mock Bank Server để quét thanh toán tức thời.
+  8. `PaymentSuccessScreen` & `SessionEndedScreen`: In hóa đơn điện tử, tích lũy điểm và hướng dẫn trả xe về trạm quy định.
+* **Tự động tải ảnh sản phẩm tĩnh chất lượng cao** thông qua thư viện Coil.
+* **Hỗ trợ vuốt cuộn dọc cảm ứng mượt mà 100%** trên toàn bộ các màn hình, không bị xung đột layout.
 
 ---
 
-### 2. 🌐 Cổng Web Quản Trị Bán Lẻ Thông Minh (`web-admin/` - Next.js 14)
-* **Công nghệ**: Next.js 14 (App Router) + TypeScript + Tailwind CSS theo thiết kế chuẩn `DESIGN.md`.
-* **5 Chức năng Quản trị Chuyên sâu**:
-  1. **Tổng quan (Dashboard Overview)**: Theo dõi 5 chỉ số tài chính KPI, doanh thu 7 ngày, tỷ lệ trạng thái đơn hàng.
-  2. **Quản lý Sản phẩm (Products Management)**: Danh sách sản phẩm, mã vạch Barcode, giá bán, tình trạng tồn kho.
-  3. **Quản lý Kho hàng (Inventory)**: Bento phân bổ ngành hàng, nhật ký xuất nhập kho chứng từ.
-  4. **Quản lý Đơn hàng (Orders)**: Lọc đơn hàng theo thời gian thực, chi tiết hóa đơn và xuất báo cáo CSV.
-  5. **Bản đồ Giám sát Xe Đẩy (Smart Cart IoT Floor Plan)**: Bản đồ 2D siêu thị thời gian thực, hiển thị vị trí, mức pin và trạng thái Online/Charging/Offline của 20 xe đẩy.
+### 2. 🌐 Nền Tảng Web Quản Trị Bán Lẻ Thông Minh (`web-admin/` - Next.js 14)
+* **Công nghệ**: Next.js 14 (App Router) + TypeScript + Tailwind CSS theo quy chuẩn thiết kế `DESIGN.md`.
+* **5 Phân hệ Quản trị Chuyên sâu**:
+  1. **Tổng quan (Dashboard Overview)**: 5 thẻ KPI tài chính thời gian thực, biểu đồ doanh thu tuần, trạng thái đơn hàng.
+  2. **Quản lý Sản phẩm (Products Management)**: Danh mục sản phẩm, mã SKU, Barcode, đơn giá, kiểm soát tồn kho.
+  3. **Quản lý Kho hàng (Inventory)**: Bento phân bổ giá trị ngành hàng, nhật ký xuất/nhập kho chứng từ.
+  4. **Quản lý Đơn hàng (Orders)**: Danh sách hóa đơn thời gian thực, trạng thái thanh toán và hỗ trợ xuất file CSV.
+  5. **Giám sát Xe Đẩy Thông Minh (Smart Cart IoT 2D Floor Plan)**: Bản đồ siêu thị 2D trực quan, radar ping vị trí, theo dõi mức pin % và trạng thái Online / Charging / Offline của 20 xe đẩy.
 
 ---
 
 ### 3. 🏦 Hệ Sinh Thái Ngân Hàng Giả Lập (`mock-bank-app/` & `server/mock-bank/`)
-* **Mock Bank Server (Port 4000)**: Giả lập cổng thanh toán ngân hàng hỗ trợ chuẩn VietQR, tạo giao dịch thanh toán và webhook đồng bộ sang Shop Server.
-* **Mock Bank Android App**: Ứng dụng ngân hàng quét mã QR trên màn hình xe đẩy để thanh toán tức thời.
+* **Mock Bank Server (Port 4000)**: Giả lập cổng thanh toán ngân hàng hỗ trợ chuẩn VietQR, tạo giao dịch thanh toán và gửi Webhook đồng bộ kết quả sang Shop Server.
+* **Mock Bank Android App**: Ứng dụng ngân hàng di động giả lập quét mã QR trên màn hình xe đẩy để xác nhận thanh toán tức thời.
 
 ---
 
-### 4. ⚙️ Máy Chủ Backend & Cơ Sở Dữ Liệu (`server/` & PostgreSQL)
-* **Cơ sở dữ liệu PostgreSQL (`stroller_db`)**: Quản lý các bảng `Products`, `Customers`, `Cart`, `CartItems`, `Transactions`, `SmartCarts`.
-* **Hệ thống RESTful API**: Quản lý giỏ hàng, nhận tín hiệu giả lập IoT Scanner từ Raspberry Pi, kiểm soát bất thường trọng lượng.
-* **Đường hầm Ngrok**: Tạo đường dẫn HTTPS công khai kết nối xuyên mạng Wi-Fi và 4G/5G.
+### 4. ⚙️ Hệ Thống Backend Đa Dịch Vụ & Cơ Sở Dữ Liệu PostgreSQL
+* **Shop Server Express.js (`server/index.js` - Port 3000)**:
+  * Xử lý giỏ hàng (`/api/cart`), thêm/xóa sản phẩm, tính toán giảm giá hội viên.
+  * Tích hợp Reverse Proxy tự động điều hướng sang Web Admin (Port 3001), Mock Bank (Port 4000) và FastAPI (Port 8000).
+* **FastAPI Server Python (`server/fastapi_server.py` - Port 8000)**:
+  * Tích hợp ThingsBoard Cloud, xử lý phân loại hình ảnh AI (`vision_class`).
+  * Thuật toán kiểm soát dung sai trọng lượng (`expected_weight_g`, `weight_tolerance_g`).
+  * Tài liệu Swagger UI tự động tại: `http://localhost:8000/docs`.
+* **Cơ sở dữ liệu PostgreSQL (`stroller_db`)**:
+  * Các bảng chuẩn: `products`, `customers`, `cart`, `cart_items`, `transactions`, `smart_carts`.
 
 ---
 
@@ -82,24 +97,28 @@ Xedaythongminh/
 │   │   ├── data/                         # Repository, Retrofit Client & DTOs
 │   │   ├── domain/                       # UseCases & Business Models
 │   │   ├── ui/                           # ViewModels, Components & 8 Màn hình
-│   │   └── AndroidManifest.xml           # Cấu hình khóa xoay ngang
+│   │   └── AndroidManifest.xml           # Khóa màn hình ngang (sensorLandscape)
 │   └── build.gradle.kts
-├── web-admin/                            # Web Dashboard Quản trị (Next.js 14)
+├── web-admin/                            # Cổng Web Quản trị Bán lẻ (Next.js 14)
 │   ├── app/                              # App Router (Dashboard, Products, Orders, Carts)
 │   ├── components/                       # Sidebar, Topbar, KpiCards
 │   ├── services/                         # API Client đồng bộ Backend
 │   └── package.json
 ├── mock-bank-app/                        # Ứng dụng Android Ngân hàng giả lập
-├── server/                               # Node.js Express Backend & PostgreSQL
-│   ├── index.js                          # Shop API Server (Port 3000)
-│   ├── db.js                             # Kết nối PostgreSQL (stroller_db)
+├── server/                               # Hệ thống Máy chủ Backend & CSDL
+│   ├── index.js                          # Shop API Server Express.js (Port 3000)
+│   ├── db.js                             # Kết nối CSDL PostgreSQL (stroller_db)
+│   ├── fastapi_server.py                 # FastAPI ThingsBoard & IoT Gateway (Port 8000)
 │   ├── mock-bank/                        # Mock Bank Server (Port 4000)
-│   ├── public/images/                    # Kho ảnh sản phẩm chất lượng cao
-│   ├── init_postgres.sql                 # Script tạo bảng CSDL
-│   └── start_all.js                      # Script chạy đồng thời toàn bộ máy chủ
+│   ├── public/images/                    # Kho ảnh sản phẩm tĩnh chất lượng cao
+│   ├── init_postgres.sql                 # Script khởi tạo bảng CSDL
+│   ├── schema_handover.sql               # Cấu trúc CSDL bàn giao IoT
+│   ├── start_all.js                      # Script chạy đồng thời toàn bộ máy chủ
+│   └── .env.example                      # File mẫu cấu hình biến môi trường
 ├── chay_tat_ca_he_thong.bat              # Script 1-click khởi chạy toàn bộ Server
 ├── chay_web_admin.bat                    # Script 1-click mở Web Admin (Port 3001)
-├── mo_web_admin_cho_ban_be.bat           # Script 1-click mở Web Admin ra Internet qua Ngrok
+├── chay_mock_bank_ngrok.bat              # Script 1-click bật Mock Bank & Ngrok
+├── mo_web_admin_cho_ban_be.bat           # Script 1-click chia sẻ Web Admin qua Internet
 └── README.md                             # Tài liệu tổng quan dự án
 ```
 
@@ -107,12 +126,12 @@ Xedaythongminh/
 
 ## ⚡ HƯỚNG DẪN KHỞI CHẠY HỆ THỐNG
 
-### Cách 1: Khởi chạy nhanh 1-Click (Khuyên dùng trên Windows)
+### Cách 1: Khởi chạy 1-Click (Khuyên dùng trên Windows)
 1. **Bật toàn bộ hệ thống Server Backend & Ngrok**:
-   * Nhấp đúp chuột vào file: **`chay_tat_ca_he_thong.bat`**
-   *(Tự động bật Shop Server cổng 3000, Mock Bank Server cổng 4000 và đường hầm Ngrok).*
-2. **Bật giao diện Web Admin**:
-   * Nhấp đúp chuột vào file: **`chay_web_admin.bat`**
+   * Nhấp đúp chuột vào: **`chay_tat_ca_he_thong.bat`**
+   *(Tự động kích hoạt Shop Server cổng 3000, Mock Bank cổng 4000, FastAPI cổng 8000 và đường hầm Ngrok).*
+2. **Bật giao diện Web Admin Dashboard**:
+   * Nhấp đúp chuột vào: **`chay_web_admin.bat`**
    *(Tự động mở trình duyệt tại địa chỉ `http://localhost:3001`).*
 
 ---
@@ -132,15 +151,27 @@ cd web-admin
 npm install
 npm run dev
 ```
-* Mở trình duyệt truy cập: `http://localhost:3001`
+* Truy cập giao diện tại: `http://localhost:3001`
 
 #### 3. Chạy ứng dụng Android App
 * Mở thư mục dự án bằng **Android Studio**.
-* Chọn build target và bấm **Run ▶️** (`Shift + F10`).
+* Bấm nút **Run ▶️** (`Shift + F10`) để nạp ứng dụng vào máy tính bảng hoặc điện thoại.
 
 ---
 
-## 👨‍💻 TÁC GIẢ & BẢN QUYỀN
+## 🌿 QUẢN LÝ PHÂN NHÁNH TRÊN GITHUB (GIT BRANCHES)
+
+Dự án được phân chia nhánh rõ ràng để các team làm việc song song không bị xung đột mã nguồn:
+
+| Tên Nhánh | Chức năng & Phạm vi phụ trách |
+| :--- | :--- |
+| **`main`** | Nhánh chính tích hợp toàn bộ hệ sinh thái: Android App, Web Admin, Server Backend, Mock Bank. |
+| **`feature/backend-python-server`** | Nhánh độc lập lưu trữ trọn vẹn 11 file Backend Python (FastAPI, ThingsBoard, Uvicorn, test script). |
+| **`feature/hardware-pi-scanner`** | Nhánh làm việc dành riêng cho Team Phần cứng Raspberry Pi & Cảm biến. |
+
+---
+
+## 👨‍💻 TÁC GIẢ & LIÊN HỆ
+* **GitHub Repository:** [https://github.com/Mr-Rabbit146452001/Xedaythongminh](https://github.com/Mr-Rabbit146452001/Xedaythongminh)
 * **Tác giả:** [Mr-Rabbit146452001](https://github.com/Mr-Rabbit146452001)
-* **Kho lưu trữ:** [https://github.com/Mr-Rabbit146452001/Xedaythongminh](https://github.com/Mr-Rabbit146452001/Xedaythongminh)
 * **Email:** levanhungu652001@gmail.com

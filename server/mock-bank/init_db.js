@@ -22,11 +22,17 @@ async function init() {
       'owner_name VARCHAR(100) NOT NULL, ' +
       'user_ref_id VARCHAR(50) NOT NULL, ' +
       'token_balance NUMERIC(15, 2) NOT NULL DEFAULT 0.00 CHECK (token_balance >= 0), ' +
-      'pin VARCHAR(10) DEFAULT \'123456\', ' +
+      'pin VARCHAR(255) DEFAULT \'123456\', ' +
+      'failed_attempts INT DEFAULT 0, ' +
+      'locked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL, ' +
       'is_active BOOLEAN DEFAULT TRUE, ' +
       'created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()' +
       ');'
     );
+    // Migration đảm bảo tương thích nếu bảng đã tồn tại trước đó
+    await client.query('ALTER TABLE bank_accounts ALTER COLUMN pin TYPE VARCHAR(255);').catch(() => {});
+    await client.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS failed_attempts INT DEFAULT 0;').catch(() => {});
+    await client.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL;').catch(() => {});
 
     // 2. Tạo bảng giao dịch ngân hàng
     await client.query(

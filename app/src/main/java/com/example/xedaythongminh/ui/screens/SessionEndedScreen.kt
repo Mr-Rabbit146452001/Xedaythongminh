@@ -199,6 +199,7 @@ fun SessionEndedScreen(
                             Spacer(modifier = Modifier.height(20.dp))
                             Button(
                                 onClick = { 
+                                    appViewModel.terminateSessionImmediately()
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     } 

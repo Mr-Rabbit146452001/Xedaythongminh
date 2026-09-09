@@ -564,23 +564,33 @@ fun PaymentQRInstructionsBox(
                     Text("Làm mới QR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                 }
             } else {
-                Button(
-                    onClick = {
-                        appViewModel.checkoutCart {
-                            navController.navigate("payment_success") {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                    },
+                // Trạng thái lắng nghe giao dịch tự động từ Ngân hàng (Không cho phép client tự xác nhận)
+                Surface(
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
                     shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    color = Color(0xFFE8F5E9),
+                    border = BorderStroke(1.dp, Color(0xFF81C784))
                 ) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Xong", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = Color(0xFF2E7D32)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Đang chờ ngân hàng...",
+                            color = Color(0xFF2E7D32),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
