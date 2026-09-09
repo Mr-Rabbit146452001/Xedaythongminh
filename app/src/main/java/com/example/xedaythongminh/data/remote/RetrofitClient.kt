@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
     // URL Ngrok chính thức kết nối máy chủ từ xa cách 20km
-    private const val DEFAULT_REMOTE_URL = "https://reflex-swipe-placidly.ngrok-free.dev/"
+    private const val DEFAULT_REMOTE_URL = "https://recede-scalded-turret.ngrok-free.dev/"
     private var currentBaseUrl = DEFAULT_REMOTE_URL
     private var _apiService: ApiService? = null
     private var sharedPrefs: SharedPreferences? = null
