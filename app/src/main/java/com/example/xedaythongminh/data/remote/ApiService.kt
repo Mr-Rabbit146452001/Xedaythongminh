@@ -14,6 +14,9 @@ interface ApiService {
     @GET("api/auth/status")
     suspend fun checkAuthStatus(@Query("sessionId") sessionId: String): Response<SessionStatusResponse>
 
+    @POST("api/auth/logout")
+    suspend fun logoutAuthSession(@Body request: Map<String, String> = emptyMap()): Response<Map<String, Any>>
+
     @GET("api/customer")
     suspend fun getCustomer(@Query("id") id: String): Response<CustomerResponse>
 

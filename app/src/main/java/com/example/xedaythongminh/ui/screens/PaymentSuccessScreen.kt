@@ -41,7 +41,9 @@ fun PaymentSuccessScreen(
     navController: NavController,
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
-    val cartItems by appViewModel.cartItemsState.collectAsState()
+    val currentCartItems by appViewModel.cartItemsState.collectAsState()
+    val lastCompletedCartItems by appViewModel.lastCompletedCartItems.collectAsState()
+    val cartItems = if (currentCartItems.isNotEmpty()) currentCartItems else lastCompletedCartItems
     val summary = CartSummary(cartItems)
 
     var autoEndCountdown by remember { mutableIntStateOf(8) }
@@ -57,7 +59,6 @@ fun PaymentSuccessScreen(
             delay(1000)
             autoEndCountdown--
         }
-        appViewModel.clearSession()
         navController.navigate("session_ended") {
             popUpTo(0) { inclusive = true }
         }

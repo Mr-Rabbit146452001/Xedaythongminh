@@ -334,6 +334,9 @@ class AppViewModel constructor(
     fun checkoutCart(onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             try {
+                if (_cartItemsState.value.isNotEmpty()) {
+                    _lastCompletedCartItems.value = _cartItemsState.value
+                }
                 val req = com.example.xedaythongminh.data.remote.dto.CheckoutRequest(
                     sessionId = _activeSessionId.value ?: "SESSION_DEFAULT",
                     customerId = _userState.value?.id ?: "CUSTOMER_888"
@@ -342,7 +345,6 @@ class AppViewModel constructor(
                 if (response.isSuccessful) {
                     cartRepository.clearCart()
                     _cartItemsState.value = emptyList()
-                    _userState.value?.id?.let { loginCustomerWithId(it) }
                     onSuccess()
                 }
             } catch (e: Exception) {
@@ -448,6 +450,15 @@ class AppViewModel constructor(
     private val _isPaymentCompleted = MutableStateFlow<Boolean>(false)
     val isPaymentCompleted: StateFlow<Boolean> = _isPaymentCompleted.asStateFlow()
 
+    private val _lastCompletedCartItems = MutableStateFlow<List<CartItem>>(emptyList())
+    val lastCompletedCartItems: StateFlow<List<CartItem>> = _lastCompletedCartItems.asStateFlow()
+
+    fun setLastCompletedCartItems(items: List<CartItem>) {
+        if (items.isNotEmpty()) {
+            _lastCompletedCartItems.value = items
+        }
+    }
+
     private var paymentPollingJob: kotlinx.coroutines.Job? = null
 
     fun startQrPaymentSession(onPaymentSuccess: () -> Unit) {
@@ -489,7 +500,11 @@ class AppViewModel constructor(
                         if (statusData != null) {
                             if (statusData.isPaid) {
                                 _isPaymentCompleted.value = true
-                                clearSession()
+                                if (_cartItemsState.value.isNotEmpty()) {
+                                    _lastCompletedCartItems.value = _cartItemsState.value
+                                }
+                                cartRepository.clearCart()
+                                _cartItemsState.value = emptyList()
                                 paymentPollingJob?.cancel()
                                 onPaymentSuccess()
                                 break
@@ -518,8 +533,33 @@ class AppViewModel constructor(
         _userState.value = null
     }
 
+    fun resetSessionAfterPayment() {
+        val sId = _activeSessionId.value
+        viewModelScope.launch {
+            try {
+                if (!sId.isNullOrBlank()) {
+                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(sId)
+                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.logoutAuthSession(mapOf("sessionId" to sId))
+                }
+            } catch (e: Exception) {
+                // ignore
+            } finally {
+                cartRepository.clearCart()
+                _cartItemsState.value = emptyList()
+                _userState.value = null
+                _isPaymentCompleted.value = false
+                _hasUnscannedProduct.value = false
+                _paymentQrContent.value = null
+                _qrSessionData.value = null
+                _isQrExpired.value = false
+                _lastCompletedCartItems.value = emptyList()
+                createShoppingSession()
+            }
+        }
+    }
+
     fun clearSession() {
-        cartRepository.clearCart()
+        resetSessionAfterPayment()
     }
 
     fun clearError() {

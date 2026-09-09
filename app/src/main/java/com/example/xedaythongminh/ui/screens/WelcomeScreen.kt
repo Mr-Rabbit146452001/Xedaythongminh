@@ -44,6 +44,11 @@ fun WelcomeScreen(
 ) {
     val isCompact = windowSize == WindowWidthSizeClass.Compact
 
+    // Đảm bảo khi quay về màn hình Welcome, dữ liệu cá nhân của khách cũ luôn được dọn sạch tuyệt đối
+    LaunchedEffect(Unit) {
+        appViewModel.logoutUser()
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = BackgroundGray,

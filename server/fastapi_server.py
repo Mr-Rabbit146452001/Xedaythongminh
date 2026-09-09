@@ -322,6 +322,9 @@ def complete_session(session_id: str):
         # Đồng bộ sang bảng shoppingsessions cho Web Admin
         cur.execute("UPDATE shoppingsessions SET status = 'completed', endtime = NOW() WHERE id = %s", (session_id,))
 
+        # Xóa sạch giỏ hàng của phiên đã hoàn tất để tránh rò rỉ dữ liệu
+        cur.execute("DELETE FROM cart_items WHERE session_id = %s", (session_id,))
+
         # Đẩy telemetry hoàn tất phiên lên ThingsBoard
         telemetry = {
             "session_id": session_id,

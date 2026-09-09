@@ -339,6 +339,7 @@ app.post('/api/cart/checkout', async (req, res) => {
     await client.query('DELETE FROM cart_items WHERE session_id = $1', [targetSession]);
 
     await client.query('COMMIT');
+    activeSessions.delete(targetSession);
     console.log(`✅ [Checkout Transaction] Thanh toán thành công! Tổng tiền: ${totalAmount} VND, Tích thêm: ${pointsEarned} điểm.`);
 
     res.json({
@@ -564,6 +565,17 @@ app.get('/api/auth/simulate-scan', async (req, res) => {
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });
   }
+});
+
+// 11.3. API Đăng xuất / Hủy phiên đăng nhập QR của khách hàng
+app.post('/api/auth/logout', (req, res) => {
+  const { sessionId } = req.body || {};
+  if (sessionId && activeSessions.has(sessionId)) {
+    activeSessions.delete(sessionId);
+  } else {
+    activeSessions.clear();
+  }
+  res.json({ status: 'Thành công', message: 'Đã đăng xuất và xóa thông tin phiên khách hàng' });
 });
 
 // ==========================================
