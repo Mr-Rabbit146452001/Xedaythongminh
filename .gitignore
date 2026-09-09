@@ -33,10 +33,10 @@ out/
 **/out/
 
 # Python temporary & bytecode
-*.py
 *.pyc
 __pycache__/
 **/__pycache__/
+!server/*.py
 
 # Environment & Logs
 *.log

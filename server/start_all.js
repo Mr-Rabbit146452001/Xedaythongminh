@@ -30,7 +30,7 @@ console.log('⚡ [FastAPI] Đang khởi động FastAPI Server trên cổng ' + 
 const fastapiProcess = spawn('python', ['-m', 'uvicorn', 'fastapi_server:app', '--host', '0.0.0.0', '--port', FASTAPI_PORT.toString()], {
   cwd: __dirname,
   shell: true,
-  stdio: 'ignore'
+  stdio: ['ignore', 'inherit', 'inherit']
 });
 
 // 4. Khởi động Smart Cart Web Admin (Port 3001)
@@ -42,7 +42,7 @@ const webAdminProcess = spawn('npm', ['run', 'dev'], {
   stdio: 'ignore'
 });
 
-console.log('⏳ [Ngrok] Đang khởi tạo đường hầm HTTPS ngrok cho cổng ' + SHOP_PORT + ' (đã tích hợp cổng ' + BANK_PORT + ' qua proxy)...');
+console.log('⏳ [Ngrok] Đang khởi tạo đường hầm HTTPS ngrok cho cổng ' + SHOP_PORT + ' (đã tích hợp cổng ' + BANK_PORT + ', ' + FASTAPI_PORT + ' và ' + ADMIN_PORT + ' qua proxy)...');
 
 // 4. Khởi động Ngrok cho cổng 3000 (Shop Server sẽ tự forward /api/bank sang 4000)
 const ngrokProcess = spawn('ngrok', ['http', SHOP_PORT.toString(), '--log=stdout'], {
@@ -62,6 +62,7 @@ const checkInterval = setInterval(() => {
       console.log('='.repeat(72));
       console.log('  🛒 Shop Server (Tablet):     http://localhost:' + SHOP_PORT);
       console.log('  🏦 Mock Bank Server:         http://localhost:' + BANK_PORT);
+      console.log('  ⚡ FastAPI Server (IoT):      http://localhost:' + FASTAPI_PORT);
       console.log('  🖥️  Smart Cart Web Admin:     http://localhost:' + ADMIN_PORT);
       console.log('='.repeat(72) + '\n');
     }
@@ -87,10 +88,15 @@ const checkInterval = setInterval(() => {
             console.log('='.repeat(72));
             console.log('  🛒 Shop Server (Tablet):     http://localhost:' + SHOP_PORT);
             console.log('  🏦 Mock Bank Server:         http://localhost:' + BANK_PORT);
+            console.log('  ⚡ FastAPI Server (IoT):      http://localhost:' + FASTAPI_PORT);
             console.log('  🖥️  Smart Cart Web Admin:     http://localhost:' + ADMIN_PORT);
             console.log('  🌐 Ngrok Public HTTPS:       ' + publicUrl);
             console.log('  📥 Tải MockBankApp APK:      ' + publicUrl + '/download/MockBankApp.apk');
             console.log('  📊 Ngrok Web Dashboard:      http://127.0.0.1:4040');
+            console.log('='.repeat(72));
+            console.log('  ⚡ DÀNH CHO IOT / FASTAPI GATEWAY (CỔNG 8000 QUA NGROK):');
+            console.log('     👉  ' + publicUrl + '/docs             (Tài liệu Swagger UI API)');
+            console.log('     👉  ' + publicUrl + '/api/v1/products  (API Danh mục sản phẩm)');
             console.log('='.repeat(72));
             console.log('  📱 DÀNH CHO APP ĐIỆN THOẠI (MockBankApp):');
             console.log('     Tải APK trực tiếp về máy: ' + publicUrl + '/download/MockBankApp.apk');

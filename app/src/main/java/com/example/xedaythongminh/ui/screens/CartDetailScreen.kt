@@ -39,6 +39,7 @@ import com.example.xedaythongminh.data.models.CartSummary
 import java.text.NumberFormat
 import java.util.Locale
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
+import com.example.xedaythongminh.ui.components.CartNotificationPill
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 
@@ -49,6 +50,7 @@ fun CartDetailScreen(
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
+    val cartNotification by appViewModel.cartNotificationState.collectAsState()
     val summary = CartSummary(cartItems)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -64,11 +66,12 @@ fun CartDetailScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
-    ) { innerPadding ->
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = BackgroundGray,
+            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+        ) { innerPadding ->
         if (cartItems.isEmpty()) {
             // Khi giỏ hàng trống: Tuyệt đối KHÔNG hiển thị ô thanh toán
             // Chỉ hiển thị 2 nút: "Tiếp tục mua hàng" hoặc "Kết thúc phiên"
@@ -368,6 +371,15 @@ fun CartDetailScreen(
         )
     }
 }
+
+        // Thông báo nhỏ khi thêm/bớt/xóa sản phẩm
+        CartNotificationPill(
+            notification = cartNotification,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+        )
+    }
 }
 
 @Composable

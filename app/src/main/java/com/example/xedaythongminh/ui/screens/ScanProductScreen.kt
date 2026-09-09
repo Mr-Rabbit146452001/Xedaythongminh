@@ -39,6 +39,7 @@ import com.example.xedaythongminh.R
 import com.example.xedaythongminh.data.models.CartItem
 import com.example.xedaythongminh.data.models.CartSummary
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
+import com.example.xedaythongminh.ui.components.CartNotificationPill
 import com.example.xedaythongminh.ui.theme.PrimaryBlue
 import com.example.xedaythongminh.ui.theme.LightBlueBg
 import com.example.xedaythongminh.ui.theme.BackgroundGray
@@ -65,6 +66,7 @@ fun ScanProductScreen(
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
+    val cartNotification by appViewModel.cartNotificationState.collectAsState()
     
     // Trạng thái sản phẩm đang được chọn hiển thị chi tiết ở khung bên trái
     var selectedCartItem by remember { mutableStateOf<CartItem?>(null) }
@@ -170,6 +172,14 @@ fun ScanProductScreen(
                 containerColor = Color.White
             )
         }
+
+        // Thông báo nhỏ khi thêm/bớt/xóa sản phẩm
+        CartNotificationPill(
+            notification = cartNotification,
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 16.dp)
+        )
     }
 }
 
@@ -179,9 +189,6 @@ fun ScanProductScannerSection(
     appViewModel: AppViewModel,
     selectedCartItem: CartItem?
 ) {
-    var manualBarcode by remember { mutableStateOf("") }
-    var manualQuantity by remember { mutableStateOf("1") }
-    
     val errorMsg by appViewModel.errorState.collectAsState()
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
@@ -353,119 +360,11 @@ fun ScanProductScannerSection(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Vui lòng đặt sản phẩm lên bàn cân xe đẩy hoặc nhập tay mã barcode bên dưới.",
+                        text = "Vui lòng đặt sản phẩm lên xe đẩy để hệ thống cảm biến tự động nhận diện và tính tiền.",
                         fontSize = 13.sp,
                         color = TextGray,
                         textAlign = TextAlign.Center
                     )
-                }
-            }
-        }
-
-        // 3. Khung nhập tay mã barcode & số lượng dưới cùng
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(16.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray)
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Nhập tay mã sản phẩm",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
-                    color = TextDark
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Ô nhập Barcode (Chiếm 3/4 độ rộng)
-                    OutlinedTextField(
-                        value = manualBarcode,
-                        onValueChange = { input ->
-                            appViewModel.clearError() // Xóa thông báo lỗi cũ ngay khi bắt đầu nhập mới
-                            
-                            // Hỗ trợ đầu quét phần cứng tự động gửi phím Enter (\n hoặc \r)
-                            if (input.contains("\n") || input.contains("\r")) {
-                                val cleanBarcode = input.replace("\n", "").replace("\r", "").trim()
-                                if (cleanBarcode.isNotBlank()) {
-                                    val qty = manualQuantity.toIntOrNull() ?: 1
-                                    appViewModel.addProductWithQuantity(cleanBarcode, qty)
-                                    manualBarcode = ""
-                                    manualQuantity = "1"
-                                }
-                            } else {
-                                manualBarcode = input
-                            }
-                        },
-                        placeholder = { Text("Nhập mã vạch sản phẩm", color = Color.Gray, fontSize = 14.sp) },
-                        modifier = Modifier.weight(2.5f),
-                        shape = RoundedCornerShape(10.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onDone = {
-                                val qty = manualQuantity.toIntOrNull() ?: 1
-                                if (manualBarcode.isNotBlank()) {
-                                    appViewModel.addProductWithQuantity(manualBarcode, qty)
-                                    manualBarcode = ""
-                                    manualQuantity = "1"
-                                }
-                            }
-                        ),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = BackgroundGray,
-                            focusedContainerColor = BackgroundGray,
-                            unfocusedBorderColor = BorderGray
-                        )
-                    )
-
-                    // Ô nhập số lượng (Chiếm 1/4 độ rộng)
-                    OutlinedTextField(
-                        value = manualQuantity,
-                        onValueChange = { 
-                            if (it.isEmpty() || it.all { char -> char.isDigit() }) {
-                                manualQuantity = it
-                            }
-                        },
-                        placeholder = { Text("SL", color = Color.Gray, fontSize = 14.sp) },
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(10.dp),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            unfocusedContainerColor = BackgroundGray,
-                            focusedContainerColor = BackgroundGray,
-                            unfocusedBorderColor = BorderGray
-                        )
-                    )
-
-                    // Nút cập nhật / thêm sản phẩm
-                    Button(
-                        onClick = {
-                            val qty = manualQuantity.toIntOrNull() ?: 1
-                            if (manualBarcode.isNotBlank()) {
-                                appViewModel.addProductWithQuantity(manualBarcode, qty)
-                                manualBarcode = ""
-                                manualQuantity = "1"
-                            }
-                        },
-                        modifier = Modifier.height(56.dp),
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Add Item", tint = Color.White)
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("Thêm", fontWeight = FontWeight.Bold, color = Color.White)
-                    }
                 }
             }
         }

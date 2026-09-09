@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.example.xedaythongminh.data.models.User
+import com.example.xedaythongminh.data.models.CartNotification
+import com.example.xedaythongminh.data.models.NotificationType
 import com.example.xedaythongminh.data.remote.dto.toDomainModel
 import com.example.xedaythongminh.data.remote.dto.toDomainCartItem
 
@@ -41,7 +43,28 @@ class AppViewModel constructor(
     private val _activeSessionId = MutableStateFlow<String?>("SESSION_DEFAULT")
     val activeSessionId: StateFlow<String?> = _activeSessionId.asStateFlow()
 
+    private val _cartNotificationState = MutableStateFlow<CartNotification?>(null)
+    val cartNotificationState: StateFlow<CartNotification?> = _cartNotificationState.asStateFlow()
+
+    private var notificationJob: kotlinx.coroutines.Job? = null
     private var qrPollingJob: kotlinx.coroutines.Job? = null
+
+    fun triggerCartNotification(productName: String, type: NotificationType) {
+        notificationJob?.cancel()
+        val message = when (type) {
+            NotificationType.ADD -> "Đã thêm $productName"
+            NotificationType.REMOVE -> "Đã lấy ra $productName"
+        }
+        _cartNotificationState.value = CartNotification(
+            message = message,
+            productName = productName,
+            type = type
+        )
+        notificationJob = viewModelScope.launch {
+            kotlinx.coroutines.delay(2500L)
+            _cartNotificationState.value = null
+        }
+    }
 
     init {
         // Lắng nghe dữ liệu từ Repository (Source of Truth)
@@ -80,6 +103,7 @@ class AppViewModel constructor(
                         increaseQuantity(existingItem)
                     } else {
                         cartRepository.addCartItem(CartItem(product = product, quantity = 1))
+                        triggerCartNotification(product.name, NotificationType.ADD)
                     }
 
                     // Đồng bộ quyết định lên server cổng 8000
@@ -89,7 +113,7 @@ class AppViewModel constructor(
                             val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
                                 sessionId = sId,
                                 action = "add",
-                                barcode = product.id,
+                                barcode = product.sku,
                                 aiClass = product.sku,
                                 aiConfidence = 1.0f,
                                 deltaWeightG = 500.0f,
@@ -118,8 +142,10 @@ class AppViewModel constructor(
                     val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
                         cartRepository.updateQuantity(existingItem, existingItem.quantity + quantity)
+                        triggerCartNotification(existingItem.product.name, NotificationType.ADD)
                     } else {
                         cartRepository.addCartItem(CartItem(product = product, quantity = quantity))
+                        triggerCartNotification(product.name, NotificationType.ADD)
                     }
                 } else {
                     _errorState.value = "Mã vạch không đúng hoặc không tồn tại"
@@ -132,6 +158,8 @@ class AppViewModel constructor(
     }
 
     fun removeCartItem(item: CartItem) {
+        triggerCartNotification(item.product.name, NotificationType.REMOVE)
+
         // 1. Cập nhật UI giỏ hàng ngay lập tức
         val currentList = _cartItemsState.value.toMutableList()
         currentList.removeAll { it.product.id == item.product.id || it.product.sku == item.product.sku }
@@ -148,7 +176,7 @@ class AppViewModel constructor(
                     val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
                         sessionId = sId,
                         action = "remove",
-                        barcode = item.product.id,
+                        barcode = item.product.sku,
                         aiClass = item.product.sku,
                         aiConfidence = 1.0f,
                         deltaWeightG = -500.0f,
@@ -161,6 +189,8 @@ class AppViewModel constructor(
     }
 
     fun increaseQuantity(item: CartItem) {
+        triggerCartNotification(item.product.name, NotificationType.ADD)
+
         val currentList = _cartItemsState.value.toMutableList()
         val idx = currentList.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
         if (idx != -1) {
@@ -176,7 +206,7 @@ class AppViewModel constructor(
                     val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
                         sessionId = sId,
                         action = "add",
-                        barcode = item.product.id,
+                        barcode = item.product.sku,
                         aiClass = item.product.sku,
                         aiConfidence = 1.0f,
                         deltaWeightG = 500.0f,
@@ -190,6 +220,8 @@ class AppViewModel constructor(
 
     fun decreaseQuantity(item: CartItem) {
         if (item.quantity > 1) {
+            triggerCartNotification(item.product.name, NotificationType.REMOVE)
+
             val currentList = _cartItemsState.value.toMutableList()
             val idx = currentList.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
             if (idx != -1) {

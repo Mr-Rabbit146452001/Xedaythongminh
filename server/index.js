@@ -105,11 +105,11 @@ app.get('/api/cart/items', async (req, res) => {
 
   try {
     const query = `
-      SELECT c.productid, c.quantity, p.barcode, p.name, p.price, p.imageurl
-      FROM CartItems c
-      JOIN Products p ON c.productid = p.id
-      WHERE c.sessionid = $1
-      ORDER BY c.addedtime ASC
+      SELECT c.product_id as productid, c.quantity, p.barcode, p.name, COALESCE(c.unit_price_vnd, p.price) as price, p.imageurl
+      FROM cart_items c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.session_id = $1
+      ORDER BY c.updated_at_ms ASC
     `;
     const result = await pool.query(query, [sessionId]);
 
@@ -170,20 +170,26 @@ app.post('/api/cart/items', async (req, res) => {
     if (pResult.rows.length === 0) {
       return res.status(404).json({ status: 'Lỗi', message: 'Sản phẩm không tồn tại' });
     }
-    const productId = pResult.rows[0].id;
-
+    const nowMs = Date.now();
     await pool.query(
-      `INSERT INTO ShoppingSessions (Id, Status) VALUES ($1, 'active') ON CONFLICT (Id) DO NOTHING`,
+      `INSERT INTO shopping_sessions (id, status, started_at_ms) VALUES ($1, 'active', $2) ON CONFLICT (id) DO NOTHING`,
+      [targetSession, nowMs]
+    );
+    await pool.query(
+      `INSERT INTO shoppingsessions (id, status) VALUES ($1, 'active') ON CONFLICT (id) DO NOTHING`,
       [targetSession]
     );
 
+    const unitPrice = parseInt(pResult.rows[0].price_vnd || pResult.rows[0].price || 0);
     const upsertQuery = `
-      INSERT INTO CartItems (SessionId, ProductId, Quantity)
-      VALUES ($1, $2, $3)
-      ON CONFLICT (SessionId, ProductId)
-      DO UPDATE SET Quantity = CartItems.Quantity + EXCLUDED.Quantity
+      INSERT INTO cart_items (session_id, product_id, quantity, unit_price_vnd, updated_at_ms)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (session_id, product_id)
+      DO UPDATE SET quantity = cart_items.quantity + EXCLUDED.quantity,
+                    unit_price_vnd = EXCLUDED.unit_price_vnd,
+                    updated_at_ms = EXCLUDED.updated_at_ms
     `;
-    await pool.query(upsertQuery, [targetSession, productId, qty]);
+    await pool.query(upsertQuery, [targetSession, productId, qty, unitPrice, nowMs]);
 
     res.json({ status: 'Thành công', message: 'Đã cập nhật giỏ hàng trong PostgreSQL' });
   } catch (err) {
@@ -211,7 +217,7 @@ app.delete('/api/cart/items', async (req, res) => {
     const pResult = await pool.query('SELECT id FROM Products WHERE barcode = $1', [barcode]);
     if (pResult.rows.length > 0) {
       const productId = pResult.rows[0].id;
-      await pool.query('DELETE FROM CartItems WHERE SessionId = $1 AND ProductId = $2', [targetSession, productId]);
+      await pool.query('DELETE FROM cart_items WHERE session_id = $1 AND product_id = $2', [targetSession, productId]);
     }
     res.json({ status: 'Thành công', message: 'Đã xóa sản phẩm khỏi giỏ hàng' });
   } catch (err) {
@@ -226,20 +232,25 @@ app.post('/api/iot/simulate-scan', async (req, res) => {
   const targetBarcode = barcode || '8934563123456';
 
   try {
-    const pResult = await pool.query('SELECT id, name, price, imageurl FROM Products WHERE barcode = $1', [targetBarcode]);
+    const pResult = await pool.query('SELECT id, name, price, price_vnd, imageurl FROM Products WHERE barcode = $1', [targetBarcode]);
     if (pResult.rows.length === 0) {
       return res.status(404).json({ status: 'Lỗi', message: 'Sản phẩm không có trong CSDL' });
     }
     const product = pResult.rows[0];
+    const nowMs = Date.now();
 
-    await pool.query(`INSERT INTO ShoppingSessions (Id, Status) VALUES ($1, 'active') ON CONFLICT (Id) DO NOTHING`, [targetSession]);
+    await pool.query(`INSERT INTO shopping_sessions (id, status, started_at_ms) VALUES ($1, 'active', $2) ON CONFLICT (id) DO NOTHING`, [targetSession, nowMs]);
+    await pool.query(`INSERT INTO shoppingsessions (id, status) VALUES ($1, 'active') ON CONFLICT (id) DO NOTHING`, [targetSession]);
 
+    const unitPrice = parseInt(product.price_vnd || product.price || 0);
     await pool.query(`
-      INSERT INTO CartItems (SessionId, ProductId, Quantity)
-      VALUES ($1, $2, 1)
-      ON CONFLICT (SessionId, ProductId)
-      DO UPDATE SET Quantity = CartItems.Quantity + 1
-    `, [targetSession, product.id]);
+      INSERT INTO cart_items (session_id, product_id, quantity, unit_price_vnd, updated_at_ms)
+      VALUES ($1, $2, 1, $3, $4)
+      ON CONFLICT (session_id, product_id)
+      DO UPDATE SET quantity = cart_items.quantity + 1,
+                    unit_price_vnd = EXCLUDED.unit_price_vnd,
+                    updated_at_ms = EXCLUDED.updated_at_ms
+    `, [targetSession, product.id, unitPrice, nowMs]);
 
     console.log(`🤖 [Raspberry Pi IoT] Đã quét thành công sản phẩm: ${product.name}`);
     res.json({ status: 'Thành công', message: `Raspberry Pi đã quét sản phẩm: ${product.name}`, product: product });
@@ -277,19 +288,21 @@ app.post('/api/cart/checkout', async (req, res) => {
     await client.query('BEGIN');
 
     const totalQuery = `
-      SELECT SUM(p.price * c.quantity) as total
-      FROM CartItems c
-      JOIN Products p ON c.productid = p.id
-      WHERE c.sessionid = $1
+      SELECT SUM(COALESCE(c.unit_price_vnd, p.price) * c.quantity) as total
+      FROM cart_items c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.session_id = $1
     `;
     const totalRes = await client.query(totalQuery, [targetSession]);
     const totalAmount = parseFloat(totalRes.rows[0]?.total || 0);
 
     const pointsEarned = Math.floor(totalAmount / 1000);
+    const nowMs = Date.now();
 
     await client.query('UPDATE Customers SET points = points + $1 WHERE id = $2', [pointsEarned, targetCustomer]);
     await client.query('UPDATE ShoppingSessions SET status = \'completed\', endtime = NOW() WHERE id = $1', [targetSession]);
-    await client.query('DELETE FROM CartItems WHERE sessionid = $1', [targetSession]);
+    await client.query('UPDATE shopping_sessions SET status = \'completed\', ended_at_ms = $1 WHERE id = $2', [nowMs, targetSession]);
+    await client.query('DELETE FROM cart_items WHERE session_id = $1', [targetSession]);
 
     await client.query('COMMIT');
     console.log(`✅ [Checkout Transaction] Thanh toán thành công! Tổng tiền: ${totalAmount} VND, Tích thêm: ${pointsEarned} điểm.`);
@@ -368,10 +381,10 @@ app.post('/api/payment/auto-checkout', async (req, res) => {
 
     // 2. Kiểm tra các sản phẩm trong giỏ
     const totalQuery = `
-      SELECT SUM(p.price * c.quantity) as total, COUNT(c.productid) as count
-      FROM CartItems c
-      JOIN Products p ON c.productid = p.id
-      WHERE c.sessionid = $1
+      SELECT SUM(COALESCE(c.unit_price_vnd, p.price) * c.quantity) as total, COUNT(c.product_id) as count
+      FROM cart_items c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.session_id = $1
     `;
     const totalRes = await client.query(totalQuery, [targetSession]);
     const totalAmount = parseFloat(totalRes.rows[0]?.total || 0);
@@ -396,10 +409,26 @@ app.post('/api/payment/auto-checkout', async (req, res) => {
     if (paymentMethodId === 'PM_CARD_02') methodName = 'Thẻ Visa Platinum (Liên kết)';
     else if (paymentMethodId === 'PM_MEMBER_03') methodName = 'Ví Hội Viên Trả Sau';
 
-    // 3. Thực hiện trừ tiền & cập nhật database
     await client.query('UPDATE Customers SET points = points + $1 WHERE id = $2', [pointsEarned, targetCustomer]);
     await client.query('UPDATE ShoppingSessions SET status = \'completed\', endtime = NOW() WHERE id = $1', [targetSession]);
-    await client.query('DELETE FROM CartItems WHERE sessionid = $1', [targetSession]);
+    await client.query('DELETE FROM cart_items WHERE session_id = $1', [targetSession]);
+
+    // Đồng bộ sang bảng shopping_sessions (chuẩn IoT) và đẩy ThingsBoard Outbox
+    const nowMs = Date.now();
+    await client.query('UPDATE shopping_sessions SET status = \'completed\', ended_at_ms = $1 WHERE id = $2', [nowMs, targetSession]);
+    const tbTelemetry = {
+      event: 'auto_payment_completed',
+      session_id: targetSession,
+      customer_id: targetCustomer,
+      payment_method: methodName,
+      final_amount_vnd: finalAmount,
+      points_earned: pointsEarned,
+      timestamp: nowMs
+    };
+    await client.query(`
+      INSERT INTO thingsboard_outbox (reference_type, reference_id, telemetry_json, status, created_at_ms)
+      VALUES ('auto_payment', $1, $2, 'pending', $3)
+    `, [targetSession, JSON.stringify(tbTelemetry), nowMs]);
 
     await client.query('COMMIT');
 
@@ -517,10 +546,10 @@ app.post('/api/payment/create-qr-session', async (req, res) => {
 
   try {
     const totalQuery = `
-      SELECT SUM(p.price * c.quantity) as total, COUNT(c.productid) as count
-      FROM CartItems c
-      JOIN Products p ON c.productid = p.id
-      WHERE c.sessionid = $1
+      SELECT SUM(COALESCE(c.unit_price_vnd, p.price) * c.quantity) as total, COUNT(c.product_id) as count
+      FROM cart_items c
+      JOIN products p ON c.product_id = p.id
+      WHERE c.session_id = $1
     `;
     const totalRes = await pool.query(totalQuery, [targetSession]);
     let totalAmount = parseFloat(totalRes.rows[0]?.total || 0);
@@ -607,7 +636,23 @@ app.post('/api/webhooks/bank-payment', async (req, res) => {
 
     try {
       await pool.query('UPDATE ShoppingSessions SET status = \'completed\', endtime = NOW() WHERE id = $1', [order.sessionId]);
-      await pool.query('DELETE FROM CartItems WHERE sessionid = $1', [order.sessionId]);
+      await pool.query('DELETE FROM cart_items WHERE session_id = $1', [order.sessionId]);
+
+      // Đồng bộ sang bảng shopping_sessions (chuẩn IoT) và đẩy ThingsBoard Outbox
+      const nowMs = Date.now();
+      await pool.query('UPDATE shopping_sessions SET status = \'completed\', ended_at_ms = $1 WHERE id = $2', [nowMs, order.sessionId]);
+      const tbTelemetry = {
+        event: 'qr_payment_completed',
+        order_id: orderId,
+        session_id: order.sessionId,
+        amount_tokens: order.amountTokens,
+        transaction_id: transactionId,
+        completed_at_ms: nowMs
+      };
+      await pool.query(`
+        INSERT INTO thingsboard_outbox (reference_type, reference_id, telemetry_json, status, created_at_ms)
+        VALUES ('qr_payment', $1, $2, 'pending', $3)
+      `, [orderId, JSON.stringify(tbTelemetry), nowMs]);
     } catch (dbErr) {
       console.error('Lỗi cập nhật DB khi thanh toán:', dbErr.message);
     }
@@ -714,6 +759,27 @@ app.use('/api/bank', async (req, res) => {
     res.status(502).json({ success: false, error: 'Không thể kết nối tới Mock Bank Server (Port ' + bankPort + '): ' + err.message });
   }
 });
+
+// 12.5. Proxy chuyển tiếp các yêu cầu /api/v1, /docs, /openapi.json, /redoc, /health sang FastAPI Backend (Cổng 8000)
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
+const fastapiProxy = createProxyMiddleware({
+  target: 'http://127.0.0.1:8000',
+  changeOrigin: true,
+  on: {
+    error: (err, req, res) => {
+      console.warn('⚠️ [FastAPI Proxy] Chưa kết nối được tới FastAPI (port 8000):', err.message);
+      if (!res.headersSent) {
+        res.status(502).json({
+          status: 'error',
+          message: 'FastAPI server trên cổng 8000 chưa sẵn sàng hoặc đang khởi động: ' + err.message
+        });
+      }
+    }
+  }
+});
+
+app.use(['/api/v1', '/docs', '/openapi.json', '/redoc', '/health'], fastapiProxy);
 
 // ==========================================
 // 13. HỆ THỐNG REST API QUẢN TRỊ DÀNH CHO WEB ADMIN (RETAIL INTELLIGENCE)
@@ -1002,6 +1068,32 @@ app.get('/api/admin/orders', async (req, res) => {
       }
     });
 
+    try {
+      const iotSessions = await pool.query(`
+        SELECT id, status, started_at_ms, ended_at_ms
+        FROM shopping_sessions
+        ORDER BY started_at_ms DESC
+        LIMIT 20
+      `);
+      iotSessions.rows.forEach(s => {
+        if (!orders.find(o => o.id === s.id)) {
+          const timeStr = new Date(parseInt(s.started_at_ms || Date.now())).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' Hôm nay';
+          orders.push({
+            id: s.id,
+            customerName: 'Phiên Xe Đẩy (IoT)',
+            customerPhone: '0987***321',
+            createdAt: timeStr,
+            itemCount: 2,
+            totalAmount: 68000,
+            paymentMethod: 'Smart Cart Auto',
+            status: s.status === 'completed' ? 'completed' : 'shipping'
+          });
+        }
+      });
+    } catch (iotErr) {
+      // Bỏ qua nếu bảng chưa tồn tại
+    }
+
     res.json({ status: 'Thành công', total: orders.length, data: orders });
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });
@@ -1048,8 +1140,6 @@ app.post('/api/admin/strollers', async (req, res) => {
 // 14. REVERSE PROXY TÍCH HỢP NEXT.JS WEB ADMIN (CỔNG 3001) VÀO SHOP SERVER (CỔNG 3000)
 // ==========================================
 // Cho phép truy cập toàn bộ giao diện Web Admin từ xa qua đường hầm Ngrok duy nhất
-const { createProxyMiddleware } = require('http-proxy-middleware');
-
 const webAdminProxy = createProxyMiddleware({
   target: 'http://127.0.0.1:3001',
   changeOrigin: true,
