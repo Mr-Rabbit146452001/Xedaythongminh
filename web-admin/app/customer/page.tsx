@@ -134,7 +134,7 @@ export default function CustomerHomePage() {
         <div className="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 rounded-3xl p-4 shadow-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
-              <QrCode className="w-6 h-6" />
+              <ShoppingBag className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -145,16 +145,14 @@ export default function CustomerHomePage() {
                 </span>
               </div>
               <p className="text-base font-black text-slate-100 mt-0.5 tracking-tight">
-                Xe: <span className="text-emerald-400 font-mono">{strollerId}</span>
+                Xe đẩy: <span className="text-emerald-400 font-mono">{strollerId}</span>
               </p>
             </div>
           </div>
-          <Link
-            href="/customer/scan"
-            className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-xs font-bold text-slate-200 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
-          >
-            <span>Đổi xe</span>
-          </Link>
+          <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400 flex items-center gap-1.5 shadow-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span>Đã kết nối</span>
+          </div>
         </div>
 
         {/* Cảnh báo trọng lượng bất thường nếu có */}

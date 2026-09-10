@@ -7,7 +7,6 @@ import { ShoppingBag, QrCode, Wallet, PackageSearch } from 'lucide-react';
 
 const navItems = [
   { label: 'Giỏ Hàng', href: '/customer', icon: ShoppingBag },
-  { label: 'Quét Xe', href: '/customer/scan', icon: QrCode },
   { label: 'Ví Token', href: '/customer/wallet', icon: Wallet },
   { label: 'Sản Phẩm', href: '/customer/products', icon: PackageSearch },
 ];
