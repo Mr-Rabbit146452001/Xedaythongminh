@@ -412,10 +412,18 @@ fun FeatureChip(icon: ImageVector, label: String) {
     }
 }
 
-@Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape")
+@Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - Welcome Screen")
 @Composable
 fun WelcomeScreenPreview() {
     MaterialTheme {
         WelcomeScreen(navController = rememberNavController(), windowSize = WindowWidthSizeClass.Expanded)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 1280, heightDp = 70, name = "Component - TopBar")
+@Composable
+fun TopBarPreview() {
+    MaterialTheme {
+        TopBar(statusText = "KH: Nguyễn Văn A | Wi-Fi | 85%")
     }
 }

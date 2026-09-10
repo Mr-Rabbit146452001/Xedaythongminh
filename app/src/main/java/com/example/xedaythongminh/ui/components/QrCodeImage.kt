@@ -18,6 +18,8 @@ import androidx.compose.ui.unit.dp
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -77,6 +79,19 @@ fun QrCodeImage(
                 bitmap = qrBitmap!!.asImageBitmap(),
                 contentDescription = "Payment QR Code",
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Component - QR Code")
+@Composable
+fun QrCodeImagePreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            QrCodeImage(
+                content = "00020101021238540010A00000072701240006970422011012345678905204739953037045405500005802VN6304ABCD",
+                modifier = Modifier.padding(8.dp)
             )
         }
     }

@@ -3,12 +3,13 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShoppingBag, QrCode, Wallet, PackageSearch } from 'lucide-react';
+import { ShoppingBag, Wallet, PackageSearch, UserCircle } from 'lucide-react';
 
 const navItems = [
   { label: 'Giỏ Hàng', href: '/customer', icon: ShoppingBag },
   { label: 'Ví Token', href: '/customer/wallet', icon: Wallet },
   { label: 'Sản Phẩm', href: '/customer/products', icon: PackageSearch },
+  { label: 'Tài Khoản', href: '/customer/login', icon: UserCircle },
 ];
 
 export default function CustomerBottomNav() {

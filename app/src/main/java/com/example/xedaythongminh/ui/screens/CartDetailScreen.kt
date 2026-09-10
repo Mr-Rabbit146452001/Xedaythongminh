@@ -188,10 +188,7 @@ fun CartDetailScreen(
                                         unitPrice = formatVnd(item.product.unitPrice),
                                         quantity = item.quantity,
                                         totalPrice = formatVnd(item.totalPrice),
-                                        imageUrl = item.product.imageUrl,
-                                        onIncrease = { appViewModel.increaseQuantity(item) },
-                                        onDecrease = { appViewModel.decreaseQuantity(item) },
-                                        onDelete = { appViewModel.removeCartItem(item) }
+                                        imageUrl = item.product.imageUrl
                                     )
                                 }
                             }
@@ -513,10 +510,7 @@ fun DetailedCartItem(
     unitPrice: String,
     quantity: Int,
     totalPrice: String,
-    imageUrl: String = "",
-    onIncrease: () -> Unit = {},
-    onDecrease: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    imageUrl: String = ""
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -574,32 +568,19 @@ fun DetailedCartItem(
                 
                 Spacer(modifier = Modifier.width(16.dp))
                 
-                // Quantity Selector Pill
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                // Read-only Quantity Display (Đồng bộ cảm biến xe đẩy)
+                Box(
                     modifier = Modifier
-                        .background(Color(0xFFF5F5F5), RoundedCornerShape(24.dp))
-                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                        .background(Color(0xFFF0F4F8), RoundedCornerShape(20.dp))
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    IconButton(
-                        onClick = onDecrease,
-                        modifier = Modifier.size(28.dp).background(Color.White, CircleShape)
-                    ) {
-                        Icon(Icons.Default.Remove, contentDescription = "Decrease", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                    }
                     Text(
-                        text = quantity.toString(),
-                        fontSize = 18.sp,
+                        text = "SL: $quantity",
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextDark,
-                        modifier = Modifier.padding(horizontal = 16.dp)
+                        color = PrimaryBlue
                     )
-                    IconButton(
-                        onClick = onIncrease,
-                        modifier = Modifier.size(28.dp).background(Color.White, CircleShape)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = "Increase", tint = PrimaryBlue, modifier = Modifier.size(16.dp))
-                    }
                 }
                 
                 Spacer(modifier = Modifier.width(32.dp))
@@ -615,16 +596,6 @@ fun DetailedCartItem(
                         color = TextDark
                     )
                 }
-                
-                Spacer(modifier = Modifier.width(40.dp)) // Make room for delete icon
-            }
-            
-            // Delete Icon (Top Right)
-            IconButton(
-                onClick = onDelete,
-                modifier = Modifier.align(Alignment.TopEnd)
-            ) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = "Delete", tint = Color.Red)
             }
         }
     }
@@ -655,5 +626,22 @@ fun CartDetailScreenEmptyPreview() {
 fun CartDetailScreenPreview() {
     MaterialTheme {
         CartDetailScreen(navController = rememberNavController(), windowSize = WindowWidthSizeClass.Expanded)
+    }
+}
+
+@Preview(showBackground = true, widthDp = 700, heightDp = 120, name = "Component - Detailed Cart Item")
+@Composable
+fun DetailedCartItemPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            DetailedCartItem(
+                title = "Bơ sáp 034 Đắk Lắk loại 1",
+                sku = "SKU-893456789",
+                unitPrice = "35.000đ",
+                quantity = 2,
+                totalPrice = "70.000đ",
+                imageUrl = ""
+            )
+        }
     }
 }

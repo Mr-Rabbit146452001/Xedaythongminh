@@ -1,8 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingCart, Wifi, Sparkles, RefreshCw, LayoutDashboard } from 'lucide-react';
+import { ShoppingCart, Wifi, RefreshCw, User, ShieldCheck } from 'lucide-react';
+import { CustomerApiService, CustomerUser } from '@/services/customerApi';
 
 interface MobileHeaderProps {
   strollerId?: string;
@@ -17,6 +18,12 @@ export default function MobileHeader({
   isRefreshing = false,
   itemCount = 0
 }: MobileHeaderProps) {
+  const [user, setUser] = useState<CustomerUser | null>(null);
+
+  useEffect(() => {
+    setUser(CustomerApiService.getStoredCustomer());
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3">
       <div className="flex items-center justify-between">
@@ -56,11 +63,26 @@ export default function MobileHeader({
             </button>
           )}
 
-          {/* Online Tag */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs text-slate-200 font-semibold shadow-sm">
-            <Wifi className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]" />
-            <span className="text-[11px]">Online</span>
-          </div>
+          {/* User Auth Quick Link */}
+          <Link
+            href="/customer/login"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 text-xs font-semibold shadow-sm transition-all text-slate-200 hover:text-emerald-400"
+            title={user ? `Tài khoản: ${user.name}` : 'Đăng nhập / Đăng ký'}
+          >
+            {user ? (
+              <>
+                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black border border-emerald-400/40">
+                  {user.name.charAt(0)}
+                </div>
+                <span className="text-[11px] max-w-[80px] truncate font-medium">{user.name.split(' ').slice(-1)[0]}</span>
+              </>
+            ) : (
+              <>
+                <User className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-[11px] text-slate-300">Đăng nhập</span>
+              </>
+            )}
+          </Link>
         </div>
       </div>
     </header>

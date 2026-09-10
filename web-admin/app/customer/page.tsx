@@ -49,7 +49,9 @@ export default function CustomerHomePage() {
   const confirmLoginOnCart = async (sessionId: string) => {
     setLoginStatus('logging_in');
     try {
-      const res = await CustomerApiService.confirmLogin(sessionId, 'CUSTOMER_888');
+      const storedUser = CustomerApiService.getStoredCustomer();
+      const customerId = storedUser ? storedUser.id : 'CUSTOMER_888';
+      const res = await CustomerApiService.confirmLogin(sessionId, customerId);
       if (res.status === 'Thành công') {
         setLoginStatus('success');
       }

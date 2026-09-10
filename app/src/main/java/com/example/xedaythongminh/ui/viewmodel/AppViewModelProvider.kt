@@ -9,18 +9,20 @@ import com.example.xedaythongminh.StrollerApplication
 object AppViewModelProvider {
     val Factory = viewModelFactory {
         initializer {
-            val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as StrollerApplication)
+            val container = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? StrollerApplication)?.container
+                ?: com.example.xedaythongminh.di.DefaultAppContainer()
             AppViewModel(
-                cartRepository = application.container.cartRepository,
-                productRepository = application.container.productRepository
+                cartRepository = container.cartRepository,
+                productRepository = container.productRepository
             )
         }
         initializer {
-            val application = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as StrollerApplication)
+            val container = (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as? StrollerApplication)?.container
+                ?: com.example.xedaythongminh.di.DefaultAppContainer()
             com.example.xedaythongminh.ui.autopayment.AutoPaymentViewModel(
-                cartRepository = application.container.cartRepository,
-                getLinkedPaymentMethodsUseCase = application.container.getLinkedPaymentMethodsUseCase,
-                processAutoPaymentUseCase = application.container.processAutoPaymentUseCase
+                cartRepository = container.cartRepository,
+                getLinkedPaymentMethodsUseCase = container.getLinkedPaymentMethodsUseCase,
+                processAutoPaymentUseCase = container.processAutoPaymentUseCase
             )
         }
     }

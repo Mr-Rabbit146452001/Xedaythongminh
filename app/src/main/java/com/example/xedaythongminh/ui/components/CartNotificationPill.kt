@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.xedaythongminh.data.models.CartNotification
@@ -66,6 +67,38 @@ fun CartNotificationPill(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Notification - Item Added")
+@Composable
+fun CartNotificationPillAddPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            CartNotificationPill(
+                notification = CartNotification(
+                    message = "Đã thêm: Bơ sáp loại 1 (x1)",
+                    productName = "Bơ sáp loại 1",
+                    type = NotificationType.ADD
+                )
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Notification - Item Removed")
+@Composable
+fun CartNotificationPillRemovePreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            CartNotificationPill(
+                notification = CartNotification(
+                    message = "Đã bớt: Bơ sáp loại 1 (x1)",
+                    productName = "Bơ sáp loại 1",
+                    type = NotificationType.REMOVE
+                )
+            )
         }
     }
 }

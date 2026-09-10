@@ -324,3 +324,26 @@ fun TimeoutWarningDialog(
         shape = RoundedCornerShape(16.dp)
     )
 }
+
+@Preview(showBackground = true, widthDp = 600, heightDp = 300, name = "Dialog - Remove Item Confirm")
+@Composable
+fun RemoveItemConfirmDialogPreview() {
+    MaterialTheme {
+        RemoveItemConfirmDialog(
+            itemName = "Bơ sáp 034 Đắk Lắk loại 1",
+            onConfirm = {},
+            onDismiss = {}
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 600, heightDp = 300, name = "Dialog - Timeout Warning")
+@Composable
+fun TimeoutWarningDialogPreview() {
+    MaterialTheme {
+        TimeoutWarningDialog(
+            onContinue = {},
+            onEndSession = {}
+        )
+    }
+}

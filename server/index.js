@@ -572,6 +572,135 @@ app.post('/api/auth/confirm-login', async (req, res) => {
   }
 });
 
+// 11.2a. API Đăng nhập tài khoản khách hàng bằng Số điện thoại & Mật khẩu
+app.post('/api/auth/customer/login', async (req, res) => {
+  const { phoneNumber, password, sessionId } = req.body || {};
+  if (!phoneNumber || !password) {
+    return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng nhập số điện thoại và mật khẩu' });
+  }
+
+  try {
+    const cleanPhone = phoneNumber.trim();
+    const result = await pool.query('SELECT * FROM Customers WHERE phonenumber = $1', [cleanPhone]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ status: 'Lỗi', message: 'Số điện thoại chưa được đăng ký trong hệ thống' });
+    }
+
+    const customer = result.rows[0];
+    const customerPassword = customer.password || '123456';
+    if (customerPassword !== password.trim()) {
+      return res.status(401).json({ status: 'Lỗi', message: 'Mật khẩu không chính xác' });
+    }
+
+    // Lấy số dư ví Token từ bank_accounts nếu có
+    let tokenBalance = 50000;
+    try {
+      const bankRes = await pool.query('SELECT token_balance FROM bank_accounts WHERE user_ref_id = $1 OR account_number = $2', [customer.id, 'ACC_CUSTOMER_01']);
+      if (bankRes.rows.length > 0) {
+        tokenBalance = parseFloat(bankRes.rows[0].token_balance);
+      }
+    } catch (_) {}
+
+    const customerDto = {
+      id: customer.id,
+      name: customer.name,
+      phoneNumber: customer.phonenumber,
+      membershipLevel: customer.membershiplevel || 'Hội viên Thân Thiết',
+      points: customer.points || 0,
+      tokenBalance: tokenBalance,
+      vouchers: ["Voucher giảm 50K cho đơn từ 500K", "Miễn phí gửi xe"],
+      promotions: ["Tặng 1 bình nước khi mua 2 hộp sữa"]
+    };
+
+    if (sessionId) {
+      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+    }
+
+    res.json({
+      status: 'Thành công',
+      message: 'Đăng nhập thành công!',
+      customer: customerDto
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.2b. API Đăng ký tài khoản khách hàng mới
+app.post('/api/auth/customer/register', async (req, res) => {
+  const { name, phoneNumber, password, sessionId } = req.body || {};
+  if (!name || !phoneNumber || !password) {
+    return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng điền đầy đủ họ tên, số điện thoại và mật khẩu' });
+  }
+
+  try {
+    const cleanPhone = phoneNumber.trim();
+    const checkRes = await pool.query('SELECT id FROM Customers WHERE phonenumber = $1', [cleanPhone]);
+    if (checkRes.rows.length > 0) {
+      return res.status(409).json({ status: 'Lỗi', message: 'Số điện thoại này đã được đăng ký tài khoản' });
+    }
+
+    const customerId = 'CUST_' + Date.now().toString().slice(-6);
+    await pool.query(
+      'INSERT INTO Customers (id, name, membershiplevel, points, phonenumber, password) VALUES ($1, $2, $3, $4, $5, $6)',
+      [customerId, name.trim(), 'Hội viên Mới', 100, cleanPhone, password.trim()]
+    );
+
+    // Tạo luôn ví ngân hàng và tặng 50.000 Token
+    const bankAccountNo = 'ACC_' + customerId;
+    try {
+      await pool.query(
+        'INSERT INTO bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (account_number) DO NOTHING',
+        [bankAccountNo, name.trim(), customerId, 50000, '123456', true]
+      );
+    } catch (_) {}
+
+    const customerDto = {
+      id: customerId,
+      name: name.trim(),
+      phoneNumber: cleanPhone,
+      membershipLevel: 'Hội viên Mới',
+      points: 100,
+      tokenBalance: 50000,
+      vouchers: ["Voucher chào mừng 30K", "Tặng 50.000 Token"],
+      promotions: ["Ưu đãi khách hàng mới"]
+    };
+
+    if (sessionId) {
+      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+    }
+
+    res.json({
+      status: 'Thành công',
+      message: 'Đăng ký thành công! Tặng ngay 50.000 Token vào ví.',
+      customer: customerDto
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.2c. API Quên mật khẩu / Đặt lại mật khẩu mới
+app.post('/api/auth/customer/forgot-password', async (req, res) => {
+  const { phoneNumber, newPassword } = req.body || {};
+  if (!phoneNumber || !newPassword) {
+    return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng cung cấp số điện thoại và mật khẩu mới' });
+  }
+
+  try {
+    const cleanPhone = phoneNumber.trim();
+    const result = await pool.query('UPDATE Customers SET password = $1 WHERE phonenumber = $2 RETURNING id, name', [newPassword.trim(), cleanPhone]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ status: 'Lỗi', message: 'Không tìm thấy số điện thoại trong hệ thống' });
+    }
+
+    res.json({ status: 'Thành công', message: 'Đổi mật khẩu thành công! Vui lòng đăng nhập lại.' });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
 app.get('/api/auth/status', async (req, res) => {
   const { sessionId } = req.query;
   const session = activeSessions.get(sessionId);

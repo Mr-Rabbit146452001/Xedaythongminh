@@ -34,6 +34,17 @@ export interface BankAccount {
   isActive: boolean;
 }
 
+export interface CustomerUser {
+  id: string;
+  name: string;
+  phoneNumber: string;
+  membershipLevel: string;
+  points: number;
+  tokenBalance: number;
+  vouchers?: string[];
+  promotions?: string[];
+}
+
 export interface PayResult {
   success: boolean;
   message?: string;
@@ -173,5 +184,86 @@ export const CustomerApiService = {
     } catch (e: any) {
       return { status: 'error', message: e.message };
     }
+  },
+
+  // 9. Dang nhap tai khoan khach hang bang so dien thoai & mat khau
+  async customerLogin(phoneNumber: string, password: string, sessionId: string = 'STR_001'): Promise<{ success: boolean; message: string; customer?: CustomerUser }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/auth/customer/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber, password, sessionId })
+      });
+      const data = await res.json();
+      if (res.ok && data.customer) {
+        this.setStoredCustomer(data.customer);
+        return { success: true, message: data.message || 'Đăng nhập thành công', customer: data.customer };
+      }
+      return { success: false, message: data.message || 'Đăng nhập thất bại' };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Lỗi mạng khi kết nối máy chủ' };
+    }
+  },
+
+  // 10. Dang ky tai khoan khach hang moi
+  async customerRegister(name: string, phoneNumber: string, password: string, sessionId: string = 'STR_001'): Promise<{ success: boolean; message: string; customer?: CustomerUser }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/auth/customer/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phoneNumber, password, sessionId })
+      });
+      const data = await res.json();
+      if (res.ok && data.customer) {
+        this.setStoredCustomer(data.customer);
+        return { success: true, message: data.message || 'Đăng ký thành công', customer: data.customer };
+      }
+      return { success: false, message: data.message || 'Đăng ký không thành công' };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Lỗi kết nối máy chủ khi đăng ký' };
+    }
+  },
+
+  // 11. Quen mat khau / Dat lai mat khau
+  async customerForgotPassword(phoneNumber: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/auth/customer/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber, newPassword })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        return { success: true, message: data.message || 'Đổi mật khẩu thành công' };
+      }
+      return { success: false, message: data.message || 'Không thể đổi mật khẩu' };
+    } catch (e: any) {
+      return { success: false, message: e.message || 'Lỗi kết nối máy chủ' };
+    }
+  },
+
+  // Helpers quan ly phien dang nhap khach hang tai LocalStorage
+  getStoredCustomer(): CustomerUser | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem('smartcart_customer_user');
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  },
+
+  setStoredCustomer(customer: CustomerUser): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('smartcart_customer_user', JSON.stringify(customer));
+    } catch (_) {}
+  },
+
+  clearStoredCustomer(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem('smartcart_customer_user');
+    } catch (_) {}
   }
 };

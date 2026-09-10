@@ -283,10 +283,10 @@ fun CustomerInfoScreen(
     }
 }
 
-@Preview(showBackground = true, widthDp = 1280, heightDp = 800)
+@Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - Customer Info")
 @Composable
 fun CustomerInfoScreenPreview() {
     MaterialTheme {
-        CustomerInfoScreen(navController = rememberNavController())
+        CustomerInfoScreen(navController = rememberNavController(), windowSize = WindowWidthSizeClass.Expanded)
     }
 }

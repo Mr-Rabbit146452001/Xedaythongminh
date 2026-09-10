@@ -47,8 +47,8 @@ import java.util.Locale
 
 @Composable
 fun AutoPaymentScreen(
-    autoPaymentViewModel: AutoPaymentViewModel,
-    appViewModel: AppViewModel,
+    autoPaymentViewModel: AutoPaymentViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = com.example.xedaythongminh.ui.viewmodel.AppViewModelProvider.Factory),
+    appViewModel: AppViewModel = androidx.lifecycle.viewmodel.compose.viewModel(factory = com.example.xedaythongminh.ui.viewmodel.AppViewModelProvider.Factory),
     navController: NavController,
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
@@ -649,10 +649,10 @@ private fun getPaymentIcon(type: PaymentMethodType): ImageVector {
     }
 }
 
-@Preview(showBackground = true, widthDp = 1280, heightDp = 800)
+@Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - Auto Payment")
 @Composable
 fun AutoPaymentScreenPreview() {
     MaterialTheme {
-        // Preview placeholder
+        AutoPaymentScreen(navController = rememberNavController(), windowSize = WindowWidthSizeClass.Expanded)
     }
 }
