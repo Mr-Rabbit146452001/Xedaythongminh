@@ -525,7 +525,51 @@ app.get('/api/customer', async (req, res) => {
 app.get('/api/auth/session', (req, res) => {
   const sessionId = 'SESS_' + Date.now();
   activeSessions.set(sessionId, { authStatus: 'pending', customer: null });
-  res.json({ status: 'Thành công', data: { sessionId: sessionId, loginUrl: `https://stroller.app/login?session=${sessionId}` } });
+
+  // Xác định domain thực tế (Ngrok hoặc LAN host) để dẫn trực tiếp vào Web App Khách Hàng
+  const host = req.get('x-forwarded-host') || req.get('host') || '127.0.0.1:3000';
+  const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+  const baseUrl = `${proto}://${host}`;
+  const loginUrl = `${baseUrl}/customer?session=${sessionId}&stroller=STR_001`;
+
+  res.json({ 
+    status: 'Thành công', 
+    data: { 
+      sessionId: sessionId, 
+      loginUrl: loginUrl 
+    } 
+  });
+});
+
+// Cho phép Web App Khách Hàng xác nhận đăng nhập xe đẩy
+app.post('/api/auth/confirm-login', async (req, res) => {
+  const { sessionId, customerId = 'CUSTOMER_888' } = req.body || {};
+  try {
+    const result = await pool.query('SELECT id, name, membershiplevel, points, phonenumber FROM Customers WHERE id = $1', [customerId]);
+    const customer = result.rows[0] || {
+      id: customerId,
+      name: 'Khách Hàng Demo (Nguyễn Văn A)',
+      membershiplevel: 'VIP',
+      points: 1200,
+      phonenumber: '0987654321'
+    };
+    const customerDto = {
+      id: customer.id,
+      name: customer.name,
+      membershipLevel: customer.membershiplevel || 'VIP',
+      points: customer.points || 0,
+      phoneNumber: customer.phonenumber || '',
+      vouchers: ["Voucher giảm 50K cho đơn hàng từ 500K"],
+      promotions: ["Tặng 1 bình nước giữ nhiệt khi mua 2 hộp sữa"]
+    };
+
+    if (sessionId) {
+      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+    }
+    res.json({ status: 'Thành công', message: 'Đã xác nhận đăng nhập thành công!', customer: customerDto });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
 });
 
 app.get('/api/auth/status', async (req, res) => {

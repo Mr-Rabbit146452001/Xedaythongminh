@@ -159,5 +159,19 @@ export const CustomerApiService = {
     } catch (e: any) {
       return { status: 'error', message: e.message };
     }
+  },
+
+  // 8. Xac nhan dang nhap tren man hinh xe day
+  async confirmLogin(sessionId: string, customerId: string = 'CUSTOMER_888'): Promise<any> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/auth/confirm-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, customerId })
+      });
+      return await res.json();
+    } catch (e: any) {
+      return { status: 'error', message: e.message };
+    }
   }
 };

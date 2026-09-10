@@ -42,11 +42,42 @@ export default function CustomerHomePage() {
     }
   }, []);
 
+  const [pendingSession, setPendingSession] = useState<string | null>(null);
+  const [loginStatus, setLoginStatus] = useState<'idle' | 'logging_in' | 'success'>('idle');
+
+  const confirmLoginOnCart = async (sessionId: string) => {
+    setLoginStatus('logging_in');
+    try {
+      const res = await CustomerApiService.confirmLogin(sessionId, 'CUSTOMER_888');
+      if (res.status === 'Thành công') {
+        setLoginStatus('success');
+      }
+    } catch (e) {
+      console.warn('Lỗi confirmLoginOnCart:', e);
+    }
+  };
+
   useEffect(() => {
-    // Đọc mã xe từ localStorage nếu có
+    // Đọc mã xe và session từ URL nếu khách vừa quét QR trên màn hình đăng nhập xe
     if (typeof window !== 'undefined') {
-      const savedStroller = localStorage.getItem('smartcart_stroller_id') || 'STR_001';
-      setStrollerId(savedStroller);
+      const params = new URLSearchParams(window.location.search);
+      const sessionParam = params.get('session');
+      const strollerParam = params.get('stroller');
+
+      if (strollerParam) {
+        setStrollerId(strollerParam);
+        localStorage.setItem('smartcart_stroller_id', strollerParam);
+      } else {
+        const savedStroller = localStorage.getItem('smartcart_stroller_id') || 'STR_001';
+        setStrollerId(savedStroller);
+      }
+
+      if (sessionParam) {
+        setPendingSession(sessionParam);
+        localStorage.setItem('smartcart_session_id', sessionParam);
+        // Tự động kích hoạt đăng nhập xe đẩy
+        confirmLoginOnCart(sessionParam);
+      }
     }
 
     fetchCart();
@@ -70,6 +101,33 @@ export default function CustomerHomePage() {
       />
 
       <main className="p-4 space-y-4 flex-1">
+        {/* Banner thông báo khi vừa quét mã QR từ màn hình xe đẩy */}
+        {pendingSession && (
+          <div className="bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-emerald-500/20 border border-emerald-500/40 rounded-2xl p-3.5 shadow-lg flex items-center justify-between animate-in fade-in duration-300">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
+                <Sparkles className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <span className="text-[11px] text-emerald-400 font-bold uppercase tracking-wider block">
+                  {loginStatus === 'success' ? 'Đã liên kết xe đẩy thành công' : 'Đang ghép nối với xe đẩy...'}
+                </span>
+                <p className="text-xs text-slate-200">
+                  {loginStatus === 'success' ? 'Màn hình xe đẩy đã tự động đăng nhập!' : 'Đang đồng bộ phiên mua sắm...'}
+                </p>
+              </div>
+            </div>
+            {loginStatus !== 'success' && (
+              <button
+                onClick={() => confirmLoginOnCart(pendingSession)}
+                className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-md active:scale-95 transition-all"
+              >
+                Đăng nhập
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Banner trạng thái xe đẩy */}
         <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
           <div className="flex items-center gap-3">
