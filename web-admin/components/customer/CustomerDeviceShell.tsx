@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { 
   Smartphone, 
   RotateCcw, 
@@ -16,9 +16,11 @@ import {
   ZoomIn,
   Check,
   Copy,
-  X
+  X,
+  ShoppingCart
 } from 'lucide-react';
 import CustomerBottomNav from '@/components/customer/CustomerBottomNav';
+import { CustomerApiService } from '@/services/customerApi';
 
 interface CustomerDeviceShellProps {
   children: React.ReactNode;
@@ -28,6 +30,7 @@ type DeviceType = 'iphone' | 'android' | 'responsive';
 
 export default function CustomerDeviceShell({ children }: CustomerDeviceShellProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const [isMobileScreen, setIsMobileScreen] = useState<boolean | null>(null);
   const [deviceType, setDeviceType] = useState<DeviceType>('iphone');
@@ -36,6 +39,10 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
   const [copied, setCopied] = useState(false);
   const [currentTime, setCurrentTime] = useState('09:41');
   const [currentUrl, setCurrentUrl] = useState('');
+
+  // Authentication Guard State
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Detect screen size and setup live clock
   useEffect(() => {
@@ -70,6 +77,32 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
     };
   }, []);
 
+  // Auth Guard Effect: Enforce login before accessing main customer features
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = CustomerApiService.getStoredCustomer();
+      const authed = !!user;
+      setIsAuthenticated(authed);
+      setIsCheckingAuth(false);
+
+      // Nếu chưa đăng nhập và đang không ở trang /customer/login -> chuyển ngay về /customer/login
+      if (!authed && pathname !== '/customer/login') {
+        const search = typeof window !== 'undefined' ? window.location.search : '';
+        router.replace(`/customer/login${search}`);
+      }
+    };
+
+    checkAuth();
+
+    const handleAuthChange = () => checkAuth();
+    window.addEventListener('customer_auth_changed', handleAuthChange);
+    window.addEventListener('storage', handleAuthChange);
+    return () => {
+      window.removeEventListener('customer_auth_changed', handleAuthChange);
+      window.removeEventListener('storage', handleAuthChange);
+    };
+  }, [pathname, router]);
+
   const handleCopyUrl = async () => {
     if (!currentUrl) return;
     try {
@@ -81,11 +114,16 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
     }
   };
 
-  // Prevent flash during hydration: if state not yet determined, render dark placeholder
-  if (isMobileScreen === null) {
+  // Prevent flash during hydration or while redirecting unauthenticated users to login
+  if (isMobileScreen === null || isCheckingAuth || (!isAuthenticated && pathname !== '/customer/login')) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center">
-        <div className="w-8 h-8 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-300 flex items-center justify-center shadow-xl shadow-emerald-500/25 mb-4 animate-bounce">
+          <ShoppingCart className="w-7 h-7 text-slate-950 stroke-[2.5]" />
+        </div>
+        <div className="w-6 h-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-3" />
+        <h3 className="text-sm font-bold text-slate-200">Đang chuyển đến cổng đăng nhập...</h3>
+        <p className="text-xs text-slate-400 mt-1">Vui lòng đăng nhập tài khoản để vào hệ sinh thái Smart Cart</p>
       </div>
     );
   }
@@ -95,7 +133,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
     return (
       <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col relative pb-20 selection:bg-emerald-500 selection:text-slate-950">
         {children}
-        <CustomerBottomNav />
+        {isAuthenticated && <CustomerBottomNav />}
       </div>
     );
   }
@@ -220,7 +258,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
             <div className="flex-1 overflow-y-auto">
               {children}
             </div>
-            <CustomerBottomNav />
+            {isAuthenticated && <CustomerBottomNav />}
           </div>
         ) : (
           /* Phone Mockup Frame: Luxury Titanium Hardware Simulation */
@@ -281,7 +319,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
               </div>
 
               {/* Pinned Bottom Navigation Inside Phone Screen */}
-              <CustomerBottomNav />
+              {isAuthenticated && <CustomerBottomNav />}
 
               {/* Bottom Home Indicator Bar */}
               <div className="h-5 shrink-0 bg-slate-950 flex items-center justify-center pointer-events-none z-40">

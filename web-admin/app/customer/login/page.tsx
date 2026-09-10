@@ -50,11 +50,30 @@ export default function CustomerLoginPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [strollerId, setStrollerId] = useState('STR_001');
+  const [sessionId, setSessionId] = useState<string>('STR_001');
 
   useEffect(() => {
     const user = CustomerApiService.getStoredCustomer();
     if (user) {
       setCurrentUser(user);
+    }
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sId = params.get('session');
+      const strId = params.get('stroller');
+
+      if (sId) {
+        setSessionId(sId);
+        localStorage.setItem('smartcart_session_id', sId);
+        if (user) {
+          CustomerApiService.confirmLogin(sId, user.id);
+        }
+      }
+      if (strId) {
+        setStrollerId(strId);
+        localStorage.setItem('smartcart_stroller_id', strId);
+      }
     }
   }, []);
 
@@ -89,7 +108,7 @@ export default function CustomerLoginPage() {
 
     setLoading(true);
     try {
-      const res = await CustomerApiService.customerLogin(phoneNumber.trim(), password.trim(), strollerId);
+      const res = await CustomerApiService.customerLogin(phoneNumber.trim(), password.trim(), sessionId || strollerId);
       if (res.success && res.customer) {
         setCurrentUser(res.customer);
         setSuccessMessage('Đăng nhập thành công! Xe đẩy đã được đồng bộ.');
@@ -132,7 +151,7 @@ export default function CustomerLoginPage() {
         fullName.trim(),
         phoneNumber.trim(),
         password.trim(),
-        strollerId
+        sessionId || strollerId
       );
       if (res.success && res.customer) {
         setCurrentUser(res.customer);
@@ -209,19 +228,27 @@ export default function CustomerLoginPage() {
     setConfirmPassword('');
     clearNotifications();
     setSuccessMessage('Đã đăng xuất tài khoản thành công.');
+    setMode('login');
   };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-24">
       {/* Top Header */}
       <div className="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
-        <Link
-          href="/customer"
-          className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-colors p-1 -ml-1 rounded-lg"
-        >
-          <ChevronLeft className="w-4 h-4" />
-          <span>Về Giỏ Hàng</span>
-        </Link>
+        {currentUser ? (
+          <Link
+            href="/customer"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-colors p-1 -ml-1 rounded-lg"
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span>Về Giỏ Hàng</span>
+          </Link>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>Cổng Đăng Nhập</span>
+          </div>
+        )}
         <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
           {currentUser ? 'Tài Khoản Thành Viên' : mode === 'login' ? 'Đăng Nhập' : mode === 'register' ? 'Đăng Ký Mới' : 'Quên Mật Khẩu'}
         </span>

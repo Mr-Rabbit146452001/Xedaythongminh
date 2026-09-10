@@ -257,6 +257,7 @@ export const CustomerApiService = {
     if (typeof window === 'undefined') return;
     try {
       localStorage.setItem('smartcart_customer_user', JSON.stringify(customer));
+      window.dispatchEvent(new Event('customer_auth_changed'));
     } catch (_) {}
   },
 
@@ -264,6 +265,7 @@ export const CustomerApiService = {
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem('smartcart_customer_user');
+      window.dispatchEvent(new Event('customer_auth_changed'));
     } catch (_) {}
   }
 };

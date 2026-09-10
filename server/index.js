@@ -530,7 +530,7 @@ app.get('/api/auth/session', (req, res) => {
   const host = req.get('x-forwarded-host') || req.get('host') || '127.0.0.1:3000';
   const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
   const baseUrl = `${proto}://${host}`;
-  const loginUrl = `${baseUrl}/customer?session=${sessionId}&stroller=STR_001`;
+  const loginUrl = `${baseUrl}/customer/login?session=${sessionId}&stroller=STR_001`;
 
   res.json({ 
     status: 'Thành công', 
