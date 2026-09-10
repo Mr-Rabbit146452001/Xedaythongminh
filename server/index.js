@@ -893,7 +893,13 @@ app.post(['/api/auth/confirm-login', '/api/auth/session/scan', '/api/auth/pair']
 });
 
 // 11.2a. API Đăng nhập tài khoản khách hàng bằng Số điện thoại & Mật khẩu
-app.post('/api/auth/customer/login', async (req, res) => {
+app.post([
+  '/api/auth/customer/login',
+  '/api/customer/login',
+  '/api/customers/login',
+  '/api/auth/login',
+  '/api/login'
+], async (req, res) => {
   const { phoneNumber, password, sessionId } = req.body || {};
   if (!phoneNumber || !password) {
     return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng nhập số điện thoại và mật khẩu' });
@@ -947,8 +953,14 @@ app.post('/api/auth/customer/login', async (req, res) => {
   }
 });
 
-// 11.2b. API Đăng ký tài khoản khách hàng mới
-app.post('/api/auth/customer/register', async (req, res) => {
+// 11.2b. API Đăng ký tài khoản khách hàng mới (Hỗ trợ /api/auth/customer/register, /api/customer/register, /api/register...)
+app.post([
+  '/api/auth/customer/register',
+  '/api/customer/register',
+  '/api/customers/register',
+  '/api/auth/register',
+  '/api/register'
+], async (req, res) => {
   const { name, phoneNumber, password, sessionId } = req.body || {};
   if (!name || !phoneNumber || !password) {
     return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng điền đầy đủ họ tên, số điện thoại và mật khẩu' });
@@ -1002,7 +1014,12 @@ app.post('/api/auth/customer/register', async (req, res) => {
 });
 
 // 11.2c. API Quên mật khẩu / Đặt lại mật khẩu mới
-app.post('/api/auth/customer/forgot-password', async (req, res) => {
+app.post([
+  '/api/auth/customer/forgot-password',
+  '/api/customer/forgot-password',
+  '/api/auth/forgot-password',
+  '/api/forgot-password'
+], async (req, res) => {
   const { phoneNumber, newPassword } = req.body || {};
   if (!phoneNumber || !newPassword) {
     return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng cung cấp số điện thoại và mật khẩu mới' });
