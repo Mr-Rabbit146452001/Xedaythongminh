@@ -2,7 +2,11 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const pool = require('./db');
+const { initCustomersDatabase } = require('./init_customers_db');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
+
+// Khởi tạo CSDL khách hàng tự động khi khởi động server
+initCustomersDatabase().catch(err => console.warn('Lỗi initCustomersDatabase:', err.message));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -494,6 +498,200 @@ app.post('/api/payment/auto-checkout', async (req, res) => {
 });
 
 // 11. API Khách hàng & Auth Sessions
+
+// 11.1 Lấy danh sách toàn bộ khách hàng cho Web Admin (kèm số dư Token và lọc tìm kiếm)
+app.get('/api/customers', async (req, res) => {
+  try {
+    const { search, tier } = req.query;
+    let query = `
+      SELECT 
+        c.id, 
+        c.name, 
+        c.membershiplevel, 
+        c.points, 
+        c.phonenumber, 
+        c.email, 
+        c.total_spent, 
+        c.created_at,
+        COALESCE(b.token_balance, 50000) as token_balance,
+        b.account_number
+      FROM Customers c
+      LEFT JOIN bank_accounts b ON (b.user_ref_id = c.id OR (c.id = 'CUSTOMER_888' AND b.account_number = 'ACC_CUSTOMER_01'))
+    `;
+    const params = [];
+    const conditions = [];
+
+    if (search) {
+      params.push(`%${search.trim()}%`);
+      conditions.push(`(c.name ILIKE $${params.length} OR c.phonenumber ILIKE $${params.length} OR c.id ILIKE $${params.length})`);
+    }
+
+    if (tier && tier !== 'ALL') {
+      params.push(tier);
+      conditions.push(`c.membershiplevel = $${params.length}`);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY c.points DESC, c.id ASC';
+
+    const result = await pool.query(query, params);
+    res.json({
+      status: 'Thành công',
+      total: result.rows.length,
+      data: result.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        membershipLevel: row.membershiplevel || 'Hội viên Mới',
+        points: parseInt(row.points || 0),
+        phoneNumber: row.phonenumber,
+        email: row.email || '',
+        totalSpent: parseFloat(row.total_spent || 0),
+        tokenBalance: parseFloat(row.token_balance || 0),
+        accountNumber: row.account_number || `ACC_${row.id}`,
+        createdAt: row.created_at
+      }))
+    });
+  } catch (err) {
+    console.error('Lỗi GET /api/customers:', err);
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.2 Thêm khách hàng mới từ Web Admin
+app.post('/api/customers', async (req, res) => {
+  const { name, phoneNumber, membershipLevel = 'Hội viên Mới', points = 100, password = '123456', email = '', tokenBalance = 50000 } = req.body || {};
+  if (!name || !phoneNumber) {
+    return res.status(400).json({ status: 'Lỗi', message: 'Vui lòng cung cấp họ tên và số điện thoại' });
+  }
+  try {
+    const cleanPhone = phoneNumber.trim();
+    const checkRes = await pool.query('SELECT id FROM Customers WHERE phonenumber = $1', [cleanPhone]);
+    if (checkRes.rows.length > 0) {
+      return res.status(409).json({ status: 'Lỗi', message: 'Số điện thoại này đã được đăng ký' });
+    }
+
+    const id = 'CUST_' + Date.now().toString().slice(-6);
+    await pool.query(`
+      INSERT INTO Customers (id, name, membershiplevel, points, phonenumber, password, email)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `, [id, name.trim(), membershipLevel, parseInt(points), cleanPhone, password.trim(), email.trim()]);
+
+    const accNo = 'ACC_' + id;
+    try {
+      await pool.query(`
+        INSERT INTO bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active)
+        VALUES ($1, $2, $3, $4, '123456', TRUE)
+        ON CONFLICT (account_number) DO UPDATE SET token_balance = EXCLUDED.token_balance
+      `, [accNo, name.trim(), id, parseFloat(tokenBalance)]);
+    } catch (_) {}
+
+    res.json({
+      status: 'Thành công',
+      message: 'Thêm khách hàng mới thành công!',
+      data: { id, name, phoneNumber: cleanPhone, membershipLevel, points, tokenBalance }
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.3 Cập nhật thông tin khách hàng
+app.put('/api/customers/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, phoneNumber, membershipLevel, points, email, tokenBalance } = req.body || {};
+  try {
+    await pool.query(`
+      UPDATE Customers 
+      SET name = COALESCE($1, name),
+          phonenumber = COALESCE($2, phonenumber),
+          membershiplevel = COALESCE($3, membershiplevel),
+          points = COALESCE($4, points),
+          email = COALESCE($5, email),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE id = $6
+    `, [name, phoneNumber, membershipLevel, points !== undefined ? parseInt(points) : null, email, id]);
+
+    if (tokenBalance !== undefined) {
+      await pool.query(`
+        UPDATE bank_accounts 
+        SET token_balance = $1
+        WHERE user_ref_id = $2 OR (account_number = 'ACC_CUSTOMER_01' AND $2 = 'CUSTOMER_888')
+      `, [parseFloat(tokenBalance), id]);
+    }
+
+    res.json({ status: 'Thành công', message: 'Cập nhật thông tin khách hàng thành công!' });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.4 Xóa khách hàng
+app.delete('/api/customers/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM Customers WHERE id = $1', [id]);
+    res.json({ status: 'Thành công', message: 'Đã xóa khách hàng thành công!' });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.5 Đồng bộ khách hàng trực tiếp lên màn hình xe đẩy (STR_001 hoặc theo session)
+app.post('/api/customers/:id/sync-cart', async (req, res) => {
+  const { id } = req.params;
+  const { sessionId = 'STR_001' } = req.body || {};
+  try {
+    const result = await pool.query('SELECT id, name, membershiplevel, points, phonenumber FROM Customers WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ status: 'Lỗi', message: 'Không tìm thấy khách hàng' });
+    }
+    const customer = result.rows[0];
+
+    let vouchers = ["Voucher giảm 50K cho đơn hàng từ 500K", "Miễn phí gửi xe"];
+    let promotions = ["Tặng 1 bình nước khi mua 2 hộp sữa"];
+    const level = (customer.membershiplevel || '').toLowerCase();
+    if (level.includes('kim cương') || level.includes('vip')) {
+      vouchers = ["Voucher đặc quyền VIP giảm 20%", "Miễn phí giao hàng tận nhà 100%", "Ưu tiên tại quầy thanh toán riêng"];
+      promotions = ["Tặng giỏ quà Tết tri ân khách hàng VIP", "Nhân đôi điểm tích lũy toàn bộ đơn hàng"];
+    } else if (level.includes('vàng')) {
+      vouchers = ["Voucher giảm 100K cho đơn từ 1 triệu", "Miễn phí gửi xe 12 tháng"];
+      promotions = ["Tặng bình giữ nhiệt cao cấp", "Tặng bánh kẹo nhập khẩu"];
+    } else if (level.includes('bạc')) {
+      vouchers = ["Voucher giảm 30K cho đơn từ 300K"];
+      promotions = ["Tặng 1 hộp sữa tươi tiệt trùng"];
+    }
+
+    const customerDto = {
+      id: customer.id,
+      name: customer.name,
+      membershipLevel: customer.membershiplevel || 'Hội viên Thân Thiết',
+      points: customer.points || 0,
+      phoneNumber: customer.phonenumber || '',
+      vouchers: vouchers,
+      promotions: promotions
+    };
+
+    activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+    for (const [sKey, sVal] of activeSessions.entries()) {
+      if (sVal.authStatus === 'pending') {
+        activeSessions.set(sKey, { authStatus: 'success', customer: customerDto });
+      }
+    }
+
+    res.json({
+      status: 'Thành công',
+      message: `Đã đồng bộ thông tin khách hàng ${customer.name} lên màn hình xe đẩy (${sessionId})!`,
+      customer: customerDto
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.6 Lấy chi tiết thông tin khách hàng cho xe đẩy & Web App
 app.get('/api/customer', async (req, res) => {
   const { id } = req.query;
   const customerId = id || 'CUSTOMER_888';
@@ -505,6 +703,20 @@ app.get('/api/customer', async (req, res) => {
     }
 
     const customer = result.rows[0];
+    let vouchers = ["Voucher giảm 50K cho đơn hàng từ 500K", "Miễn phí gửi xe"];
+    let promotions = ["Tặng 1 bình nước khi mua 2 hộp sữa"];
+    const level = (customer.membershiplevel || '').toLowerCase();
+    if (level.includes('kim cương') || level.includes('vip')) {
+      vouchers = ["Voucher đặc quyền VIP giảm 20%", "Miễn phí giao hàng tận nhà 100%", "Ưu tiên tại quầy thanh toán riêng"];
+      promotions = ["Tặng giỏ quà Tết tri ân khách hàng VIP", "Nhân đôi điểm tích lũy toàn bộ đơn hàng"];
+    } else if (level.includes('vàng')) {
+      vouchers = ["Voucher giảm 100K cho đơn từ 1 triệu", "Miễn phí gửi xe 12 tháng"];
+      promotions = ["Tặng bình giữ nhiệt cao cấp", "Tặng bánh kẹo nhập khẩu"];
+    } else if (level.includes('bạc')) {
+      vouchers = ["Voucher giảm 30K cho đơn từ 300K"];
+      promotions = ["Tặng 1 hộp sữa tươi tiệt trùng"];
+    }
+
     res.json({
       status: 'Thành công',
       data: {
@@ -513,8 +725,8 @@ app.get('/api/customer', async (req, res) => {
         membershipLevel: customer.membershiplevel,
         points: customer.points,
         phoneNumber: customer.phonenumber,
-        vouchers: ["Voucher giảm 50K cho đơn hàng từ 500K", "Miễn phí giao hàng tận nhà"],
-        promotions: ["Tặng 1 bình nước giữ nhiệt khi mua 2 hộp sữa"]
+        vouchers: vouchers,
+        promotions: promotions
       }
     });
   } catch (err) {

@@ -465,15 +465,39 @@ export default function CustomerLoginPage() {
                   )}
                 </button>
 
-                {/* Quick Demo Fill Button */}
-                <button
-                  type="button"
-                  onClick={handleFillDemoUser}
-                  className="w-full py-2 px-3 rounded-xl bg-slate-950/60 border border-slate-800 hover:border-emerald-500/40 text-slate-400 hover:text-emerald-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
-                >
-                  <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  <span>Điền nhanh tài khoản VIP mẫu (0987654321)</span>
-                </button>
+                {/* Quick Demo Fill Buttons from CSDL */}
+                <div className="pt-2 border-t border-slate-800/80">
+                  <div className="text-[11px] text-slate-400 mb-2 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Chọn nhanh tài khoản mẫu từ CSDL:</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => { setPhoneNumber('0987654321'); setPassword('123456'); clearNotifications(); }}
+                      className="py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-[11px] text-slate-300 hover:text-emerald-400 transition-all text-center truncate"
+                      title="Nguyễn Văn A - Hội viên Vàng"
+                    >
+                      <span className="font-bold text-amber-400">Vàng</span> • A
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPhoneNumber('0909123456'); setPassword('123456'); clearNotifications(); }}
+                      className="py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-[11px] text-slate-300 hover:text-emerald-400 transition-all text-center truncate"
+                      title="Trần Thị B - Hội viên Kim Cương"
+                    >
+                      <span className="font-bold text-purple-400">Kim Cương</span> • B
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setPhoneNumber('0918889999'); setPassword('123456'); clearNotifications(); }}
+                      className="py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-[11px] text-slate-300 hover:text-emerald-400 transition-all text-center truncate"
+                      title="Lê Hoàng Long - Hội viên VIP"
+                    >
+                      <span className="font-bold text-emerald-400">VIP</span> • Long
+                    </button>
+                  </div>
+                </div>
               </form>
             )}
 

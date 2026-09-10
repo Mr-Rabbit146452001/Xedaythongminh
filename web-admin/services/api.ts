@@ -251,5 +251,91 @@ export const ApiService = {
     const n = typeof amount === 'string' ? parseFloat(amount) : amount;
     if (isNaN(n)) return '0 ₫';
     return `${ApiService.formatNumber(n)} ₫`;
+  },
+
+  // ====================================================
+  // QUẢN LÝ KHÁCH HÀNG & ĐỒNG BỘ CƠ SỞ DỮ LIỆU (CSDL)
+  // ====================================================
+  async getCustomers(search?: string, tier?: string): Promise<CustomerItem[]> {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (tier && tier !== 'ALL') params.append('tier', tier);
+
+      const res = await fetch(`${API_BASE_URL}/customers?${params.toString()}`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      return json.data || [];
+    } catch (err) {
+      console.warn('⚠️ [API Service] Lỗi getCustomers:', err);
+      return [];
+    }
+  },
+
+  async createCustomer(customer: Partial<CustomerItem>): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/customers`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customer)
+      });
+      const json = await res.json();
+      return { success: res.ok, message: json.message || 'Thao tác hoàn tất', data: json.data };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Lỗi kết nối máy chủ' };
+    }
+  },
+
+  async updateCustomer(id: string, customer: Partial<CustomerItem>): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/customers/${encodeURIComponent(id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customer)
+      });
+      const json = await res.json();
+      return { success: res.ok, message: json.message || 'Thao tác hoàn tất' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Lỗi kết nối' };
+    }
+  },
+
+  async deleteCustomer(id: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/customers/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      });
+      const json = await res.json();
+      return { success: res.ok, message: json.message || 'Thao tác hoàn tất' };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Lỗi kết nối' };
+    }
+  },
+
+  async syncCustomerToStroller(id: string, sessionId: string = 'STR_001'): Promise<{ success: boolean; message: string; customer?: any }> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/customers/${encodeURIComponent(id)}/sync-cart`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      const json = await res.json();
+      return { success: res.ok, message: json.message || 'Đã đồng bộ xe đẩy', customer: json.customer };
+    } catch (err: any) {
+      return { success: false, message: err.message || 'Lỗi kết nối' };
+    }
   }
 };
+
+export interface CustomerItem {
+  id: string;
+  name: string;
+  membershipLevel: string;
+  points: number;
+  phoneNumber: string;
+  email?: string;
+  totalSpent?: number;
+  tokenBalance: number;
+  accountNumber?: string;
+  createdAt?: string;
+}
