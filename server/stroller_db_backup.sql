@@ -1,4 +1,4 @@
-﻿--
+--
 -- PostgreSQL database dump
 --
 
@@ -405,298 +405,272 @@ ALTER TABLE ONLY public.strollers ALTER COLUMN id SET DEFAULT nextval('public.st
 -- Data for Name: bank_accounts; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active, created_at) FROM stdin;
-ACC_CUSTOMER_01	Khách Hàng Demo (Anh Nam)	CUST_001	1977040.00	123456	t	2026-09-04 18:09:56.358824+07
-ACC_STORE_MAIN	Siêu Thị Xe Đẩy Thông Minh	STORE_01	122960.00	123456	t	2026-09-04 18:09:56.358824+07
-\.
+INSERT INTO public.bank_accounts VALUES ('ACC_CUSTOMER_01', 'Khách Hàng Demo (Anh Nam)', 'CUST_001', 1977040.00, '123456', true, '2026-09-04 18:09:56.358824+07');
+INSERT INTO public.bank_accounts VALUES ('ACC_STORE_MAIN', 'Siêu Thị Xe Đẩy Thông Minh', 'STORE_01', 122960.00, '123456', true, '2026-09-04 18:09:56.358824+07');
 
 
 --
 -- Data for Name: bank_transactions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.bank_transactions (id, order_id, from_account, to_account, amount, status, idempotency_key, webhook_status, created_at) FROM stdin;
-263f9d4f-989e-416a-833c-c2f4ccf40ce1	ORD_1788520485991	ACC_CUSTOMER_01	ACC_STORE_MAIN	135.00	SUCCESS	ORDER_ORD_1788520485991_ACC_CUSTOMER_01	DELIVERED	2026-09-04 18:14:46.013102+07
-880d1f84-a300-4089-bd3c-dc685da8f32d	ORD_1788581348062	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788581348062_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:09:08.097034+07
-11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c	TEST_DIRECT_4000	ACC_CUSTOMER_01	ACC_STORE_MAIN	10.00	SUCCESS	ORDER_TEST_DIRECT_4000_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:17:23.584612+07
-03af14b6-7366-4940-9ecf-0ad2fe6c7569	TEST_PROXY_FIXED	ACC_CUSTOMER_01	ACC_STORE_MAIN	5.00	SUCCESS	ORDER_TEST_PROXY_FIXED_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:18:57.896921+07
-f7604d5a-7b0d-420f-9ea1-9a1a0e46d014	TEST_NGROK_FIXED	ACC_CUSTOMER_01	ACC_STORE_MAIN	5.00	SUCCESS	ORDER_TEST_NGROK_FIXED_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:19:00.905961+07
-db7ee622-3369-49df-b1dd-1631082fbd28	ORD_1788582071736	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788582071736_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:21:12.140067+07
-12ea541f-4c52-42a6-a1c2-d3d622fb6949	ORD_1788582545633	ACC_CUSTOMER_01	ACC_STORE_MAIN	11250.00	SUCCESS	ORDER_ORD_1788582545633_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:29:15.563472+07
-b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0	ORD_1788583406745	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788583406745_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:43:27.22175+07
-06f7b2d3-37ad-4c3a-961b-b3b988612874	ORD_1788583592180	ACC_CUSTOMER_01	ACC_STORE_MAIN	11250.00	SUCCESS	ORDER_ORD_1788583592180_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:46:51.602584+07
-af37d4c7-4da1-494c-ae92-89219fa49e1b	ORD_1788600777565	ACC_CUSTOMER_01	ACC_STORE_MAIN	30600.00	SUCCESS	ORDER_ORD_1788600777565_ACC_CUSTOMER_01	DELIVERED	2026-09-05 16:33:17.275221+07
-c25e7b96-7587-4e9e-9bae-3ff4614d79b8	ORD_1788972646436	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788972646436_ACC_CUSTOMER_01	DELIVERED	2026-09-09 23:51:06.315052+07
-125c7a78-bf16-43f8-9fbb-af76c8ac6291	ORD_1788974554860	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788974554860_ACC_CUSTOMER_01	DELIVERED	2026-09-10 00:22:41.552667+07
-3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b	ORD_1788975236849	ACC_CUSTOMER_01	ACC_STORE_MAIN	2340.00	SUCCESS	ORDER_ORD_1788975236849_ACC_CUSTOMER_01	DELIVERED	2026-09-10 00:34:08.965132+07
-\.
+INSERT INTO public.bank_transactions VALUES ('263f9d4f-989e-416a-833c-c2f4ccf40ce1', 'ORD_1788520485991', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 135.00, 'SUCCESS', 'ORDER_ORD_1788520485991_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-04 18:14:46.013102+07');
+INSERT INTO public.bank_transactions VALUES ('880d1f84-a300-4089-bd3c-dc685da8f32d', 'ORD_1788581348062', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 13500.00, 'SUCCESS', 'ORDER_ORD_1788581348062_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:09:08.097034+07');
+INSERT INTO public.bank_transactions VALUES ('11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c', 'TEST_DIRECT_4000', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 10.00, 'SUCCESS', 'ORDER_TEST_DIRECT_4000_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:17:23.584612+07');
+INSERT INTO public.bank_transactions VALUES ('03af14b6-7366-4940-9ecf-0ad2fe6c7569', 'TEST_PROXY_FIXED', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 5.00, 'SUCCESS', 'ORDER_TEST_PROXY_FIXED_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:18:57.896921+07');
+INSERT INTO public.bank_transactions VALUES ('f7604d5a-7b0d-420f-9ea1-9a1a0e46d014', 'TEST_NGROK_FIXED', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 5.00, 'SUCCESS', 'ORDER_TEST_NGROK_FIXED_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:19:00.905961+07');
+INSERT INTO public.bank_transactions VALUES ('db7ee622-3369-49df-b1dd-1631082fbd28', 'ORD_1788582071736', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 13500.00, 'SUCCESS', 'ORDER_ORD_1788582071736_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:21:12.140067+07');
+INSERT INTO public.bank_transactions VALUES ('12ea541f-4c52-42a6-a1c2-d3d622fb6949', 'ORD_1788582545633', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 11250.00, 'SUCCESS', 'ORDER_ORD_1788582545633_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:29:15.563472+07');
+INSERT INTO public.bank_transactions VALUES ('b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0', 'ORD_1788583406745', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 13500.00, 'SUCCESS', 'ORDER_ORD_1788583406745_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:43:27.22175+07');
+INSERT INTO public.bank_transactions VALUES ('06f7b2d3-37ad-4c3a-961b-b3b988612874', 'ORD_1788583592180', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 11250.00, 'SUCCESS', 'ORDER_ORD_1788583592180_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 11:46:51.602584+07');
+INSERT INTO public.bank_transactions VALUES ('af37d4c7-4da1-494c-ae92-89219fa49e1b', 'ORD_1788600777565', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 30600.00, 'SUCCESS', 'ORDER_ORD_1788600777565_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-05 16:33:17.275221+07');
+INSERT INTO public.bank_transactions VALUES ('c25e7b96-7587-4e9e-9bae-3ff4614d79b8', 'ORD_1788972646436', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 13500.00, 'SUCCESS', 'ORDER_ORD_1788972646436_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-09 23:51:06.315052+07');
+INSERT INTO public.bank_transactions VALUES ('125c7a78-bf16-43f8-9fbb-af76c8ac6291', 'ORD_1788974554860', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 13500.00, 'SUCCESS', 'ORDER_ORD_1788974554860_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-10 00:22:41.552667+07');
+INSERT INTO public.bank_transactions VALUES ('3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b', 'ORD_1788975236849', 'ACC_CUSTOMER_01', 'ACC_STORE_MAIN', 2340.00, 'SUCCESS', 'ORDER_ORD_1788975236849_ACC_CUSTOMER_01', 'DELIVERED', '2026-09-10 00:34:08.965132+07');
 
 
 --
 -- Data for Name: cart_events; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.cart_events (id, session_id, action, product_id, barcode, ai_class, ai_confidence, delta_weight_g, weight_source, quantity_delta, decision, reasons_json, created_at_ms) FROM stdin;
-1	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	9	8935005801135	lavie_500ml	0.95	500	simulated	1	verified	\N	1788778228145
-2	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	10	6975493200982	banh_sua_chua_20g	0.95	20	simulated	1	verified	\N	1788778228199
-3	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	11	8938556329004	pocari_sweat_500ml	0.95	500	simulated	1	verified	\N	1788778228247
-4	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	12	8936154640613	siro_ho_euca_super_extra_125ml	0.95	150	simulated	1	verified	\N	1788778228301
-5	43e1fe94-96d1-4304-a190-502a0b201aab	add	9	8935005801135	lavie_500ml	0.95	500	simulated	1	accepted	[]	1788965773593
-6	43e1fe94-96d1-4304-a190-502a0b201aab	add	9	8935005801135	lavie_500ml	0.95	-50	simulated	0	rejected	["weight_out_of_tolerance", "weight_direction_mismatch"]	1788965773649
-7	64befa28-e8e0-4840-9122-32ddfe672ac8	add	9	8935005801135	8935005801135	0.98	520	loadcell	0	rejected	["ai_class_mismatch"]	1788971973447
-8	64befa28-e8e0-4840-9122-32ddfe672ac8	add	9	8935005801135	lavie_500ml	0.98	505	loadcell	1	accepted	[]	1788971983772
-9	SESSION_1788971956218	add	9	8935005801135	lavie_500ml	0.98	505	loadcell	1	accepted	[]	1788972024537
-10	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972186852
-11	SESSION_1788971956218	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788972189165
-12	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972189297
-13	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972195993
-14	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972197954
-15	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972199060
-16	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972200783
-17	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972201904
-18	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972209901
-19	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972210724
-20	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972210894
-21	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972212746
-22	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972212907
-23	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972220971
-24	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972221730
-25	SESSION_1788971956218	remove	10	6975493200982	banh_sua_chua_20g	0.99	-20	loadcell	-1	accepted	[]	1788972388946
-26	SESSION_1788971956218	remove	9	8935005801135	lavie_500ml	0.99	-505	loadcell	-1	accepted	[]	1788972534973
-27	SESSION_1788971956218	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788972567541
-28	SESSION_1788971956218	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788972572126
-29	SESSION_1788971956218	remove	9	8935005801135	lavie_500ml	0.99	-505	loadcell	-1	accepted	[]	1788972583165
-30	SESSION_1788971956218	remove	10	6975493200982	banh_sua_chua_20g	0.99	-20	loadcell	0	rejected	["product_not_in_cart"]	1788972619348
-31	SESSION_1788971956218	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788972628406
-32	SESSION_1788971956218	remove	9	8935005801135	lavie_500ml	0.99	-505	loadcell	-1	accepted	[]	1788972635331
-33	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788974530136
-34	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788974538530
-35	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788974540680
-36	d5d3f1d7-5b58-4546-8f4c-31807573b0c0	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788974599432
-37	d5d3f1d7-5b58-4546-8f4c-31807573b0c0	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788974602335
-38	d5d3f1d7-5b58-4546-8f4c-31807573b0c0	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788974604393
-39	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788975201218
-40	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788975203232
-41	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788975213842
-42	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788975217607
-\.
+INSERT INTO public.cart_events VALUES (1, 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 'add', 9, '8935005801135', 'lavie_500ml', 0.95, 500, 'simulated', 1, 'verified', NULL, 1788778228145);
+INSERT INTO public.cart_events VALUES (2, 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.95, 20, 'simulated', 1, 'verified', NULL, 1788778228199);
+INSERT INTO public.cart_events VALUES (3, 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 'add', 11, '8938556329004', 'pocari_sweat_500ml', 0.95, 500, 'simulated', 1, 'verified', NULL, 1788778228247);
+INSERT INTO public.cart_events VALUES (4, 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 'add', 12, '8936154640613', 'siro_ho_euca_super_extra_125ml', 0.95, 150, 'simulated', 1, 'verified', NULL, 1788778228301);
+INSERT INTO public.cart_events VALUES (5, '43e1fe94-96d1-4304-a190-502a0b201aab', 'add', 9, '8935005801135', 'lavie_500ml', 0.95, 500, 'simulated', 1, 'accepted', '[]', 1788965773593);
+INSERT INTO public.cart_events VALUES (6, '43e1fe94-96d1-4304-a190-502a0b201aab', 'add', 9, '8935005801135', 'lavie_500ml', 0.95, -50, 'simulated', 0, 'rejected', '["weight_out_of_tolerance", "weight_direction_mismatch"]', 1788965773649);
+INSERT INTO public.cart_events VALUES (7, '64befa28-e8e0-4840-9122-32ddfe672ac8', 'add', 9, '8935005801135', '8935005801135', 0.98, 520, 'loadcell', 0, 'rejected', '["ai_class_mismatch"]', 1788971973447);
+INSERT INTO public.cart_events VALUES (8, '64befa28-e8e0-4840-9122-32ddfe672ac8', 'add', 9, '8935005801135', 'lavie_500ml', 0.98, 505, 'loadcell', 1, 'accepted', '[]', 1788971983772);
+INSERT INTO public.cart_events VALUES (9, 'SESSION_1788971956218', 'add', 9, '8935005801135', 'lavie_500ml', 0.98, 505, 'loadcell', 1, 'accepted', '[]', 1788972024537);
+INSERT INTO public.cart_events VALUES (10, 'SESSION_1788971956218', 'remove', NULL, 'lavie_500ml', 'lavie_500ml', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972186852);
+INSERT INTO public.cart_events VALUES (11, 'SESSION_1788971956218', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788972189165);
+INSERT INTO public.cart_events VALUES (12, 'SESSION_1788971956218', 'remove', NULL, 'lavie_500ml', 'lavie_500ml', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972189297);
+INSERT INTO public.cart_events VALUES (13, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972195993);
+INSERT INTO public.cart_events VALUES (14, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972197954);
+INSERT INTO public.cart_events VALUES (15, 'SESSION_1788971956218', 'remove', NULL, 'lavie_500ml', 'lavie_500ml', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972199060);
+INSERT INTO public.cart_events VALUES (16, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972200783);
+INSERT INTO public.cart_events VALUES (17, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972201904);
+INSERT INTO public.cart_events VALUES (18, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972209901);
+INSERT INTO public.cart_events VALUES (19, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972210724);
+INSERT INTO public.cart_events VALUES (20, 'SESSION_1788971956218', 'remove', NULL, 'lavie_500ml', 'lavie_500ml', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972210894);
+INSERT INTO public.cart_events VALUES (21, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972212746);
+INSERT INTO public.cart_events VALUES (22, 'SESSION_1788971956218', 'remove', NULL, 'lavie_500ml', 'lavie_500ml', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972212907);
+INSERT INTO public.cart_events VALUES (23, 'SESSION_1788971956218', 'remove', NULL, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972220971);
+INSERT INTO public.cart_events VALUES (24, 'SESSION_1788971956218', 'remove', NULL, 'lavie_500ml', 'lavie_500ml', 1, -500, 'simulated', 0, 'rejected', '["product_not_found"]', 1788972221730);
+INSERT INTO public.cart_events VALUES (25, 'SESSION_1788971956218', 'remove', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, -20, 'loadcell', -1, 'accepted', '[]', 1788972388946);
+INSERT INTO public.cart_events VALUES (26, 'SESSION_1788971956218', 'remove', 9, '8935005801135', 'lavie_500ml', 0.99, -505, 'loadcell', -1, 'accepted', '[]', 1788972534973);
+INSERT INTO public.cart_events VALUES (27, 'SESSION_1788971956218', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788972567541);
+INSERT INTO public.cart_events VALUES (28, 'SESSION_1788971956218', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788972572126);
+INSERT INTO public.cart_events VALUES (29, 'SESSION_1788971956218', 'remove', 9, '8935005801135', 'lavie_500ml', 0.99, -505, 'loadcell', -1, 'accepted', '[]', 1788972583165);
+INSERT INTO public.cart_events VALUES (30, 'SESSION_1788971956218', 'remove', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, -20, 'loadcell', 0, 'rejected', '["product_not_in_cart"]', 1788972619348);
+INSERT INTO public.cart_events VALUES (31, 'SESSION_1788971956218', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788972628406);
+INSERT INTO public.cart_events VALUES (32, 'SESSION_1788971956218', 'remove', 9, '8935005801135', 'lavie_500ml', 0.99, -505, 'loadcell', -1, 'accepted', '[]', 1788972635331);
+INSERT INTO public.cart_events VALUES (33, '918ceee5-f65f-4ef5-a450-3d69ab03f6e6', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788974530136);
+INSERT INTO public.cart_events VALUES (34, '918ceee5-f65f-4ef5-a450-3d69ab03f6e6', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788974538530);
+INSERT INTO public.cart_events VALUES (35, '918ceee5-f65f-4ef5-a450-3d69ab03f6e6', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788974540680);
+INSERT INTO public.cart_events VALUES (36, 'd5d3f1d7-5b58-4546-8f4c-31807573b0c0', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788974599432);
+INSERT INTO public.cart_events VALUES (37, 'd5d3f1d7-5b58-4546-8f4c-31807573b0c0', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788974602335);
+INSERT INTO public.cart_events VALUES (38, 'd5d3f1d7-5b58-4546-8f4c-31807573b0c0', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788974604393);
+INSERT INTO public.cart_events VALUES (39, 'f5951acf-ecf5-44fc-9300-b2937f60b66a', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788975201218);
+INSERT INTO public.cart_events VALUES (40, 'f5951acf-ecf5-44fc-9300-b2937f60b66a', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788975203232);
+INSERT INTO public.cart_events VALUES (41, 'f5951acf-ecf5-44fc-9300-b2937f60b66a', 'add', 10, '6975493200982', 'banh_sua_chua_20g', 0.99, 20, 'loadcell', 1, 'accepted', '[]', 1788975213842);
+INSERT INTO public.cart_events VALUES (42, 'f5951acf-ecf5-44fc-9300-b2937f60b66a', 'add', 9, '8935005801135', 'lavie_500ml', 0.99, 505, 'loadcell', 1, 'accepted', '[]', 1788975217607);
 
 
 --
 -- Data for Name: cart_items; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.cart_items (session_id, product_id, quantity, unit_price_vnd, updated_at_ms) FROM stdin;
-ffaa7c52-2e5b-472b-99d1-22c28fad7e89	9	1	10000	1788778228145
-ffaa7c52-2e5b-472b-99d1-22c28fad7e89	10	1	3000	1788778228199
-ffaa7c52-2e5b-472b-99d1-22c28fad7e89	11	1	15000	1788778228247
-ffaa7c52-2e5b-472b-99d1-22c28fad7e89	12	1	60000	1788778228301
-43e1fe94-96d1-4304-a190-502a0b201aab	9	1	10000	1788965773593
-64befa28-e8e0-4840-9122-32ddfe672ac8	9	1	10000	1788971983772
-SESSION_1788971956218	10	1	3000	1788972628406
-d5d3f1d7-5b58-4546-8f4c-31807573b0c0	10	1	3000	1788974599432
-d5d3f1d7-5b58-4546-8f4c-31807573b0c0	9	2	10000	1788974604393
-\.
+INSERT INTO public.cart_items VALUES ('ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 9, 1, 10000, 1788778228145);
+INSERT INTO public.cart_items VALUES ('ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 10, 1, 3000, 1788778228199);
+INSERT INTO public.cart_items VALUES ('ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 11, 1, 15000, 1788778228247);
+INSERT INTO public.cart_items VALUES ('ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 12, 1, 60000, 1788778228301);
+INSERT INTO public.cart_items VALUES ('43e1fe94-96d1-4304-a190-502a0b201aab', 9, 1, 10000, 1788965773593);
+INSERT INTO public.cart_items VALUES ('64befa28-e8e0-4840-9122-32ddfe672ac8', 9, 1, 10000, 1788971983772);
+INSERT INTO public.cart_items VALUES ('SESSION_1788971956218', 10, 1, 3000, 1788972628406);
+INSERT INTO public.cart_items VALUES ('d5d3f1d7-5b58-4546-8f4c-31807573b0c0', 10, 1, 3000, 1788974599432);
+INSERT INTO public.cart_items VALUES ('d5d3f1d7-5b58-4546-8f4c-31807573b0c0', 9, 2, 10000, 1788974604393);
 
 
 --
 -- Data for Name: cartitems; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.cartitems (sessionid, productid, quantity, addedtime) FROM stdin;
-\.
 
 
 --
 -- Data for Name: customers; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.customers (id, name, membershiplevel, points, phonenumber) FROM stdin;
-CUSTOMER_999	Trần Thị B	Hội viên Kim Cương	8900	0909123456
-CUSTOMER_888	Nguyễn Văn A	Hội viên Vàng	3822	0987654321
-\.
+INSERT INTO public.customers VALUES ('CUSTOMER_999', 'Trần Thị B', 'Hội viên Kim Cương', 8900, '0909123456');
+INSERT INTO public.customers VALUES ('CUSTOMER_888', 'Nguyễn Văn A', 'Hội viên Vàng', 3822, '0987654321');
 
 
 --
 -- Data for Name: ledger_entries; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.ledger_entries (id, transaction_id, account_number, entry_type, amount, balance_after, created_at) FROM stdin;
-2	263f9d4f-989e-416a-833c-c2f4ccf40ce1	ACC_CUSTOMER_01	DEBIT	135.00	865.00	2026-09-04 18:14:46.013102+07
-3	263f9d4f-989e-416a-833c-c2f4ccf40ce1	ACC_STORE_MAIN	CREDIT	135.00	135.00	2026-09-04 18:14:46.013102+07
-4	880d1f84-a300-4089-bd3c-dc685da8f32d	ACC_CUSTOMER_01	DEBIT	13500.00	486500.00	2026-09-05 11:09:08.097034+07
-5	880d1f84-a300-4089-bd3c-dc685da8f32d	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-05 11:09:08.097034+07
-6	11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c	ACC_CUSTOMER_01	DEBIT	10.00	486490.00	2026-09-05 11:17:23.584612+07
-7	11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c	ACC_STORE_MAIN	CREDIT	10.00	10.00	2026-09-05 11:17:23.584612+07
-8	03af14b6-7366-4940-9ecf-0ad2fe6c7569	ACC_CUSTOMER_01	DEBIT	5.00	486485.00	2026-09-05 11:18:57.896921+07
-9	03af14b6-7366-4940-9ecf-0ad2fe6c7569	ACC_STORE_MAIN	CREDIT	5.00	5.00	2026-09-05 11:18:57.896921+07
-10	f7604d5a-7b0d-420f-9ea1-9a1a0e46d014	ACC_CUSTOMER_01	DEBIT	5.00	486480.00	2026-09-05 11:19:00.905961+07
-11	f7604d5a-7b0d-420f-9ea1-9a1a0e46d014	ACC_STORE_MAIN	CREDIT	5.00	5.00	2026-09-05 11:19:00.905961+07
-12	db7ee622-3369-49df-b1dd-1631082fbd28	ACC_CUSTOMER_01	DEBIT	13500.00	472980.00	2026-09-05 11:21:12.140067+07
-13	db7ee622-3369-49df-b1dd-1631082fbd28	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-05 11:21:12.140067+07
-14	12ea541f-4c52-42a6-a1c2-d3d622fb6949	ACC_CUSTOMER_01	DEBIT	11250.00	461730.00	2026-09-05 11:29:15.563472+07
-15	12ea541f-4c52-42a6-a1c2-d3d622fb6949	ACC_STORE_MAIN	CREDIT	11250.00	11250.00	2026-09-05 11:29:15.563472+07
-16	b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0	ACC_CUSTOMER_01	DEBIT	13500.00	448230.00	2026-09-05 11:43:27.22175+07
-17	b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-05 11:43:27.22175+07
-18	06f7b2d3-37ad-4c3a-961b-b3b988612874	ACC_CUSTOMER_01	DEBIT	11250.00	436980.00	2026-09-05 11:46:51.602584+07
-19	06f7b2d3-37ad-4c3a-961b-b3b988612874	ACC_STORE_MAIN	CREDIT	11250.00	11250.00	2026-09-05 11:46:51.602584+07
-20	af37d4c7-4da1-494c-ae92-89219fa49e1b	ACC_CUSTOMER_01	DEBIT	30600.00	406380.00	2026-09-05 16:33:17.275221+07
-21	af37d4c7-4da1-494c-ae92-89219fa49e1b	ACC_STORE_MAIN	CREDIT	30600.00	30600.00	2026-09-05 16:33:17.275221+07
-22	c25e7b96-7587-4e9e-9bae-3ff4614d79b8	ACC_CUSTOMER_01	DEBIT	13500.00	392880.00	2026-09-09 23:51:06.315052+07
-23	c25e7b96-7587-4e9e-9bae-3ff4614d79b8	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-09 23:51:06.315052+07
-24	125c7a78-bf16-43f8-9fbb-af76c8ac6291	ACC_CUSTOMER_01	DEBIT	13500.00	1079380.00	2026-09-10 00:22:41.552667+07
-25	125c7a78-bf16-43f8-9fbb-af76c8ac6291	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-10 00:22:41.552667+07
-26	3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b	ACC_CUSTOMER_01	DEBIT	2340.00	1977040.00	2026-09-10 00:34:08.965132+07
-27	3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b	ACC_STORE_MAIN	CREDIT	2340.00	2340.00	2026-09-10 00:34:08.965132+07
-\.
+INSERT INTO public.ledger_entries VALUES (2, '263f9d4f-989e-416a-833c-c2f4ccf40ce1', 'ACC_CUSTOMER_01', 'DEBIT', 135.00, 865.00, '2026-09-04 18:14:46.013102+07');
+INSERT INTO public.ledger_entries VALUES (3, '263f9d4f-989e-416a-833c-c2f4ccf40ce1', 'ACC_STORE_MAIN', 'CREDIT', 135.00, 135.00, '2026-09-04 18:14:46.013102+07');
+INSERT INTO public.ledger_entries VALUES (4, '880d1f84-a300-4089-bd3c-dc685da8f32d', 'ACC_CUSTOMER_01', 'DEBIT', 13500.00, 486500.00, '2026-09-05 11:09:08.097034+07');
+INSERT INTO public.ledger_entries VALUES (5, '880d1f84-a300-4089-bd3c-dc685da8f32d', 'ACC_STORE_MAIN', 'CREDIT', 13500.00, 13500.00, '2026-09-05 11:09:08.097034+07');
+INSERT INTO public.ledger_entries VALUES (6, '11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c', 'ACC_CUSTOMER_01', 'DEBIT', 10.00, 486490.00, '2026-09-05 11:17:23.584612+07');
+INSERT INTO public.ledger_entries VALUES (7, '11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c', 'ACC_STORE_MAIN', 'CREDIT', 10.00, 10.00, '2026-09-05 11:17:23.584612+07');
+INSERT INTO public.ledger_entries VALUES (8, '03af14b6-7366-4940-9ecf-0ad2fe6c7569', 'ACC_CUSTOMER_01', 'DEBIT', 5.00, 486485.00, '2026-09-05 11:18:57.896921+07');
+INSERT INTO public.ledger_entries VALUES (9, '03af14b6-7366-4940-9ecf-0ad2fe6c7569', 'ACC_STORE_MAIN', 'CREDIT', 5.00, 5.00, '2026-09-05 11:18:57.896921+07');
+INSERT INTO public.ledger_entries VALUES (10, 'f7604d5a-7b0d-420f-9ea1-9a1a0e46d014', 'ACC_CUSTOMER_01', 'DEBIT', 5.00, 486480.00, '2026-09-05 11:19:00.905961+07');
+INSERT INTO public.ledger_entries VALUES (11, 'f7604d5a-7b0d-420f-9ea1-9a1a0e46d014', 'ACC_STORE_MAIN', 'CREDIT', 5.00, 5.00, '2026-09-05 11:19:00.905961+07');
+INSERT INTO public.ledger_entries VALUES (12, 'db7ee622-3369-49df-b1dd-1631082fbd28', 'ACC_CUSTOMER_01', 'DEBIT', 13500.00, 472980.00, '2026-09-05 11:21:12.140067+07');
+INSERT INTO public.ledger_entries VALUES (13, 'db7ee622-3369-49df-b1dd-1631082fbd28', 'ACC_STORE_MAIN', 'CREDIT', 13500.00, 13500.00, '2026-09-05 11:21:12.140067+07');
+INSERT INTO public.ledger_entries VALUES (14, '12ea541f-4c52-42a6-a1c2-d3d622fb6949', 'ACC_CUSTOMER_01', 'DEBIT', 11250.00, 461730.00, '2026-09-05 11:29:15.563472+07');
+INSERT INTO public.ledger_entries VALUES (15, '12ea541f-4c52-42a6-a1c2-d3d622fb6949', 'ACC_STORE_MAIN', 'CREDIT', 11250.00, 11250.00, '2026-09-05 11:29:15.563472+07');
+INSERT INTO public.ledger_entries VALUES (16, 'b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0', 'ACC_CUSTOMER_01', 'DEBIT', 13500.00, 448230.00, '2026-09-05 11:43:27.22175+07');
+INSERT INTO public.ledger_entries VALUES (17, 'b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0', 'ACC_STORE_MAIN', 'CREDIT', 13500.00, 13500.00, '2026-09-05 11:43:27.22175+07');
+INSERT INTO public.ledger_entries VALUES (18, '06f7b2d3-37ad-4c3a-961b-b3b988612874', 'ACC_CUSTOMER_01', 'DEBIT', 11250.00, 436980.00, '2026-09-05 11:46:51.602584+07');
+INSERT INTO public.ledger_entries VALUES (19, '06f7b2d3-37ad-4c3a-961b-b3b988612874', 'ACC_STORE_MAIN', 'CREDIT', 11250.00, 11250.00, '2026-09-05 11:46:51.602584+07');
+INSERT INTO public.ledger_entries VALUES (20, 'af37d4c7-4da1-494c-ae92-89219fa49e1b', 'ACC_CUSTOMER_01', 'DEBIT', 30600.00, 406380.00, '2026-09-05 16:33:17.275221+07');
+INSERT INTO public.ledger_entries VALUES (21, 'af37d4c7-4da1-494c-ae92-89219fa49e1b', 'ACC_STORE_MAIN', 'CREDIT', 30600.00, 30600.00, '2026-09-05 16:33:17.275221+07');
+INSERT INTO public.ledger_entries VALUES (22, 'c25e7b96-7587-4e9e-9bae-3ff4614d79b8', 'ACC_CUSTOMER_01', 'DEBIT', 13500.00, 392880.00, '2026-09-09 23:51:06.315052+07');
+INSERT INTO public.ledger_entries VALUES (23, 'c25e7b96-7587-4e9e-9bae-3ff4614d79b8', 'ACC_STORE_MAIN', 'CREDIT', 13500.00, 13500.00, '2026-09-09 23:51:06.315052+07');
+INSERT INTO public.ledger_entries VALUES (24, '125c7a78-bf16-43f8-9fbb-af76c8ac6291', 'ACC_CUSTOMER_01', 'DEBIT', 13500.00, 1079380.00, '2026-09-10 00:22:41.552667+07');
+INSERT INTO public.ledger_entries VALUES (25, '125c7a78-bf16-43f8-9fbb-af76c8ac6291', 'ACC_STORE_MAIN', 'CREDIT', 13500.00, 13500.00, '2026-09-10 00:22:41.552667+07');
+INSERT INTO public.ledger_entries VALUES (26, '3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b', 'ACC_CUSTOMER_01', 'DEBIT', 2340.00, 1977040.00, '2026-09-10 00:34:08.965132+07');
+INSERT INTO public.ledger_entries VALUES (27, '3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b', 'ACC_STORE_MAIN', 'CREDIT', 2340.00, 2340.00, '2026-09-10 00:34:08.965132+07');
 
 
 --
 -- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.products (id, barcode, name, price, imageurl, category, stock, sku, vision_class, price_vnd, expected_weight_g, weight_tolerance_g, active, created_at_ms, updated_at_ms) FROM stdin;
-1	8934563123456	Sữa tươi tiệt trùng ít đường 1L	34000.00	sua_vinamilk.jpg	Đồ uống	100	\N	\N	34000	0	0	1	1788746300000	1788746300000
-6	8936079015024	Nước khoáng La Vie 500ml	6000.00	lavie_500ml.jpg	Đồ uống	100	\N	\N	6000	0	0	1	1788746300000	1788746300000
-5	8934563123460	Mì tôm Hảo Hảo chua cay	4500.00	hao_hao.jpg	Bánh kẹo	100	\N	\N	4500	0	0	1	1788746300000	1788746300000
-3	8934563123458	Táo Envy New Zealand	125000.00	tao_envy.jpg	Thực phẩm tươi	100	\N	\N	125000	0	0	1	1788746300000	1788746300000
-2	8934563123457	Bơ sáp loại 1 (KG)	45000.00	bo_sap.jpg	Thực phẩm tươi	100	\N	\N	45000	0	0	1	1788746300000	1788746300000
-7	8935001239841	Bánh quy kẹp kem Oreo socola 137g	18000.00	oreo_socola.jpg	Bánh kẹo	100	\N	\N	18000	0	0	1	1788746300000	1788746300000
-8	8935001239842	Nước ngọt Coca Cola lon 330ml	10000.00	coca_cola_330ml.jpg	Đồ uống	100	\N	\N	10000	0	0	1	1788746300000	1788746300000
-4	8934563123459	Nước khoáng Aquafina 500ml	6000.00	aquafina_500ml.jpg	Đồ uống	100	\N	\N	6000	0	0	1	1788746300000	1788746300000
-9	8935005801135	La Vie 500 ml	10000.00	lavie_500ml.jpg	Đồ uống	100	lavie_500ml	lavie_500ml	10000	500	20	1	1788746300000	1788746300000
-10	6975493200982	Bánh Sữa Chua 20g	3000.00	banh_sua_chua.jpg	Đồ uống	100	banh_sua_chua_20g	banh_sua_chua_20g	3000	20	5	1	1788746300000	1788746300000
-11	8938556329004	Pocari Sweat 500 ml	15000.00	pocari_sweat.jpg	Đồ uống	100	pocari_sweat_500ml	pocari_sweat_500ml	15000	500	20	1	1788746300000	1788746300000
-12	8936154640613	Siro EUCA Super Extra 125 ml	60000.00	siro_euca.jpg	Đồ uống	100	siro_ho_euca_super_extra_125ml	siro_ho_euca_super_extra_125ml	60000	150	15	1	1788746300000	1788746300000
-\.
+INSERT INTO public.products VALUES (1, '8934563123456', 'Sữa tươi tiệt trùng ít đường 1L', 34000.00, 'sua_vinamilk.jpg', 'Đồ uống', 100, NULL, NULL, 34000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (6, '8936079015024', 'Nước khoáng La Vie 500ml', 6000.00, 'lavie_500ml.jpg', 'Đồ uống', 100, NULL, NULL, 6000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (5, '8934563123460', 'Mì tôm Hảo Hảo chua cay', 4500.00, 'hao_hao.jpg', 'Bánh kẹo', 100, NULL, NULL, 4500, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (3, '8934563123458', 'Táo Envy New Zealand', 125000.00, 'tao_envy.jpg', 'Thực phẩm tươi', 100, NULL, NULL, 125000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (2, '8934563123457', 'Bơ sáp loại 1 (KG)', 45000.00, 'bo_sap.jpg', 'Thực phẩm tươi', 100, NULL, NULL, 45000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (7, '8935001239841', 'Bánh quy kẹp kem Oreo socola 137g', 18000.00, 'oreo_socola.jpg', 'Bánh kẹo', 100, NULL, NULL, 18000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (8, '8935001239842', 'Nước ngọt Coca Cola lon 330ml', 10000.00, 'coca_cola_330ml.jpg', 'Đồ uống', 100, NULL, NULL, 10000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (4, '8934563123459', 'Nước khoáng Aquafina 500ml', 6000.00, 'aquafina_500ml.jpg', 'Đồ uống', 100, NULL, NULL, 6000, 0, 0, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (9, '8935005801135', 'La Vie 500 ml', 10000.00, 'lavie_500ml.jpg', 'Đồ uống', 100, 'lavie_500ml', 'lavie_500ml', 10000, 500, 20, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (10, '6975493200982', 'Bánh Sữa Chua 20g', 3000.00, 'banh_sua_chua.jpg', 'Đồ uống', 100, 'banh_sua_chua_20g', 'banh_sua_chua_20g', 3000, 20, 5, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (11, '8938556329004', 'Pocari Sweat 500 ml', 15000.00, 'pocari_sweat.jpg', 'Đồ uống', 100, 'pocari_sweat_500ml', 'pocari_sweat_500ml', 15000, 500, 20, 1, 1788746300000, 1788746300000);
+INSERT INTO public.products VALUES (12, '8936154640613', 'Siro EUCA Super Extra 125 ml', 60000.00, 'siro_euca.jpg', 'Đồ uống', 100, 'siro_ho_euca_super_extra_125ml', 'siro_ho_euca_super_extra_125ml', 60000, 150, 15, 1, 1788746300000, 1788746300000);
 
 
 --
 -- Data for Name: sensor_events; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.sensor_events (id, session_id, source, event_type, barcode, ai_class, ai_confidence, weight_g, delta_weight_g, decision, metadata_json, created_at_ms) FROM stdin;
-\.
 
 
 --
 -- Data for Name: shopping_sessions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.shopping_sessions (id, status, started_at_ms, ended_at_ms) FROM stdin;
-ffaa7c52-2e5b-472b-99d1-22c28fad7e89	completed	1788778227958	1788778228384
-43e1fe94-96d1-4304-a190-502a0b201aab	active	1788965773515	\N
-SESSION_TEST	active	1788969983909	\N
-250e1fd3-82c4-4987-b8ab-7bb086e7516b	active	1788971787757	\N
-64befa28-e8e0-4840-9122-32ddfe672ac8	active	1788971799463	\N
-SESSION_1788971956218	active	1788972024537	\N
-8a32c5d1-87a6-44d7-95f0-115e202c2beb	active	1788973460847	\N
-SESSION_DEFAULT	completed	1788971723165	1788974561580
-918ceee5-f65f-4ef5-a450-3d69ab03f6e6	completed	1788974424453	1788974571581
-79fce9b1-c458-4886-be87-9c2f3a43964a	active	1788974571797	\N
-567e2b59-c69d-4061-a306-c18ea44d827e	completed	1788974571866	1788974575192
-d5d3f1d7-5b58-4546-8f4c-31807573b0c0	active	1788974575476	\N
-f5951acf-ecf5-44fc-9300-b2937f60b66a	completed	1788975175264	1788975258799
-241c568f-ec7c-424a-9bd2-b643adaaa698	active	1788975259032	\N
-60406c12-8354-4a0d-a54f-f07407bc6bb4	active	1788975259147	\N
-\.
+INSERT INTO public.shopping_sessions VALUES ('ffaa7c52-2e5b-472b-99d1-22c28fad7e89', 'completed', 1788778227958, 1788778228384);
+INSERT INTO public.shopping_sessions VALUES ('43e1fe94-96d1-4304-a190-502a0b201aab', 'active', 1788965773515, NULL);
+INSERT INTO public.shopping_sessions VALUES ('SESSION_TEST', 'active', 1788969983909, NULL);
+INSERT INTO public.shopping_sessions VALUES ('250e1fd3-82c4-4987-b8ab-7bb086e7516b', 'active', 1788971787757, NULL);
+INSERT INTO public.shopping_sessions VALUES ('64befa28-e8e0-4840-9122-32ddfe672ac8', 'active', 1788971799463, NULL);
+INSERT INTO public.shopping_sessions VALUES ('SESSION_1788971956218', 'active', 1788972024537, NULL);
+INSERT INTO public.shopping_sessions VALUES ('8a32c5d1-87a6-44d7-95f0-115e202c2beb', 'active', 1788973460847, NULL);
+INSERT INTO public.shopping_sessions VALUES ('SESSION_DEFAULT', 'completed', 1788971723165, 1788974561580);
+INSERT INTO public.shopping_sessions VALUES ('918ceee5-f65f-4ef5-a450-3d69ab03f6e6', 'completed', 1788974424453, 1788974571581);
+INSERT INTO public.shopping_sessions VALUES ('79fce9b1-c458-4886-be87-9c2f3a43964a', 'active', 1788974571797, NULL);
+INSERT INTO public.shopping_sessions VALUES ('567e2b59-c69d-4061-a306-c18ea44d827e', 'completed', 1788974571866, 1788974575192);
+INSERT INTO public.shopping_sessions VALUES ('d5d3f1d7-5b58-4546-8f4c-31807573b0c0', 'active', 1788974575476, NULL);
+INSERT INTO public.shopping_sessions VALUES ('f5951acf-ecf5-44fc-9300-b2937f60b66a', 'completed', 1788975175264, 1788975258799);
+INSERT INTO public.shopping_sessions VALUES ('241c568f-ec7c-424a-9bd2-b643adaaa698', 'active', 1788975259032, NULL);
+INSERT INTO public.shopping_sessions VALUES ('60406c12-8354-4a0d-a54f-f07407bc6bb4', 'active', 1788975259147, NULL);
 
 
 --
 -- Data for Name: shoppingsessions; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.shoppingsessions (id, customerid, strollerid, starttime, endtime, status) FROM stdin;
-SESSION_TEST	\N	\N	2026-08-08 18:35:50.66326	\N	active
-43e1fe94-96d1-4304-a190-502a0b201aab	\N	\N	2026-09-09 21:56:13.55041	\N	active
-250e1fd3-82c4-4987-b8ab-7bb086e7516b	\N	\N	2026-09-09 23:36:27.796221	\N	active
-64befa28-e8e0-4840-9122-32ddfe672ac8	\N	\N	2026-09-09 23:36:39.492563	\N	active
-SESSION_1788971956218	\N	\N	2026-09-09 23:40:24.542428	\N	active
-8a32c5d1-87a6-44d7-95f0-115e202c2beb	\N	\N	2026-09-10 00:04:21.022864	\N	active
-SESSION_DEFAULT	\N	\N	2026-08-08 18:51:09.402974	2026-09-10 00:22:41.579009	completed
-918ceee5-f65f-4ef5-a450-3d69ab03f6e6	\N	\N	2026-09-10 00:20:24.492648	2026-09-10 00:22:51.608882	completed
-79fce9b1-c458-4886-be87-9c2f3a43964a	\N	\N	2026-09-10 00:22:51.823429	\N	active
-567e2b59-c69d-4061-a306-c18ea44d827e	\N	\N	2026-09-10 00:22:51.891163	2026-09-10 00:22:55.224058	completed
-d5d3f1d7-5b58-4546-8f4c-31807573b0c0	\N	\N	2026-09-10 00:22:55.502146	\N	active
-f5951acf-ecf5-44fc-9300-b2937f60b66a	\N	\N	2026-09-10 00:32:55.301694	2026-09-10 00:34:18.825318	completed
-241c568f-ec7c-424a-9bd2-b643adaaa698	\N	\N	2026-09-10 00:34:19.057054	\N	active
-60406c12-8354-4a0d-a54f-f07407bc6bb4	\N	\N	2026-09-10 00:34:19.175936	\N	active
-\.
+INSERT INTO public.shoppingsessions VALUES ('SESSION_TEST', NULL, NULL, '2026-08-08 18:35:50.66326', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('43e1fe94-96d1-4304-a190-502a0b201aab', NULL, NULL, '2026-09-09 21:56:13.55041', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('250e1fd3-82c4-4987-b8ab-7bb086e7516b', NULL, NULL, '2026-09-09 23:36:27.796221', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('64befa28-e8e0-4840-9122-32ddfe672ac8', NULL, NULL, '2026-09-09 23:36:39.492563', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('SESSION_1788971956218', NULL, NULL, '2026-09-09 23:40:24.542428', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('8a32c5d1-87a6-44d7-95f0-115e202c2beb', NULL, NULL, '2026-09-10 00:04:21.022864', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('SESSION_DEFAULT', NULL, NULL, '2026-08-08 18:51:09.402974', '2026-09-10 00:22:41.579009', 'completed');
+INSERT INTO public.shoppingsessions VALUES ('918ceee5-f65f-4ef5-a450-3d69ab03f6e6', NULL, NULL, '2026-09-10 00:20:24.492648', '2026-09-10 00:22:51.608882', 'completed');
+INSERT INTO public.shoppingsessions VALUES ('79fce9b1-c458-4886-be87-9c2f3a43964a', NULL, NULL, '2026-09-10 00:22:51.823429', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('567e2b59-c69d-4061-a306-c18ea44d827e', NULL, NULL, '2026-09-10 00:22:51.891163', '2026-09-10 00:22:55.224058', 'completed');
+INSERT INTO public.shoppingsessions VALUES ('d5d3f1d7-5b58-4546-8f4c-31807573b0c0', NULL, NULL, '2026-09-10 00:22:55.502146', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('f5951acf-ecf5-44fc-9300-b2937f60b66a', NULL, NULL, '2026-09-10 00:32:55.301694', '2026-09-10 00:34:18.825318', 'completed');
+INSERT INTO public.shoppingsessions VALUES ('241c568f-ec7c-424a-9bd2-b643adaaa698', NULL, NULL, '2026-09-10 00:34:19.057054', NULL, 'active');
+INSERT INTO public.shoppingsessions VALUES ('60406c12-8354-4a0d-a54f-f07407bc6bb4', NULL, NULL, '2026-09-10 00:34:19.175936', NULL, 'active');
 
 
 --
 -- Data for Name: strollers; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.strollers (id, status) FROM stdin;
-1	in_use
-2	in_use
-3	in_use
-8	maintenance
-15	idle
-16	in_use
-17	in_use
-18	in_use
-\.
+INSERT INTO public.strollers VALUES (1, 'in_use');
+INSERT INTO public.strollers VALUES (2, 'in_use');
+INSERT INTO public.strollers VALUES (3, 'in_use');
+INSERT INTO public.strollers VALUES (8, 'maintenance');
+INSERT INTO public.strollers VALUES (15, 'idle');
+INSERT INTO public.strollers VALUES (16, 'in_use');
+INSERT INTO public.strollers VALUES (17, 'in_use');
+INSERT INTO public.strollers VALUES (18, 'in_use');
 
 
 --
 -- Data for Name: thingsboard_outbox; Type: TABLE DATA; Schema: public; Owner: -
 --
 
-COPY public.thingsboard_outbox (id, reference_type, reference_id, telemetry_json, status, attempts, next_attempt_at_ms, last_error, created_at_ms, sent_at_ms) FROM stdin;
-1	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 1, "cart_total_vnd": 10000, "last_action": "add", "last_barcode": "8935005801135"}	pending	0	\N	\N	1788778228145	\N
-2	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 2, "cart_total_vnd": 13000, "last_action": "add", "last_barcode": "6975493200982"}	pending	0	\N	\N	1788778228199	\N
-3	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 3, "cart_total_vnd": 28000, "last_action": "add", "last_barcode": "8938556329004"}	pending	0	\N	\N	1788778228247	\N
-4	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 4, "cart_total_vnd": 88000, "last_action": "add", "last_barcode": "8936154640613"}	pending	0	\N	\N	1788778228301	\N
-5	session	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "status": "completed", "completed_at_ms": 1788778228384}	pending	0	\N	\N	1788778228384	\N
-6	cart_event	5	{"event_id": 5, "event_type": "cart_decision", "session_id": "43e1fe94-96d1-4304-a190-502a0b201aab", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.95, "delta_weight_g": 500.0, "weight_source": "simulated", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788965773593}	pending	0	\N	\N	1788965773593	\N
-7	cart_event	6	{"event_id": 6, "event_type": "cart_decision", "session_id": "43e1fe94-96d1-4304-a190-502a0b201aab", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.95, "delta_weight_g": -50.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "weight_out_of_tolerance,weight_direction_mismatch", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788965773649}	pending	0	\N	\N	1788965773649	\N
-8	cart_event	7	{"event_id": 7, "event_type": "cart_decision", "session_id": "64befa28-e8e0-4840-9122-32ddfe672ac8", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "8935005801135", "ai_confidence": 0.98, "delta_weight_g": 520.0, "weight_source": "loadcell", "decision": "rejected", "rejection_reasons": "ai_class_mismatch", "cart_quantity": 0, "cart_total_vnd": 0, "timestamp": 1788971973447}	pending	0	\N	\N	1788971973447	\N
-9	cart_event	8	{"event_id": 8, "event_type": "cart_decision", "session_id": "64befa28-e8e0-4840-9122-32ddfe672ac8", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.98, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788971983772}	pending	0	\N	\N	1788971983772	\N
-10	cart_event	9	{"event_id": 9, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.98, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972024537}	pending	0	\N	\N	1788972024537	\N
-11	cart_event	10	{"event_id": 10, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972186852}	pending	0	\N	\N	1788972186852	\N
-12	cart_event	11	{"event_id": 11, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972189165}	pending	0	\N	\N	1788972189165	\N
-13	cart_event	12	{"event_id": 12, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972189297}	pending	0	\N	\N	1788972189297	\N
-14	cart_event	13	{"event_id": 13, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972195993}	pending	0	\N	\N	1788972195993	\N
-15	cart_event	14	{"event_id": 14, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972197954}	pending	0	\N	\N	1788972197954	\N
-16	cart_event	15	{"event_id": 15, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972199060}	pending	0	\N	\N	1788972199060	\N
-17	cart_event	16	{"event_id": 16, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972200783}	pending	0	\N	\N	1788972200783	\N
-18	cart_event	17	{"event_id": 17, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972201904}	pending	0	\N	\N	1788972201904	\N
-19	cart_event	18	{"event_id": 18, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972209901}	pending	0	\N	\N	1788972209901	\N
-20	cart_event	19	{"event_id": 19, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972210724}	pending	0	\N	\N	1788972210724	\N
-21	cart_event	20	{"event_id": 20, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972210894}	pending	0	\N	\N	1788972210894	\N
-22	cart_event	21	{"event_id": 21, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972212746}	pending	0	\N	\N	1788972212746	\N
-23	cart_event	22	{"event_id": 22, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972212907}	pending	0	\N	\N	1788972212907	\N
-24	cart_event	23	{"event_id": 23, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972220971}	pending	0	\N	\N	1788972220971	\N
-25	cart_event	24	{"event_id": 24, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972221730}	pending	0	\N	\N	1788972221730	\N
-26	cart_event	25	{"event_id": 25, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": -20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972388946}	pending	0	\N	\N	1788972388946	\N
-27	cart_event	26	{"event_id": 26, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 0, "cart_total_vnd": 0, "timestamp": 1788972534973}	pending	0	\N	\N	1788972534973	\N
-28	cart_event	27	{"event_id": 27, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972567541}	pending	0	\N	\N	1788972567541	\N
-29	cart_event	28	{"event_id": 28, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 20000, "timestamp": 1788972572126}	pending	0	\N	\N	1788972572126	\N
-30	cart_event	29	{"event_id": 29, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972583165}	pending	0	\N	\N	1788972583165	\N
-31	cart_event	30	{"event_id": 30, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": -20.0, "weight_source": "loadcell", "decision": "rejected", "rejection_reasons": "product_not_in_cart", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972619348}	pending	0	\N	\N	1788972619348	\N
-32	cart_event	31	{"event_id": 31, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972628406}	pending	0	\N	\N	1788972628406	\N
-33	cart_event	32	{"event_id": 32, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788972635331}	pending	0	\N	\N	1788972635331	\N
-34	qr_payment	ORD_1788972646436	{"event":"qr_payment_completed","order_id":"ORD_1788972646436","session_id":"SESSION_DEFAULT","amount_tokens":13500,"transaction_id":"c25e7b96-7587-4e9e-9bae-3ff4614d79b8","completed_at_ms":1788972666351}	pending	0	\N	\N	1788972666351	\N
-35	cart_event	33	{"event_id": 33, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788974530136}	pending	0	\N	\N	1788974530136	\N
-36	cart_event	34	{"event_id": 34, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788974538530}	pending	0	\N	\N	1788974538530	\N
-37	cart_event	35	{"event_id": 35, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 16000, "timestamp": 1788974540680}	pending	0	\N	\N	1788974540680	\N
-38	qr_payment	ORD_1788974554860	{"event":"qr_payment_completed","order_id":"ORD_1788974554860","session_id":"SESSION_DEFAULT","amount_tokens":13500,"transaction_id":"125c7a78-bf16-43f8-9fbb-af76c8ac6291","completed_at_ms":1788974561580}	pending	0	\N	\N	1788974561580	\N
-39	session	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	{"session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "status": "completed", "completed_at_ms": 1788974571479}	pending	0	\N	\N	1788974571479	\N
-40	session	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	{"session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "status": "completed", "completed_at_ms": 1788974571581}	pending	0	\N	\N	1788974571581	\N
-41	session	567e2b59-c69d-4061-a306-c18ea44d827e	{"session_id": "567e2b59-c69d-4061-a306-c18ea44d827e", "status": "completed", "completed_at_ms": 1788974575192}	pending	0	\N	\N	1788974575192	\N
-42	cart_event	36	{"event_id": 36, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788974599432}	pending	0	\N	\N	1788974599432	\N
-43	cart_event	37	{"event_id": 37, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788974602335}	pending	0	\N	\N	1788974602335	\N
-44	cart_event	38	{"event_id": 38, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 23000, "timestamp": 1788974604393}	pending	0	\N	\N	1788974604393	\N
-45	cart_event	39	{"event_id": 39, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788975201218}	pending	0	\N	\N	1788975201218	\N
-46	cart_event	40	{"event_id": 40, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788975203232}	pending	0	\N	\N	1788975203232	\N
-47	cart_event	41	{"event_id": 41, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 16000, "timestamp": 1788975213842}	pending	0	\N	\N	1788975213842	\N
-48	cart_event	42	{"event_id": 42, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 4, "cart_total_vnd": 26000, "timestamp": 1788975217607}	pending	0	\N	\N	1788975217607	\N
-49	qr_payment	ORD_1788975236849	{"event":"qr_payment_completed","order_id":"ORD_1788975236849","session_id":"f5951acf-ecf5-44fc-9300-b2937f60b66a","amount_tokens":2340,"transaction_id":"3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b","completed_at_ms":1788975248989}	pending	0	\N	\N	1788975248989	\N
-50	session	f5951acf-ecf5-44fc-9300-b2937f60b66a	{"session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "status": "completed", "completed_at_ms": 1788975258652}	pending	0	\N	\N	1788975258652	\N
-51	session	f5951acf-ecf5-44fc-9300-b2937f60b66a	{"session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "status": "completed", "completed_at_ms": 1788975258799}	pending	0	\N	\N	1788975258799	\N
-\.
+INSERT INTO public.thingsboard_outbox VALUES (1, 'cart', 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', '{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 1, "cart_total_vnd": 10000, "last_action": "add", "last_barcode": "8935005801135"}', 'pending', 0, NULL, NULL, 1788778228145, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (2, 'cart', 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', '{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 2, "cart_total_vnd": 13000, "last_action": "add", "last_barcode": "6975493200982"}', 'pending', 0, NULL, NULL, 1788778228199, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (3, 'cart', 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', '{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 3, "cart_total_vnd": 28000, "last_action": "add", "last_barcode": "8938556329004"}', 'pending', 0, NULL, NULL, 1788778228247, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (4, 'cart', 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', '{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 4, "cart_total_vnd": 88000, "last_action": "add", "last_barcode": "8936154640613"}', 'pending', 0, NULL, NULL, 1788778228301, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (5, 'session', 'ffaa7c52-2e5b-472b-99d1-22c28fad7e89', '{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "status": "completed", "completed_at_ms": 1788778228384}', 'pending', 0, NULL, NULL, 1788778228384, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (6, 'cart_event', '5', '{"event_id": 5, "event_type": "cart_decision", "session_id": "43e1fe94-96d1-4304-a190-502a0b201aab", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.95, "delta_weight_g": 500.0, "weight_source": "simulated", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788965773593}', 'pending', 0, NULL, NULL, 1788965773593, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (7, 'cart_event', '6', '{"event_id": 6, "event_type": "cart_decision", "session_id": "43e1fe94-96d1-4304-a190-502a0b201aab", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.95, "delta_weight_g": -50.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "weight_out_of_tolerance,weight_direction_mismatch", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788965773649}', 'pending', 0, NULL, NULL, 1788965773649, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (8, 'cart_event', '7', '{"event_id": 7, "event_type": "cart_decision", "session_id": "64befa28-e8e0-4840-9122-32ddfe672ac8", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "8935005801135", "ai_confidence": 0.98, "delta_weight_g": 520.0, "weight_source": "loadcell", "decision": "rejected", "rejection_reasons": "ai_class_mismatch", "cart_quantity": 0, "cart_total_vnd": 0, "timestamp": 1788971973447}', 'pending', 0, NULL, NULL, 1788971973447, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (9, 'cart_event', '8', '{"event_id": 8, "event_type": "cart_decision", "session_id": "64befa28-e8e0-4840-9122-32ddfe672ac8", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.98, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788971983772}', 'pending', 0, NULL, NULL, 1788971983772, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (10, 'cart_event', '9', '{"event_id": 9, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.98, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972024537}', 'pending', 0, NULL, NULL, 1788972024537, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (11, 'cart_event', '10', '{"event_id": 10, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972186852}', 'pending', 0, NULL, NULL, 1788972186852, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (12, 'cart_event', '11', '{"event_id": 11, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972189165}', 'pending', 0, NULL, NULL, 1788972189165, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (13, 'cart_event', '12', '{"event_id": 12, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972189297}', 'pending', 0, NULL, NULL, 1788972189297, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (14, 'cart_event', '13', '{"event_id": 13, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972195993}', 'pending', 0, NULL, NULL, 1788972195993, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (15, 'cart_event', '14', '{"event_id": 14, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972197954}', 'pending', 0, NULL, NULL, 1788972197954, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (16, 'cart_event', '15', '{"event_id": 15, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972199060}', 'pending', 0, NULL, NULL, 1788972199060, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (17, 'cart_event', '16', '{"event_id": 16, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972200783}', 'pending', 0, NULL, NULL, 1788972200783, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (18, 'cart_event', '17', '{"event_id": 17, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972201904}', 'pending', 0, NULL, NULL, 1788972201904, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (19, 'cart_event', '18', '{"event_id": 18, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972209901}', 'pending', 0, NULL, NULL, 1788972209901, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (20, 'cart_event', '19', '{"event_id": 19, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972210724}', 'pending', 0, NULL, NULL, 1788972210724, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (21, 'cart_event', '20', '{"event_id": 20, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972210894}', 'pending', 0, NULL, NULL, 1788972210894, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (22, 'cart_event', '21', '{"event_id": 21, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972212746}', 'pending', 0, NULL, NULL, 1788972212746, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (23, 'cart_event', '22', '{"event_id": 22, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972212907}', 'pending', 0, NULL, NULL, 1788972212907, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (24, 'cart_event', '23', '{"event_id": 23, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972220971}', 'pending', 0, NULL, NULL, 1788972220971, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (25, 'cart_event', '24', '{"event_id": 24, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972221730}', 'pending', 0, NULL, NULL, 1788972221730, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (26, 'cart_event', '25', '{"event_id": 25, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": -20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972388946}', 'pending', 0, NULL, NULL, 1788972388946, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (27, 'cart_event', '26', '{"event_id": 26, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 0, "cart_total_vnd": 0, "timestamp": 1788972534973}', 'pending', 0, NULL, NULL, 1788972534973, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (28, 'cart_event', '27', '{"event_id": 27, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972567541}', 'pending', 0, NULL, NULL, 1788972567541, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (29, 'cart_event', '28', '{"event_id": 28, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 20000, "timestamp": 1788972572126}', 'pending', 0, NULL, NULL, 1788972572126, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (30, 'cart_event', '29', '{"event_id": 29, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972583165}', 'pending', 0, NULL, NULL, 1788972583165, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (31, 'cart_event', '30', '{"event_id": 30, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": -20.0, "weight_source": "loadcell", "decision": "rejected", "rejection_reasons": "product_not_in_cart", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972619348}', 'pending', 0, NULL, NULL, 1788972619348, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (32, 'cart_event', '31', '{"event_id": 31, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972628406}', 'pending', 0, NULL, NULL, 1788972628406, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (33, 'cart_event', '32', '{"event_id": 32, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788972635331}', 'pending', 0, NULL, NULL, 1788972635331, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (34, 'qr_payment', 'ORD_1788972646436', '{"event":"qr_payment_completed","order_id":"ORD_1788972646436","session_id":"SESSION_DEFAULT","amount_tokens":13500,"transaction_id":"c25e7b96-7587-4e9e-9bae-3ff4614d79b8","completed_at_ms":1788972666351}', 'pending', 0, NULL, NULL, 1788972666351, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (35, 'cart_event', '33', '{"event_id": 33, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788974530136}', 'pending', 0, NULL, NULL, 1788974530136, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (36, 'cart_event', '34', '{"event_id": 34, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788974538530}', 'pending', 0, NULL, NULL, 1788974538530, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (37, 'cart_event', '35', '{"event_id": 35, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 16000, "timestamp": 1788974540680}', 'pending', 0, NULL, NULL, 1788974540680, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (38, 'qr_payment', 'ORD_1788974554860', '{"event":"qr_payment_completed","order_id":"ORD_1788974554860","session_id":"SESSION_DEFAULT","amount_tokens":13500,"transaction_id":"125c7a78-bf16-43f8-9fbb-af76c8ac6291","completed_at_ms":1788974561580}', 'pending', 0, NULL, NULL, 1788974561580, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (39, 'session', '918ceee5-f65f-4ef5-a450-3d69ab03f6e6', '{"session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "status": "completed", "completed_at_ms": 1788974571479}', 'pending', 0, NULL, NULL, 1788974571479, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (40, 'session', '918ceee5-f65f-4ef5-a450-3d69ab03f6e6', '{"session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "status": "completed", "completed_at_ms": 1788974571581}', 'pending', 0, NULL, NULL, 1788974571581, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (41, 'session', '567e2b59-c69d-4061-a306-c18ea44d827e', '{"session_id": "567e2b59-c69d-4061-a306-c18ea44d827e", "status": "completed", "completed_at_ms": 1788974575192}', 'pending', 0, NULL, NULL, 1788974575192, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (42, 'cart_event', '36', '{"event_id": 36, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788974599432}', 'pending', 0, NULL, NULL, 1788974599432, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (43, 'cart_event', '37', '{"event_id": 37, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788974602335}', 'pending', 0, NULL, NULL, 1788974602335, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (44, 'cart_event', '38', '{"event_id": 38, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 23000, "timestamp": 1788974604393}', 'pending', 0, NULL, NULL, 1788974604393, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (45, 'cart_event', '39', '{"event_id": 39, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788975201218}', 'pending', 0, NULL, NULL, 1788975201218, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (46, 'cart_event', '40', '{"event_id": 40, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788975203232}', 'pending', 0, NULL, NULL, 1788975203232, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (47, 'cart_event', '41', '{"event_id": 41, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 16000, "timestamp": 1788975213842}', 'pending', 0, NULL, NULL, 1788975213842, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (48, 'cart_event', '42', '{"event_id": 42, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 4, "cart_total_vnd": 26000, "timestamp": 1788975217607}', 'pending', 0, NULL, NULL, 1788975217607, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (49, 'qr_payment', 'ORD_1788975236849', '{"event":"qr_payment_completed","order_id":"ORD_1788975236849","session_id":"f5951acf-ecf5-44fc-9300-b2937f60b66a","amount_tokens":2340,"transaction_id":"3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b","completed_at_ms":1788975248989}', 'pending', 0, NULL, NULL, 1788975248989, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (50, 'session', 'f5951acf-ecf5-44fc-9300-b2937f60b66a', '{"session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "status": "completed", "completed_at_ms": 1788975258652}', 'pending', 0, NULL, NULL, 1788975258652, NULL);
+INSERT INTO public.thingsboard_outbox VALUES (51, 'session', 'f5951acf-ecf5-44fc-9300-b2937f60b66a', '{"session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "status": "completed", "completed_at_ms": 1788975258799}', 'pending', 0, NULL, NULL, 1788975258799, NULL);
 
 
 --
