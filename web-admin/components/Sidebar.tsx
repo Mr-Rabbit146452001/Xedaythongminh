@@ -16,28 +16,59 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Sản phẩm', href: '/products', icon: 'inventory_2' },
   { name: 'Kho hàng', href: '/inventory', icon: 'warehouse' },
   { name: 'Smart Cart', href: '/smart-cart', icon: 'shopping_basket', badge: 'IoT' },
-  { name: 'Khách hàng', href: '#', icon: 'group' },
+  { name: 'Khách hàng (Mobile)', href: '/customer', icon: 'smartphone', badge: 'PWA' },
   { name: 'Khuyến mãi', href: '#', icon: 'sell' },
   { name: 'Báo cáo', href: '#', icon: 'assessment' },
   { name: 'Nhân viên', href: '#', icon: 'badge' },
   { name: 'Cài đặt', href: '#', icon: 'settings' },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-sidebar-width bg-surface-container-lowest border-r border-outline-variant/30 flex flex-col py-6 px-4 z-50">
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-3 mb-8">
-        <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-white shadow-sm">
-          <span className="material-symbols-outlined text-2xl">shopping_basket</span>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpen && (
+        <div
+          onClick={onClose}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 md:hidden transition-opacity duration-300 animate-in fade-in"
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Drawer */}
+      <aside
+        className={`fixed left-0 top-0 h-screen w-[280px] md:w-sidebar-width bg-surface-container-lowest border-r border-outline-variant/30 flex flex-col py-6 px-4 z-50 transition-transform duration-300 ease-in-out md:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
+        {/* Brand & Mobile Close Button */}
+        <div className="flex items-center justify-between px-2 mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center text-white shadow-sm">
+              <span className="material-symbols-outlined text-2xl">shopping_basket</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-primary tracking-tight">SMART CART</h1>
+              <p className="text-xs font-medium text-on-surface-variant">Retail Intelligence</p>
+            </div>
+          </div>
+
+          {/* Close button on mobile */}
+          <button
+            onClick={onClose}
+            className="md:hidden p-2 text-on-surface-variant hover:text-primary rounded-xl hover:bg-surface-container-high transition-colors"
+            title="Đóng menu"
+          >
+            <span className="material-symbols-outlined text-xl">close</span>
+          </button>
         </div>
-        <div>
-          <h1 className="text-xl font-bold text-primary tracking-tight">SMART CART</h1>
-          <p className="text-xs font-medium text-on-surface-variant">Retail Intelligence</p>
-        </div>
-      </div>
 
       {/* Navigation Links */}
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto pr-1">
@@ -47,6 +78,7 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
+              onClick={onClose}
               className={`flex items-center justify-between px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-200 ${
                 isActive
                   ? 'bg-primary-fixed text-on-primary-fixed-variant shadow-sm'
@@ -77,6 +109,7 @@ export default function Sidebar() {
       <div className="mt-auto border-t border-outline-variant/30 pt-4 flex flex-col gap-1 text-sm font-semibold text-on-surface-variant">
         <Link
           href="#"
+          onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 rounded-xl hover:text-primary hover:bg-surface-container-high transition-colors"
         >
           <span className="material-symbols-outlined text-xl">account_circle</span>
@@ -84,6 +117,7 @@ export default function Sidebar() {
         </Link>
         <Link
           href="#"
+          onClick={onClose}
           className="flex items-center gap-3 px-4 py-3 rounded-xl hover:text-danger hover:bg-error-container/40 transition-colors"
         >
           <span className="material-symbols-outlined text-xl">logout</span>
@@ -91,5 +125,6 @@ export default function Sidebar() {
         </Link>
       </div>
     </aside>
+    </>
   );
 }

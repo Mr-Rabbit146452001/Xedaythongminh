@@ -1,18 +1,31 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface TopbarProps {
   onRefresh?: () => void;
+  onToggleMobileSidebar?: () => void;
 }
 
-export default function Topbar({ onRefresh }: TopbarProps) {
+export default function Topbar({ onRefresh, onToggleMobileSidebar }: TopbarProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   return (
-    <header className="fixed top-0 right-0 w-[calc(100%-260px)] h-topbar-height bg-surface-container-lowest/90 border-b border-outline-variant/30 backdrop-blur-md shadow-sm flex justify-between items-center px-gutter-md z-40">
+    <header className="fixed top-0 right-0 w-full md:w-[calc(100%-260px)] h-topbar-height bg-surface-container-lowest/90 border-b border-outline-variant/30 backdrop-blur-md shadow-sm flex justify-between items-center px-3 sm:px-gutter-md z-40 transition-all">
+      {/* Mobile Hamburger Menu Toggle */}
+      <button
+        type="button"
+        onClick={onToggleMobileSidebar}
+        className="md:hidden p-2 -ml-1 mr-2 text-on-surface-variant hover:text-primary rounded-xl hover:bg-surface-container-high transition-colors active:scale-95"
+        title="Mở menu quản trị"
+        aria-label="Mở menu"
+      >
+        <span className="material-symbols-outlined text-2xl">menu</span>
+      </button>
+
       {/* Search Input */}
-      <div className="flex-1 max-w-md relative">
+      <div className="flex-1 max-w-xs sm:max-w-md relative">
         <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-xl">
           search
         </span>
@@ -27,6 +40,16 @@ export default function Topbar({ onRefresh }: TopbarProps) {
 
       {/* Action Buttons & Avatar */}
       <div className="flex items-center gap-2">
+        {/* Switch View Button to Mobile Customer */}
+        <Link
+          href="/customer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/30 text-xs font-bold transition-all active:scale-95 shadow-sm"
+          title="Chuyển sang giao diện Mobile Khách Hàng (PWA)"
+        >
+          <span className="material-symbols-outlined text-base text-emerald-600">smartphone</span>
+          <span className="hidden md:inline">Giao Diện Khách Hàng</span>
+        </Link>
+
         <button
           onClick={onRefresh}
           title="Làm mới dữ liệu"

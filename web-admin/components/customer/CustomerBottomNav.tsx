@@ -16,31 +16,35 @@ export default function CustomerBottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur-md border-t border-slate-800">
-      <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-around">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex flex-col items-center justify-center w-16 py-1 transition-all duration-200 ${
-                isActive
-                  ? 'text-emerald-400 font-semibold scale-105'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform ${isActive ? 'stroke-[2.5]' : 'stroke-[1.75]'}`} />
-                {isActive && (
-                  <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-emerald-400 animate-pulse" />
-                )}
-              </div>
-              <span className="text-[11px] mt-1 tracking-tight">{item.label}</span>
-            </Link>
-          );
-        })}
+    <nav className="fixed md:absolute bottom-0 left-0 right-0 z-50 pointer-events-none">
+      <div className="w-full max-w-md mx-auto pointer-events-auto">
+        <div className="mx-3 mb-2 sm:mb-3 bg-slate-950/90 backdrop-blur-2xl border border-slate-800/80 rounded-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.7),0_0_20px_rgba(16,185,129,0.08)] px-2 py-1.5 flex items-center justify-around">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`relative flex flex-col items-center justify-center min-w-[64px] min-h-[48px] py-1 px-2 rounded-xl transition-all duration-200 select-none active:scale-95 ${
+                  isActive
+                    ? 'text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 shadow-sm shadow-emerald-500/20'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+                }`}
+              >
+                <div className="relative">
+                  <Icon className={`w-5 h-5 transition-transform ${isActive ? 'stroke-[2.5] scale-110 text-emerald-400' : 'stroke-[1.75]'}`} />
+                  {isActive && (
+                    <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                  )}
+                </div>
+                <span className={`text-[11px] mt-1 tracking-tight ${isActive ? 'text-emerald-400 font-bold' : 'font-medium'}`}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </nav>
   );

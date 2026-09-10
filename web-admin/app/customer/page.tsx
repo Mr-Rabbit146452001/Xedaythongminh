@@ -2,21 +2,22 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { 
   ShoppingBag, 
-  AlertTriangle, 
   ArrowRight, 
   QrCode, 
   Sparkles, 
   CheckCircle2, 
   Coins, 
   ShieldAlert,
-  Plus,
-  Minus
+  PackageSearch,
+  ExternalLink,
+  Tag,
+  Layers,
+  Check
 } from 'lucide-react';
 import MobileHeader from '@/components/customer/MobileHeader';
-import { CustomerApiService, CustomerCartItem, CustomerCartSummary } from '@/services/customerApi';
+import { CustomerApiService, CustomerCartSummary } from '@/services/customerApi';
 
 export default function CustomerHomePage() {
   const [cart, setCart] = useState<CustomerCartSummary>({
@@ -92,7 +93,8 @@ export default function CustomerHomePage() {
   const tokenAmount = Math.ceil(cart.totalAmount / 10);
 
   return (
-    <div className="flex flex-col flex-1">
+    <div className="flex flex-col flex-1 pb-10">
+      {/* Mobile Top App Bar */}
       <MobileHeader 
         strollerId={strollerId} 
         onRefresh={() => fetchCart(true)} 
@@ -120,7 +122,7 @@ export default function CustomerHomePage() {
             {loginStatus !== 'success' && (
               <button
                 onClick={() => confirmLoginOnCart(pendingSession)}
-                className="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-md active:scale-95 transition-all"
+                className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-md active:scale-95 transition-all"
               >
                 Đăng nhập
               </button>
@@ -128,75 +130,87 @@ export default function CustomerHomePage() {
           </div>
         )}
 
-        {/* Banner trạng thái xe đẩy */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-slate-700/60 rounded-2xl p-3.5 shadow-lg flex items-center justify-between">
+        {/* Card Trạng Thái Xe Đẩy & Phiên IoT */}
+        <div className="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 rounded-3xl p-4 shadow-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-              <QrCode className="w-5 h-5" />
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
+              <QrCode className="w-6 h-6" />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs text-slate-400">Phiên mua sắm</span>
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-medium">Phiên mua sắm IoT</span>
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                </span>
               </div>
-              <p className="text-sm font-bold text-slate-100">
-                Xe đẩy: <span className="text-emerald-400">{strollerId}</span>
+              <p className="text-base font-black text-slate-100 mt-0.5 tracking-tight">
+                Xe: <span className="text-emerald-400 font-mono">{strollerId}</span>
               </p>
             </div>
           </div>
           <Link
             href="/customer/scan"
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-slate-200 transition-all active:scale-95"
+            className="px-3.5 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-xs font-bold text-slate-200 transition-all active:scale-95 flex items-center gap-1.5 shadow-sm"
           >
-            Đổi xe
+            <span>Đổi xe</span>
           </Link>
         </div>
 
         {/* Cảnh báo trọng lượng bất thường nếu có */}
         {cart.anomalyDetected && (
-          <div className="bg-rose-500/10 border border-rose-500/40 rounded-2xl p-3.5 flex items-start gap-3 animate-pulse">
+          <div className="bg-rose-500/10 border border-rose-500/40 rounded-2xl p-3.5 flex items-start gap-3 animate-pulse shadow-lg shadow-rose-500/5">
             <ShieldAlert className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
             <div className="text-xs">
               <p className="font-bold text-rose-300">Cảnh báo chênh lệch trọng lượng!</p>
-              <p className="text-rose-200/80 mt-0.5">
-                Hệ thống phát hiện trọng lượng trong giỏ không khớp với mã quét. Vui lòng kiểm tra lại món hàng.
+              <p className="text-rose-200/80 mt-0.5 leading-relaxed">
+                Hệ thống cảm biến phát hiện trọng lượng trong giỏ không khớp với mã sản phẩm vừa quét. Vui lòng kiểm tra lại món hàng.
               </p>
             </div>
           </div>
         )}
 
-        {/* Tiêu đề danh sách giỏ hàng */}
+        {/* Tiêu đề danh sách giỏ hàng & Badge số lượng */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
-            <ShoppingBag className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
-              Giỏ Hàng Trong Xe ({cart.totalQuantity})
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+            <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+              Sản Phẩm Trong Xe
             </h2>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/30">
+              {cart.totalQuantity}
+            </span>
           </div>
-          <span className="text-xs text-slate-400">Tự động đồng bộ</span>
+          <span className="text-[11px] text-slate-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Live Sync
+          </span>
         </div>
 
-        {/* Danh sách món hàng */}
+        {/* Danh sách món hàng vuốt chạm mượt mà */}
         {isLoading ? (
-          <div className="space-y-3 py-8">
+          <div className="space-y-3 py-4">
             {[1, 2, 3].map((i) => (
               <div key={i} className="h-20 bg-slate-900/60 rounded-2xl animate-pulse border border-slate-800" />
             ))}
           </div>
         ) : cart.items.length === 0 ? (
           <div className="bg-slate-900/40 border border-dashed border-slate-800 rounded-3xl p-8 text-center flex flex-col items-center justify-center my-4">
-            <div className="w-16 h-16 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 mb-3">
-              <ShoppingBag className="w-8 h-8 stroke-[1.5]" />
+            <div className="w-16 h-16 rounded-3xl bg-slate-800/60 border border-slate-700/40 flex items-center justify-center text-slate-500 mb-3 shadow-inner">
+              <ShoppingBag className="w-8 h-8 stroke-[1.5] text-slate-400" />
             </div>
             <h3 className="text-base font-bold text-slate-200 mb-1">Giỏ hàng đang trống</h3>
-            <p className="text-xs text-slate-400 max-w-[240px] leading-relaxed mb-4">
+            <p className="text-xs text-slate-400 max-w-[240px] leading-relaxed mb-5">
               Hãy quét mã vạch sản phẩm và đặt vào xe đẩy thông minh để bắt đầu mua sắm!
             </p>
             <Link
               href="/customer/products"
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-emerald-400 border border-emerald-500/20 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 active:scale-95"
             >
-              Xem danh mục sản phẩm
+              <PackageSearch className="w-4 h-4" />
+              <span>Khám phá sản phẩm</span>
             </Link>
           </div>
         ) : (
@@ -206,38 +220,51 @@ export default function CustomerHomePage() {
               return (
                 <div
                   key={item.Id || item.Barcode}
-                  className="bg-slate-900/90 border border-slate-800/90 hover:border-slate-700/80 rounded-2xl p-3 flex items-center gap-3 shadow-md transition-all"
+                  className="bg-slate-900/90 border border-slate-800/80 hover:border-emerald-500/40 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-md transition-all active:scale-[0.99]"
                 >
-                  <div className="w-14 h-14 rounded-xl bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700/50">
+                  {/* Ảnh sản phẩm */}
+                  <div className="w-16 h-16 rounded-xl bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700/60 relative">
                     {item.ImageUrl ? (
                       <img
                         src={`/images/${item.ImageUrl.replace(/^\/images\//, '')}`}
                         alt={item.Name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          // Fallback icon khi ảnh lỗi
                           (e.target as HTMLElement).style.display = 'none';
                         }}
                       />
                     ) : (
-                      <ShoppingBag className="w-6 h-6 text-slate-600" />
+                      <ShoppingBag className="w-7 h-7 text-slate-600" />
                     )}
+                    {/* Badge số lượng trên ảnh */}
+                    <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-bold font-mono text-emerald-400 border border-emerald-500/30">
+                      x{item.Quantity}
+                    </span>
                   </div>
 
+                  {/* Thông tin sản phẩm */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-semibold text-slate-100 truncate">{item.Name}</h4>
-                    <p className="text-xs text-slate-400 mt-0.5">
-                      {item.Price.toLocaleString('vi-VN')} đ × <b className="text-emerald-400">{item.Quantity}</b>
+                    <h4 className="text-sm font-bold text-slate-100 truncate tracking-tight">
+                      {item.Name}
+                    </h4>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {item.Price.toLocaleString('vi-VN')} đ × <span className="font-bold text-emerald-400">{item.Quantity}</span>
                     </p>
-                    <span className="text-[10px] text-slate-500 font-mono">Barcode: {item.Barcode}</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] text-slate-500 font-mono bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/50">
+                        {item.Barcode}
+                      </span>
+                    </div>
                   </div>
 
+                  {/* Giá thành & Token */}
                   <div className="text-right flex-shrink-0">
-                    <span className="text-sm font-bold text-slate-100 block">
+                    <span className="text-sm font-black text-slate-100 block tracking-tight">
                       {itemTotal.toLocaleString('vi-VN')} đ
                     </span>
-                    <span className="text-[11px] text-emerald-400 font-medium block">
-                      ≈ {Math.ceil(itemTotal / 10).toLocaleString('vi-VN')} Token
+                    <span className="text-[11px] text-emerald-400 font-bold flex items-center justify-end gap-1 mt-0.5">
+                      <Coins className="w-3 h-3 text-emerald-400" />
+                      {Math.ceil(itemTotal / 10).toLocaleString('vi-VN')} T
                     </span>
                   </div>
                 </div>
@@ -246,48 +273,59 @@ export default function CustomerHomePage() {
           </div>
         )}
 
-        {/* Tóm tắt chi phí & Nút Thanh Toán */}
+        {/* Tóm Tắt Chi Phí & Nút Thanh Toán Nổi Bật (Thumb-friendly dock) */}
         {cart.items.length > 0 && (
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-3 shadow-xl mt-4">
-            <div className="space-y-1.5 text-xs text-slate-400 pb-3 border-b border-slate-800">
+          <div className="bg-gradient-to-b from-slate-900/90 to-slate-950 border border-slate-800/90 rounded-3xl p-4 space-y-3.5 shadow-2xl mt-4">
+            {/* Chi tiết tính tiền */}
+            <div className="space-y-2 text-xs text-slate-400 pb-3.5 border-b border-slate-800">
               <div className="flex justify-between">
-                <span>Tổng số lượng:</span>
-                <span className="font-semibold text-slate-200">{cart.totalQuantity} món</span>
+                <span>Số lượng sản phẩm:</span>
+                <span className="font-semibold text-slate-200 font-mono">{cart.totalQuantity} món</span>
               </div>
               <div className="flex justify-between">
-                <span>Tạm tính:</span>
-                <span className="font-semibold text-slate-200">{cart.totalAmount.toLocaleString('vi-VN')} VNĐ</span>
+                <span>Tổng tiền hàng:</span>
+                <span className="font-semibold text-slate-200 font-mono">{cart.totalAmount.toLocaleString('vi-VN')} VNĐ</span>
               </div>
               <div className="flex justify-between text-emerald-400">
-                <span>Ưu đãi thành viên:</span>
-                <span className="font-semibold">Miễn phí dịch vụ</span>
+                <span className="flex items-center gap-1">
+                  <Sparkles className="w-3 h-3" />
+                  <span>Ưu đãi thành viên:</span>
+                </span>
+                <span className="font-bold">Miễn phí dịch vụ IoT</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1">
+            {/* Tổng cộng & Quy đổi Token */}
+            <div className="flex items-center justify-between pt-0.5">
               <div>
-                <span className="text-[11px] uppercase tracking-wider text-slate-400 block font-semibold">
-                  Tổng thanh toán
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
+                  Tổng Thanh Toán
                 </span>
-                <span className="text-xl font-black text-slate-100">
-                  {cart.totalAmount.toLocaleString('vi-VN')} <span className="text-sm font-normal text-slate-400">VNĐ</span>
-                </span>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-2xl font-black text-slate-100 tracking-tight">
+                    {cart.totalAmount.toLocaleString('vi-VN')}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-400">VNĐ</span>
+                </div>
               </div>
               <div className="text-right">
-                <span className="text-xs text-slate-400 block">Quy đổi Token:</span>
-                <span className="text-lg font-extrabold text-emerald-400 flex items-center justify-end gap-1">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
+                  Quy Đổi Ví Token
+                </span>
+                <span className="text-xl font-black text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
                   <Coins className="w-4 h-4 text-emerald-400" />
                   {tokenAmount.toLocaleString('vi-VN')}
                 </span>
               </div>
             </div>
 
+            {/* Nút Thanh Toán Nổi Bật Chuẩn FinTech */}
             <Link
               href="/customer/checkout"
-              className="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:from-emerald-400 hover:to-teal-300 active:scale-[0.98] text-slate-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25 transition-all mt-2"
+              className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 active:scale-[0.98] text-slate-950 font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 transition-all mt-3 select-none"
             >
               <span>Thanh Toán Bằng Ví Token</span>
-              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              <ArrowRight className="w-5 h-5 stroke-[2.5]" />
             </Link>
           </div>
         )}
