@@ -57,8 +57,27 @@ export default function CustomerScanPage() {
 
     const startScanner = async () => {
       try {
-        const { Html5Qrcode } = await import('html5-qrcode');
-        html5QrCode = new Html5Qrcode('qr-reader-container');
+        let Html5QrcodeClass = (window as any).Html5Qrcode;
+        if (!Html5QrcodeClass) {
+          await new Promise<void>((resolve, reject) => {
+            const existing = document.querySelector('script[src*="html5-qrcode"]');
+            if (existing) {
+              existing.addEventListener('load', () => resolve());
+              return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+            script.async = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Không thể tải thư viện camera'));
+            document.head.appendChild(script);
+          });
+          Html5QrcodeClass = (window as any).Html5Qrcode;
+        }
+
+        if (!Html5QrcodeClass) throw new Error('Thư viện camera chưa sẵn sàng');
+
+        html5QrCode = new Html5QrcodeClass('qr-reader-container');
         scannerRef.current = html5QrCode;
 
         await html5QrCode.start(
