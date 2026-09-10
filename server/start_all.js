@@ -78,8 +78,12 @@ console.log('⏳ [Ngrok] Đang khởi tạo đường hầm HTTPS ngrok cho cổ
 // 5. Khởi động Ngrok cho cổng 3000 (Shop Server sẽ tự forward /api/bank sang 4000)
 let ngrokProcess = null;
 let ngrokAvailable = true;
+const fs = require('fs');
+const localNgrokExe = path.join(__dirname, 'ngrok.exe');
+const ngrokBinary = fs.existsSync(localNgrokExe) ? localNgrokExe : 'ngrok';
+
 try {
-  ngrokProcess = spawn('ngrok', ['http', SHOP_PORT.toString(), '--log=stdout'], {
+  ngrokProcess = spawn(ngrokBinary, ['http', SHOP_PORT.toString(), '--log=stdout'], {
     stdio: ['ignore', 'pipe', 'pipe']
   });
   ngrokProcess.on('error', (err) => {
