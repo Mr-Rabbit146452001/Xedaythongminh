@@ -1831,12 +1831,11 @@ app.use((req, res, next) => {
 });
 
 // Khởi chạy Server
-if (require.main === module) {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`===================================================`);
-    console.log(`🚀 Stroller Backend Server đang chạy tại: http://localhost:${PORT}`);
-    console.log(`===================================================`);
-  });
-}
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`===================================================`);
+  console.log(`🚀 Stroller Backend Server đang chạy tại: http://localhost:${PORT}`);
+  console.log(`===================================================`);
+});
 
+app.server = server;
 module.exports = app;
