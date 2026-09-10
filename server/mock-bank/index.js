@@ -13,6 +13,18 @@ const BANK_SECRET_KEY = process.env.BANK_SECRET_KEY || 'stroller_mock_bank_secre
 app.use(cors());
 app.use(express.json());
 
+// Tự động kiểm tra và nâng cấp cấu trúc bảng nếu thiếu cột
+(async () => {
+  try {
+    await pool.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS failed_attempts INT DEFAULT 0;');
+    await pool.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL;');
+    await pool.query('ALTER TABLE bank_accounts ALTER COLUMN pin TYPE VARCHAR(255);').catch(() => {});
+    console.log('✅ [Mock Bank] Đã đồng bộ cấu trúc bảng bank_accounts.');
+  } catch (err) {
+    console.warn('⚠️ [Mock Bank Migration]:', err.message);
+  }
+})();
+
 // 1. Health check
 app.get('/api/health', (req, res) => {
   res.json({ service: 'Mock Bank Service', status: 'running', port: PORT, time: new Date() });
