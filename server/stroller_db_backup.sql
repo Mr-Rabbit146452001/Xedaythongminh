@@ -2,7 +2,6 @@
 -- PostgreSQL database dump
 --
 
-\restrict 8FwTd9NQIcDCl7n0583nZXv4ERdqZXJYslQieYAxlBfiW1b8N9fklXyZdUbvZ9r
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
@@ -985,5 +984,4 @@ ALTER TABLE ONLY public.shoppingsessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 8FwTd9NQIcDCl7n0583nZXv4ERdqZXJYslQieYAxlBfiW1b8N9fklXyZdUbvZ9r
 
