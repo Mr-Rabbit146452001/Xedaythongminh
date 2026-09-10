@@ -81,18 +81,50 @@ export const CustomerApiService = {
   },
 
   // 2. Lay gio hang thoi gian thuc
-  async getCart(): Promise<CustomerCartSummary> {
+  async getCart(sessionId?: string): Promise<CustomerCartSummary> {
     try {
-      const res = await fetch(getBaseUrl() + '/api/cart', { cache: 'no-store' });
+      const url = sessionId 
+        ? `${getBaseUrl()}/api/cart?sessionId=${encodeURIComponent(sessionId)}`
+        : `${getBaseUrl()}/api/cart`;
+      const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
-      const items: CustomerCartItem[] = json.items || json.data || [];
-      const totalAmount = json.totalAmount || items.reduce((sum, item) => sum + (item.TotalPrice || item.Price * item.Quantity), 0);
-      const totalQuantity = json.totalQuantity || items.reduce((sum, item) => sum + item.Quantity, 0);
+      const rawItems = json.items || json.data?.items || json.data || [];
+      const items: CustomerCartItem[] = rawItems.map((it: any) => ({
+        Id: it.Id || it.id || it.product?.Id || 0,
+        Barcode: it.Barcode || it.barcode || it.product?.Barcode || '',
+        Name: it.Name || it.name || it.product?.Name || 'Sản phẩm',
+        Price: it.Price || it.price || it.product?.Price || 0,
+        Quantity: it.Quantity || it.quantity || 1,
+        TotalPrice: it.TotalPrice || it.totalPrice || ((it.Price || it.price || it.product?.Price || 0) * (it.Quantity || it.quantity || 1)),
+        ImageUrl: it.ImageUrl || it.imageUrl || it.product?.ImageUrl || '/products/sua_vinamilk.jpg'
+      }));
+      const totalAmount = json.totalAmount || json.data?.totalAmount || items.reduce((sum, item) => sum + item.TotalPrice, 0);
+      const totalQuantity = json.totalQuantity || json.data?.totalItems || items.reduce((sum, item) => sum + item.Quantity, 0);
       const anomalyDetected = json.anomalyDetected || false;
       return { items, totalQuantity, totalAmount, anomalyDetected };
     } catch (e) {
-      console.warn('Loi getCart:', e);
+      console.warn('Loi getCart, thu fallback /api/cart/items:', e);
+      try {
+        const fallbackUrl = `${getBaseUrl()}/api/cart/items${sessionId ? `?sessionId=${encodeURIComponent(sessionId)}` : ''}`;
+        const res2 = await fetch(fallbackUrl, { cache: 'no-store' });
+        if (res2.ok) {
+          const json2 = await res2.json();
+          const legacyItems = json2.data?.items || [];
+          const items: CustomerCartItem[] = legacyItems.map((it: any) => ({
+            Id: it.product?.Id || 0,
+            Barcode: it.product?.Barcode || '',
+            Name: it.product?.Name || 'Sản phẩm',
+            Price: it.product?.Price || 0,
+            Quantity: it.quantity || 1,
+            TotalPrice: (it.product?.Price || 0) * (it.quantity || 1),
+            ImageUrl: it.product?.ImageUrl || '/products/sua_vinamilk.jpg'
+          }));
+          const totalAmount = json2.data?.totalAmount || items.reduce((sum, it) => sum + it.TotalPrice, 0);
+          const totalQuantity = json2.data?.totalItems || items.reduce((sum, it) => sum + it.Quantity, 0);
+          return { items, totalQuantity, totalAmount, anomalyDetected: false };
+        }
+      } catch (_) {}
       return { items: [], totalQuantity: 0, totalAmount: 0, anomalyDetected: false };
     }
   },

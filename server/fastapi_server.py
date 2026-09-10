@@ -305,6 +305,7 @@ def get_active_session():
         conn.close()
 
 @app.post("/api/v1/sessions/{session_id}/complete", response_model=SessionResponse)
+@app.post("/api/v1/sessions/{session_id}/end", response_model=SessionResponse)
 def complete_session(session_id: str):
     now_ms = int(time.time() * 1000)
     conn = get_db_connection()
@@ -337,6 +338,58 @@ def complete_session(session_id: str):
         """, (session_id, json.dumps(telemetry), now_ms))
 
         return SessionResponse(**dict(row))
+    finally:
+        cur.close()
+        conn.close()
+
+@app.post("/api/v1/session/end")
+@app.post("/api/end")
+def end_current_session(session_id: Optional[str] = Query(None)):
+    target_id = session_id
+    if not target_id:
+        try:
+            active = get_active_session()
+            target_id = active.id
+        except Exception:
+            target_id = "SESSION_DEFAULT"
+    return complete_session(target_id)
+
+class ProductLookupReq(BaseModel):
+    qr_code: Optional[str] = None
+    barcode: Optional[str] = None
+
+@app.post("/product")
+@app.post("/api/product")
+def get_product_by_qr(req: ProductLookupReq):
+    target_code = req.qr_code or req.barcode
+    if not target_code:
+        raise HTTPException(status_code=400, detail="Thiếu mã barcode/qr_code")
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    try:
+        cur.execute("""
+            SELECT id, barcode, sku, name, vision_class, price_vnd, 
+                   expected_weight_g, weight_tolerance_g 
+            FROM products 
+            WHERE barcode = %s OR sku = %s 
+            LIMIT 1
+        """, (target_code, target_code))
+        row = cur.fetchone()
+        if not row:
+            return {"found": False, "message": "Không tìm thấy sản phẩm"}
+        return {
+            "found": True,
+            "id": row["id"],
+            "barcode": row["barcode"],
+            "sku": row["sku"] or row["barcode"],
+            "name": row["name"],
+            "vision_class": row["vision_class"] or "unknown",
+            "price_vnd": row["price_vnd"],
+            "price": row["price_vnd"],
+            "expected_weight_g": float(row["expected_weight_g"] or 0),
+            "weight_tolerance_g": float(row["weight_tolerance_g"] or 0),
+            "message": "Tìm thấy sản phẩm"
+        }
     finally:
         cur.close()
         conn.close()

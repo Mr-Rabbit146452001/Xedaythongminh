@@ -136,9 +136,23 @@ app.get('/api/products/search', async (req, res) => {
   }
 });
 
-// 4. API Lấy chi tiết Giỏ hàng kèm Hình ảnh từ PostgreSQL
-app.get('/api/cart/items', async (req, res) => {
-  const sessionId = req.query.sessionId || 'SESSION_DEFAULT';
+// 4. API Lấy chi tiết Giỏ hàng kèm Hình ảnh từ PostgreSQL (Hỗ trợ cả /api/cart và /api/cart/items)
+app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
+  let sessionId = req.query.sessionId || req.headers['x-session-id'];
+
+  // Nếu không truyền sessionId, tự động lấy phiên active mới nhất hoặc STR_001
+  if (!sessionId) {
+    try {
+      const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
+      if (activeRes.rows.length > 0) {
+        sessionId = activeRes.rows[0].id;
+      } else {
+        sessionId = 'SESSION_DEFAULT';
+      }
+    } catch (_) {
+      sessionId = 'SESSION_DEFAULT';
+    }
+  }
 
   try {
     const query = `
@@ -151,11 +165,36 @@ app.get('/api/cart/items', async (req, res) => {
     const result = await pool.query(query, [sessionId]);
 
     let totalAmount = 0;
-    const items = result.rows.map(row => {
+    let totalQuantity = 0;
+    const formattedItems = [];
+    const legacyItems = [];
+
+    result.rows.forEach(row => {
       const price = parseFloat(row.price);
       const subtotal = price * row.quantity;
       totalAmount += subtotal;
-      return {
+      totalQuantity += row.quantity;
+
+      // Format chuẩn dành cho Web App Khách Hàng (CustomerCartItem)
+      formattedItems.push({
+        Id: row.productid,
+        id: row.productid,
+        Barcode: row.barcode,
+        barcode: row.barcode,
+        Name: row.name,
+        name: row.name,
+        Price: price,
+        price: price,
+        Quantity: row.quantity,
+        quantity: row.quantity,
+        TotalPrice: subtotal,
+        totalPrice: subtotal,
+        ImageUrl: row.imageurl || null,
+        imageUrl: row.imageurl || null
+      });
+
+      // Format dành cho Android App (Retrofit)
+      legacyItems.push({
         product: {
           Id: row.productid,
           Barcode: row.barcode,
@@ -164,26 +203,31 @@ app.get('/api/cart/items', async (req, res) => {
           ImageUrl: row.imageurl || null
         },
         quantity: row.quantity
-      };
+      });
     });
 
     res.json({
       status: 'Thành công',
+      sessionId: sessionId,
+      items: formattedItems,
+      totalQuantity: totalQuantity,
+      totalAmount: totalAmount,
+      anomalyDetected: weightAnomalyDetected,
       data: {
         sessionId: sessionId,
-        items: items,
+        items: legacyItems,
         totalAmount: totalAmount,
-        totalItems: items.length
+        totalItems: legacyItems.length
       }
     });
   } catch (err) {
-    console.error('Lỗi API GET /api/cart/items:', err);
+    console.error('Lỗi API GET /api/cart:', err);
     res.status(500).json({ status: 'Lỗi', message: err.message });
   }
 });
 
-// 5. API Thêm hoặc Cập nhật số lượng sản phẩm
-app.post('/api/cart/items', async (req, res) => {
+// 5. API Thêm hoặc Cập nhật số lượng sản phẩm (Hỗ trợ cả /api/cart và /api/cart/items)
+app.post(['/api/cart', '/api/cart/items'], async (req, res) => {
   const { barcode, quantity, sessionId } = req.body;
   const targetSession = sessionId || 'SESSION_DEFAULT';
   const qty = quantity || 1;
@@ -236,10 +280,10 @@ app.post('/api/cart/items', async (req, res) => {
   }
 });
 
-// 6. API Xóa sản phẩm khỏi Giỏ hàng
-app.delete('/api/cart/items', async (req, res) => {
-  const { barcode, sessionId } = req.body;
-  const targetSession = sessionId || 'SESSION_DEFAULT';
+// 6. API Xóa sản phẩm hoặc Dọn sạch Giỏ hàng (Hỗ trợ cả /api/cart và /api/cart/items)
+app.delete(['/api/cart', '/api/cart/items'], async (req, res) => {
+  const { barcode, sessionId } = req.body || {};
+  const targetSession = sessionId || req.query.sessionId || 'SESSION_DEFAULT';
 
   // Kiểm tra khóa 1 phút đầu đồng bộ thanh toán
   const lockedOrder = getActiveLockedOrder(targetSession);
@@ -252,12 +296,18 @@ app.delete('/api/cart/items', async (req, res) => {
   }
 
   try {
-    const pResult = await pool.query('SELECT id FROM Products WHERE barcode = $1', [barcode]);
-    if (pResult.rows.length > 0) {
-      const productId = pResult.rows[0].id;
-      await pool.query('DELETE FROM cart_items WHERE session_id = $1 AND product_id = $2', [targetSession, productId]);
+    if (barcode) {
+      const pResult = await pool.query('SELECT id FROM Products WHERE barcode = $1', [barcode]);
+      if (pResult.rows.length > 0) {
+        const productId = pResult.rows[0].id;
+        await pool.query('DELETE FROM cart_items WHERE session_id = $1 AND product_id = $2', [targetSession, productId]);
+      }
+      res.json({ status: 'Thành công', message: 'Đã xóa sản phẩm khỏi giỏ hàng' });
+    } else {
+      // Nếu không truyền barcode, xóa toàn bộ giỏ hàng của session
+      await pool.query('DELETE FROM cart_items WHERE session_id = $1', [targetSession]);
+      res.json({ status: 'Thành công', message: 'Đã làm sạch toàn bộ giỏ hàng của phiên' });
     }
-    res.json({ status: 'Thành công', message: 'Đã xóa sản phẩm khỏi giỏ hàng' });
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });
   }
@@ -315,12 +365,9 @@ app.get('/api/cart/status', (req, res) => {
   });
 });
 
-// 10. API Thanh toán (Checkout Transaction & Tích điểm)
-app.post('/api/cart/checkout', async (req, res) => {
-  const { sessionId, customerId } = req.body;
+// Helper dùng chung để kết thúc phiên và dọn sạch giỏ hàng
+async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888') {
   const targetSession = sessionId || 'SESSION_DEFAULT';
-  const targetCustomer = customerId || 'CUSTOMER_888';
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -337,31 +384,92 @@ app.post('/api/cart/checkout', async (req, res) => {
     const pointsEarned = Math.floor(totalAmount / 1000);
     const nowMs = Date.now();
 
-    await client.query('UPDATE Customers SET points = points + $1 WHERE id = $2', [pointsEarned, targetCustomer]);
-    await client.query('UPDATE ShoppingSessions SET status = \'completed\', endtime = NOW() WHERE id = $1', [targetSession]);
-    await client.query('UPDATE shopping_sessions SET status = \'completed\', ended_at_ms = $1 WHERE id = $2', [nowMs, targetSession]);
+    if (customerId) {
+      await client.query('UPDATE Customers SET points = points + $1 WHERE id = $2', [pointsEarned, customerId]);
+    }
+    await client.query("UPDATE ShoppingSessions SET status = 'completed', endtime = NOW() WHERE id = $1", [targetSession]);
+    await client.query("UPDATE shopping_sessions SET status = 'completed', ended_at_ms = $1 WHERE id = $2", [nowMs, targetSession]);
     await client.query('DELETE FROM cart_items WHERE session_id = $1', [targetSession]);
 
     await client.query('COMMIT');
     activeSessions.delete(targetSession);
-    console.log(`✅ [Checkout Transaction] Thanh toán thành công! Tổng tiền: ${totalAmount} VND, Tích thêm: ${pointsEarned} điểm.`);
+    console.log(`✅ [Session End] Kết thúc phiên ${targetSession} thành công. Tổng: ${totalAmount} VND, Điểm tích lũy: +${pointsEarned}.`);
 
+    return {
+      success: true,
+      sessionId: targetSession,
+      totalAmount,
+      pointsEarned,
+      message: 'Phiên mua sắm đã kết thúc thành công'
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Lỗi khi kết thúc phiên:', err);
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+// 10. API Thanh toán (Checkout Transaction & Tích điểm)
+app.post('/api/cart/checkout', async (req, res) => {
+  const { sessionId, customerId } = req.body || {};
+  try {
+    const result = await endSessionHelper(sessionId, customerId);
     res.json({
       status: 'Thành công',
       data: {
-        totalAmount: totalAmount,
-        pointsEarned: pointsEarned,
+        totalAmount: result.totalAmount,
+        pointsEarned: result.pointsEarned,
         message: 'Thanh toán hoàn tất thành công'
       }
     });
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Lỗi API Checkout Transaction:', err);
     res.status(500).json({ status: 'Lỗi', message: err.message });
-  } finally {
-    client.release();
   }
 });
+
+// 10.0. Các API kết thúc phiên linh hoạt (Hỗ trợ /api/end, /api/cart/end, /api/session/end...)
+const handleSessionEndRoute = async (req, res) => {
+  let sessionId = req.body?.sessionId || req.query?.sessionId || req.params?.id || req.params?.sessionId;
+  const customerId = req.body?.customerId || req.query?.customerId || 'CUSTOMER_888';
+
+  if (!sessionId) {
+    try {
+      const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
+      if (activeRes.rows.length > 0) {
+        sessionId = activeRes.rows[0].id;
+      } else {
+        sessionId = 'SESSION_DEFAULT';
+      }
+    } catch (_) {
+      sessionId = 'SESSION_DEFAULT';
+    }
+  }
+
+  try {
+    const result = await endSessionHelper(sessionId, customerId);
+    res.json({
+      status: 'Thành công',
+      ...result
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+};
+
+app.all([
+  '/api/end',
+  '/api/cart/end',
+  '/api/cart/clear',
+  '/api/session/end',
+  '/api/session/complete',
+  '/api/sessions/end',
+  '/api/sessions/:id/end',
+  '/api/v1/sessions/:id/end',
+  '/api/v1/session/end',
+  '/api/v1/end'
+], handleSessionEndRoute);
 
 // 10.1. API Lấy danh sách phương thức thanh toán tự động đã liên kết
 app.get('/api/payment/methods', (req, res) => {
@@ -753,8 +861,8 @@ app.get('/api/auth/session', (req, res) => {
   });
 });
 
-// Cho phép Web App Khách Hàng xác nhận đăng nhập xe đẩy
-app.post('/api/auth/confirm-login', async (req, res) => {
+// Cho phép Web App Khách Hàng xác nhận đăng nhập xe đẩy (Hỗ trợ /api/auth/confirm-login, /api/auth/session/scan, /api/auth/pair)
+app.post(['/api/auth/confirm-login', '/api/auth/session/scan', '/api/auth/pair'], async (req, res) => {
   const { sessionId, customerId = 'CUSTOMER_888' } = req.body || {};
   try {
     const result = await pool.query('SELECT id, name, membershiplevel, points, phonenumber FROM Customers WHERE id = $1', [customerId]);
@@ -1624,6 +1732,49 @@ app.post('/api/admin/strollers', async (req, res) => {
   }
 });
 
+// 13.9. API Tra cứu sản phẩm nhanh bằng mã Barcode / QR (Tương thích Retrofit @POST("product") & @POST("api/product"))
+const handleProductLookup = async (req, res) => {
+  const barcode = req.body?.qr_code || req.body?.barcode || req.query?.barcode || req.query?.qr_code;
+  if (!barcode) {
+    return res.status(400).json({ found: false, message: 'Thiếu mã barcode hoặc qr_code' });
+  }
+  try {
+    const result = await pool.query('SELECT * FROM Products WHERE barcode = $1 LIMIT 1', [barcode]);
+    if (result.rows.length === 0) {
+      return res.json({ found: false, message: 'Không tìm thấy sản phẩm' });
+    }
+    const p = result.rows[0];
+    const priceNum = parseInt(p.price || p.price_vnd || 0);
+    res.json({
+      found: true,
+      id: p.id,
+      barcode: p.barcode,
+      sku: p.sku || p.barcode,
+      name: p.name,
+      vision_class: p.vision_class || 'unknown',
+      price_vnd: priceNum,
+      price: priceNum,
+      expected_weight_g: parseFloat(p.expected_weight_g || 0),
+      weight_tolerance_g: parseFloat(p.weight_tolerance_g || 0),
+      message: 'Tìm thấy sản phẩm'
+    });
+  } catch (err) {
+    res.status(500).json({ found: false, message: err.message });
+  }
+};
+
+app.all(['/product', '/api/product'], handleProductLookup);
+
+// API Thông tin hệ thống Root / API
+app.get(['/api', '/api/info'], (req, res) => {
+  res.json({
+    service: 'Smart Retail Cart Backend API',
+    status: 'ok',
+    version: '1.2.0',
+    time: new Date().toISOString()
+  });
+});
+
 // ==========================================
 // 14. REVERSE PROXY TÍCH HỢP NEXT.JS WEB ADMIN (CỔNG 3001) VÀO SHOP SERVER (CỔNG 3000)
 // ==========================================
@@ -1650,15 +1801,25 @@ const webAdminProxy = createProxyMiddleware({
 
 // Chuyển tiếp tất cả request không phải API hoặc file tĩnh của backend sang Web Admin
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/images') || req.path.startsWith('/download')) {
-    return res.status(404).json({ status: 'Lỗi', message: 'API endpoint không tồn tại' });
+  if (req.path.startsWith('/api') || req.path.startsWith('/images') || req.path.startsWith('/download') || req.path.startsWith('/product')) {
+    console.warn(`⚠️ [404 Not Found] ${req.method} ${req.originalUrl}`);
+    return res.status(404).json({ 
+      status: 'Lỗi', 
+      message: `API endpoint không tồn tại: ${req.method} ${req.originalUrl}`,
+      method: req.method,
+      path: req.originalUrl
+    });
   }
   return webAdminProxy(req, res, next);
 });
 
 // Khởi chạy Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`===================================================`);
-  console.log(`🚀 Stroller Backend Server đang chạy tại: http://localhost:${PORT}`);
-  console.log(`===================================================`);
-});
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`===================================================`);
+    console.log(`🚀 Stroller Backend Server đang chạy tại: http://localhost:${PORT}`);
+    console.log(`===================================================`);
+  });
+}
+
+module.exports = app;
