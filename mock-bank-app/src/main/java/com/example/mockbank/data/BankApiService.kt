@@ -74,8 +74,8 @@ interface BankApi {
 }
 
 object BankApiClient {
-    // Địa chỉ ngrok HTTPS công khai mặc định
-    const val DEFAULT_BASE_URL = "https://recede-scalded-turret.ngrok-free.dev/"
+    // Địa chỉ ngrok HTTPS công khai mặc định (Máy bạn Vinh)
+    const val DEFAULT_BASE_URL = "https://reflex-swipe-placidly.ngrok-free.dev/"
     private const val PREFS_NAME = "mock_bank_prefs"
     private const val KEY_BASE_URL = "base_url"
 
