@@ -1,0 +1,989 @@
+﻿--
+-- PostgreSQL database dump
+--
+
+\restrict 8FwTd9NQIcDCl7n0583nZXv4ERdqZXJYslQieYAxlBfiW1b8N9fklXyZdUbvZ9r
+
+-- Dumped from database version 18.4
+-- Dumped by pg_dump version 18.4
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET idle_in_transaction_session_timeout = 0;
+SET transaction_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SELECT pg_catalog.set_config('search_path', '', false);
+SET check_function_bodies = false;
+SET xmloption = content;
+SET client_min_messages = warning;
+SET row_security = off;
+
+ALTER TABLE IF EXISTS ONLY public.shoppingsessions DROP CONSTRAINT IF EXISTS shoppingsessions_strollerid_fkey;
+ALTER TABLE IF EXISTS ONLY public.shoppingsessions DROP CONSTRAINT IF EXISTS shoppingsessions_customerid_fkey;
+ALTER TABLE IF EXISTS ONLY public.sensor_events DROP CONSTRAINT IF EXISTS sensor_events_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.ledger_entries DROP CONSTRAINT IF EXISTS ledger_entries_transaction_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.ledger_entries DROP CONSTRAINT IF EXISTS ledger_entries_account_number_fkey;
+ALTER TABLE IF EXISTS ONLY public.cartitems DROP CONSTRAINT IF EXISTS cartitems_sessionid_fkey;
+ALTER TABLE IF EXISTS ONLY public.cartitems DROP CONSTRAINT IF EXISTS cartitems_productid_fkey;
+ALTER TABLE IF EXISTS ONLY public.cart_items DROP CONSTRAINT IF EXISTS cart_items_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.cart_items DROP CONSTRAINT IF EXISTS cart_items_product_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.cart_events DROP CONSTRAINT IF EXISTS cart_events_session_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.cart_events DROP CONSTRAINT IF EXISTS cart_events_product_id_fkey;
+ALTER TABLE IF EXISTS ONLY public.bank_transactions DROP CONSTRAINT IF EXISTS bank_transactions_to_account_fkey;
+ALTER TABLE IF EXISTS ONLY public.bank_transactions DROP CONSTRAINT IF EXISTS bank_transactions_from_account_fkey;
+DROP INDEX IF EXISTS public.ix_products_barcode;
+ALTER TABLE IF EXISTS ONLY public.thingsboard_outbox DROP CONSTRAINT IF EXISTS thingsboard_outbox_pkey;
+ALTER TABLE IF EXISTS ONLY public.strollers DROP CONSTRAINT IF EXISTS strollers_pkey;
+ALTER TABLE IF EXISTS ONLY public.shoppingsessions DROP CONSTRAINT IF EXISTS shoppingsessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.shopping_sessions DROP CONSTRAINT IF EXISTS shopping_sessions_pkey;
+ALTER TABLE IF EXISTS ONLY public.sensor_events DROP CONSTRAINT IF EXISTS sensor_events_pkey;
+ALTER TABLE IF EXISTS ONLY public.products DROP CONSTRAINT IF EXISTS products_pkey;
+ALTER TABLE IF EXISTS ONLY public.products DROP CONSTRAINT IF EXISTS products_barcode_key;
+ALTER TABLE IF EXISTS ONLY public.ledger_entries DROP CONSTRAINT IF EXISTS ledger_entries_pkey;
+ALTER TABLE IF EXISTS ONLY public.customers DROP CONSTRAINT IF EXISTS customers_pkey;
+ALTER TABLE IF EXISTS ONLY public.customers DROP CONSTRAINT IF EXISTS customers_phonenumber_key;
+ALTER TABLE IF EXISTS ONLY public.cartitems DROP CONSTRAINT IF EXISTS cartitems_pkey;
+ALTER TABLE IF EXISTS ONLY public.cart_items DROP CONSTRAINT IF EXISTS cart_items_pkey;
+ALTER TABLE IF EXISTS ONLY public.cart_events DROP CONSTRAINT IF EXISTS cart_events_pkey;
+ALTER TABLE IF EXISTS ONLY public.bank_transactions DROP CONSTRAINT IF EXISTS bank_transactions_pkey;
+ALTER TABLE IF EXISTS ONLY public.bank_transactions DROP CONSTRAINT IF EXISTS bank_transactions_idempotency_key_key;
+ALTER TABLE IF EXISTS ONLY public.bank_accounts DROP CONSTRAINT IF EXISTS bank_accounts_pkey;
+ALTER TABLE IF EXISTS public.strollers ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.products ALTER COLUMN id DROP DEFAULT;
+ALTER TABLE IF EXISTS public.ledger_entries ALTER COLUMN id DROP DEFAULT;
+DROP TABLE IF EXISTS public.thingsboard_outbox;
+DROP SEQUENCE IF EXISTS public.strollers_id_seq;
+DROP TABLE IF EXISTS public.strollers;
+DROP TABLE IF EXISTS public.shoppingsessions;
+DROP TABLE IF EXISTS public.shopping_sessions;
+DROP TABLE IF EXISTS public.sensor_events;
+DROP SEQUENCE IF EXISTS public.products_id_seq;
+DROP TABLE IF EXISTS public.products;
+DROP SEQUENCE IF EXISTS public.ledger_entries_id_seq;
+DROP TABLE IF EXISTS public.ledger_entries;
+DROP TABLE IF EXISTS public.customers;
+DROP TABLE IF EXISTS public.cartitems;
+DROP TABLE IF EXISTS public.cart_items;
+DROP TABLE IF EXISTS public.cart_events;
+DROP TABLE IF EXISTS public.bank_transactions;
+DROP TABLE IF EXISTS public.bank_accounts;
+SET default_tablespace = '';
+
+SET default_table_access_method = heap;
+
+--
+-- Name: bank_accounts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bank_accounts (
+    account_number character varying(30) NOT NULL,
+    owner_name character varying(100) NOT NULL,
+    user_ref_id character varying(50) NOT NULL,
+    token_balance numeric(15,2) DEFAULT 0.00 NOT NULL,
+    pin character varying(10) DEFAULT '123456'::character varying,
+    is_active boolean DEFAULT true,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT bank_accounts_token_balance_check CHECK ((token_balance >= (0)::numeric))
+);
+
+
+--
+-- Name: bank_transactions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.bank_transactions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    order_id character varying(50) NOT NULL,
+    from_account character varying(30),
+    to_account character varying(30),
+    amount numeric(15,2) NOT NULL,
+    status character varying(20) DEFAULT 'PENDING'::character varying NOT NULL,
+    idempotency_key character varying(100),
+    webhook_status character varying(20) DEFAULT 'UNSENT'::character varying,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT bank_transactions_amount_check CHECK ((amount > (0)::numeric))
+);
+
+
+--
+-- Name: cart_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cart_events (
+    id bigint NOT NULL,
+    session_id text,
+    action text NOT NULL,
+    product_id bigint,
+    barcode text,
+    ai_class text,
+    ai_confidence real,
+    delta_weight_g real,
+    weight_source text,
+    quantity_delta integer DEFAULT 1,
+    decision text,
+    reasons_json text,
+    created_at_ms bigint NOT NULL
+);
+
+
+--
+-- Name: cart_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.cart_events ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.cart_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: cart_items; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cart_items (
+    session_id text NOT NULL,
+    product_id bigint NOT NULL,
+    quantity integer DEFAULT 1 NOT NULL,
+    unit_price_vnd integer NOT NULL,
+    updated_at_ms bigint NOT NULL
+);
+
+
+--
+-- Name: cartitems; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.cartitems (
+    sessionid character varying(100) NOT NULL,
+    productid integer NOT NULL,
+    quantity integer NOT NULL,
+    addedtime timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT cartitems_quantity_check CHECK ((quantity > 0))
+);
+
+
+--
+-- Name: customers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.customers (
+    id character varying(50) NOT NULL,
+    name character varying(100) NOT NULL,
+    membershiplevel character varying(50) DEFAULT 'Thành viên mới'::character varying,
+    points integer DEFAULT 0,
+    phonenumber character varying(20) NOT NULL
+);
+
+
+--
+-- Name: ledger_entries; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.ledger_entries (
+    id bigint NOT NULL,
+    transaction_id uuid,
+    account_number character varying(30),
+    entry_type character varying(10) NOT NULL,
+    amount numeric(15,2) NOT NULL,
+    balance_after numeric(15,2),
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT ledger_entries_entry_type_check CHECK (((entry_type)::text = ANY ((ARRAY['DEBIT'::character varying, 'CREDIT'::character varying])::text[])))
+);
+
+
+--
+-- Name: ledger_entries_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.ledger_entries_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: ledger_entries_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.ledger_entries_id_seq OWNED BY public.ledger_entries.id;
+
+
+--
+-- Name: products; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.products (
+    id integer NOT NULL,
+    barcode character varying(50) NOT NULL,
+    name character varying(255) NOT NULL,
+    price numeric(18,2) NOT NULL,
+    imageurl character varying(500),
+    category character varying(100) DEFAULT 'Đồ uống'::character varying,
+    stock integer DEFAULT 100,
+    sku text,
+    vision_class text,
+    price_vnd integer,
+    expected_weight_g real DEFAULT 0,
+    weight_tolerance_g real DEFAULT 0,
+    active integer DEFAULT 1,
+    created_at_ms bigint DEFAULT '1788746300000'::bigint,
+    updated_at_ms bigint DEFAULT '1788746300000'::bigint,
+    CONSTRAINT products_price_check CHECK ((price >= (0)::numeric))
+);
+
+
+--
+-- Name: products_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.products_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: products_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.products_id_seq OWNED BY public.products.id;
+
+
+--
+-- Name: sensor_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.sensor_events (
+    id bigint NOT NULL,
+    session_id text,
+    source text,
+    event_type text,
+    barcode text,
+    ai_class text,
+    ai_confidence real,
+    weight_g real,
+    delta_weight_g real,
+    decision text,
+    metadata_json text,
+    created_at_ms bigint NOT NULL
+);
+
+
+--
+-- Name: sensor_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.sensor_events ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.sensor_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: shopping_sessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.shopping_sessions (
+    id text NOT NULL,
+    status text DEFAULT 'active'::text NOT NULL,
+    started_at_ms bigint NOT NULL,
+    ended_at_ms bigint
+);
+
+
+--
+-- Name: shoppingsessions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.shoppingsessions (
+    id character varying(100) NOT NULL,
+    customerid character varying(50),
+    strollerid integer,
+    starttime timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    endtime timestamp without time zone,
+    status character varying(50) DEFAULT 'active'::character varying
+);
+
+
+--
+-- Name: strollers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.strollers (
+    id integer NOT NULL,
+    status character varying(50) DEFAULT 'idle'::character varying
+);
+
+
+--
+-- Name: strollers_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+CREATE SEQUENCE public.strollers_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+--
+-- Name: strollers_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: -
+--
+
+ALTER SEQUENCE public.strollers_id_seq OWNED BY public.strollers.id;
+
+
+--
+-- Name: thingsboard_outbox; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.thingsboard_outbox (
+    id bigint NOT NULL,
+    reference_type text,
+    reference_id text,
+    telemetry_json text NOT NULL,
+    status text DEFAULT 'pending'::text NOT NULL,
+    attempts integer DEFAULT 0,
+    next_attempt_at_ms bigint,
+    last_error text,
+    created_at_ms bigint NOT NULL,
+    sent_at_ms bigint
+);
+
+
+--
+-- Name: thingsboard_outbox_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.thingsboard_outbox ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY (
+    SEQUENCE NAME public.thingsboard_outbox_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
+-- Name: ledger_entries id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_entries ALTER COLUMN id SET DEFAULT nextval('public.ledger_entries_id_seq'::regclass);
+
+
+--
+-- Name: products id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products ALTER COLUMN id SET DEFAULT nextval('public.products_id_seq'::regclass);
+
+
+--
+-- Name: strollers id; Type: DEFAULT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.strollers ALTER COLUMN id SET DEFAULT nextval('public.strollers_id_seq'::regclass);
+
+
+--
+-- Data for Name: bank_accounts; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active, created_at) FROM stdin;
+ACC_CUSTOMER_01	Khách Hàng Demo (Anh Nam)	CUST_001	1977040.00	123456	t	2026-09-04 18:09:56.358824+07
+ACC_STORE_MAIN	Siêu Thị Xe Đẩy Thông Minh	STORE_01	122960.00	123456	t	2026-09-04 18:09:56.358824+07
+\.
+
+
+--
+-- Data for Name: bank_transactions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.bank_transactions (id, order_id, from_account, to_account, amount, status, idempotency_key, webhook_status, created_at) FROM stdin;
+263f9d4f-989e-416a-833c-c2f4ccf40ce1	ORD_1788520485991	ACC_CUSTOMER_01	ACC_STORE_MAIN	135.00	SUCCESS	ORDER_ORD_1788520485991_ACC_CUSTOMER_01	DELIVERED	2026-09-04 18:14:46.013102+07
+880d1f84-a300-4089-bd3c-dc685da8f32d	ORD_1788581348062	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788581348062_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:09:08.097034+07
+11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c	TEST_DIRECT_4000	ACC_CUSTOMER_01	ACC_STORE_MAIN	10.00	SUCCESS	ORDER_TEST_DIRECT_4000_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:17:23.584612+07
+03af14b6-7366-4940-9ecf-0ad2fe6c7569	TEST_PROXY_FIXED	ACC_CUSTOMER_01	ACC_STORE_MAIN	5.00	SUCCESS	ORDER_TEST_PROXY_FIXED_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:18:57.896921+07
+f7604d5a-7b0d-420f-9ea1-9a1a0e46d014	TEST_NGROK_FIXED	ACC_CUSTOMER_01	ACC_STORE_MAIN	5.00	SUCCESS	ORDER_TEST_NGROK_FIXED_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:19:00.905961+07
+db7ee622-3369-49df-b1dd-1631082fbd28	ORD_1788582071736	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788582071736_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:21:12.140067+07
+12ea541f-4c52-42a6-a1c2-d3d622fb6949	ORD_1788582545633	ACC_CUSTOMER_01	ACC_STORE_MAIN	11250.00	SUCCESS	ORDER_ORD_1788582545633_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:29:15.563472+07
+b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0	ORD_1788583406745	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788583406745_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:43:27.22175+07
+06f7b2d3-37ad-4c3a-961b-b3b988612874	ORD_1788583592180	ACC_CUSTOMER_01	ACC_STORE_MAIN	11250.00	SUCCESS	ORDER_ORD_1788583592180_ACC_CUSTOMER_01	DELIVERED	2026-09-05 11:46:51.602584+07
+af37d4c7-4da1-494c-ae92-89219fa49e1b	ORD_1788600777565	ACC_CUSTOMER_01	ACC_STORE_MAIN	30600.00	SUCCESS	ORDER_ORD_1788600777565_ACC_CUSTOMER_01	DELIVERED	2026-09-05 16:33:17.275221+07
+c25e7b96-7587-4e9e-9bae-3ff4614d79b8	ORD_1788972646436	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788972646436_ACC_CUSTOMER_01	DELIVERED	2026-09-09 23:51:06.315052+07
+125c7a78-bf16-43f8-9fbb-af76c8ac6291	ORD_1788974554860	ACC_CUSTOMER_01	ACC_STORE_MAIN	13500.00	SUCCESS	ORDER_ORD_1788974554860_ACC_CUSTOMER_01	DELIVERED	2026-09-10 00:22:41.552667+07
+3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b	ORD_1788975236849	ACC_CUSTOMER_01	ACC_STORE_MAIN	2340.00	SUCCESS	ORDER_ORD_1788975236849_ACC_CUSTOMER_01	DELIVERED	2026-09-10 00:34:08.965132+07
+\.
+
+
+--
+-- Data for Name: cart_events; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.cart_events (id, session_id, action, product_id, barcode, ai_class, ai_confidence, delta_weight_g, weight_source, quantity_delta, decision, reasons_json, created_at_ms) FROM stdin;
+1	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	9	8935005801135	lavie_500ml	0.95	500	simulated	1	verified	\N	1788778228145
+2	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	10	6975493200982	banh_sua_chua_20g	0.95	20	simulated	1	verified	\N	1788778228199
+3	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	11	8938556329004	pocari_sweat_500ml	0.95	500	simulated	1	verified	\N	1788778228247
+4	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	add	12	8936154640613	siro_ho_euca_super_extra_125ml	0.95	150	simulated	1	verified	\N	1788778228301
+5	43e1fe94-96d1-4304-a190-502a0b201aab	add	9	8935005801135	lavie_500ml	0.95	500	simulated	1	accepted	[]	1788965773593
+6	43e1fe94-96d1-4304-a190-502a0b201aab	add	9	8935005801135	lavie_500ml	0.95	-50	simulated	0	rejected	["weight_out_of_tolerance", "weight_direction_mismatch"]	1788965773649
+7	64befa28-e8e0-4840-9122-32ddfe672ac8	add	9	8935005801135	8935005801135	0.98	520	loadcell	0	rejected	["ai_class_mismatch"]	1788971973447
+8	64befa28-e8e0-4840-9122-32ddfe672ac8	add	9	8935005801135	lavie_500ml	0.98	505	loadcell	1	accepted	[]	1788971983772
+9	SESSION_1788971956218	add	9	8935005801135	lavie_500ml	0.98	505	loadcell	1	accepted	[]	1788972024537
+10	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972186852
+11	SESSION_1788971956218	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788972189165
+12	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972189297
+13	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972195993
+14	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972197954
+15	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972199060
+16	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972200783
+17	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972201904
+18	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972209901
+19	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972210724
+20	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972210894
+21	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972212746
+22	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972212907
+23	SESSION_1788971956218	remove	\N	banh_sua_chua_20g	banh_sua_chua_20g	1	-500	simulated	0	rejected	["product_not_found"]	1788972220971
+24	SESSION_1788971956218	remove	\N	lavie_500ml	lavie_500ml	1	-500	simulated	0	rejected	["product_not_found"]	1788972221730
+25	SESSION_1788971956218	remove	10	6975493200982	banh_sua_chua_20g	0.99	-20	loadcell	-1	accepted	[]	1788972388946
+26	SESSION_1788971956218	remove	9	8935005801135	lavie_500ml	0.99	-505	loadcell	-1	accepted	[]	1788972534973
+27	SESSION_1788971956218	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788972567541
+28	SESSION_1788971956218	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788972572126
+29	SESSION_1788971956218	remove	9	8935005801135	lavie_500ml	0.99	-505	loadcell	-1	accepted	[]	1788972583165
+30	SESSION_1788971956218	remove	10	6975493200982	banh_sua_chua_20g	0.99	-20	loadcell	0	rejected	["product_not_in_cart"]	1788972619348
+31	SESSION_1788971956218	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788972628406
+32	SESSION_1788971956218	remove	9	8935005801135	lavie_500ml	0.99	-505	loadcell	-1	accepted	[]	1788972635331
+33	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788974530136
+34	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788974538530
+35	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788974540680
+36	d5d3f1d7-5b58-4546-8f4c-31807573b0c0	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788974599432
+37	d5d3f1d7-5b58-4546-8f4c-31807573b0c0	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788974602335
+38	d5d3f1d7-5b58-4546-8f4c-31807573b0c0	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788974604393
+39	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788975201218
+40	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788975203232
+41	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	10	6975493200982	banh_sua_chua_20g	0.99	20	loadcell	1	accepted	[]	1788975213842
+42	f5951acf-ecf5-44fc-9300-b2937f60b66a	add	9	8935005801135	lavie_500ml	0.99	505	loadcell	1	accepted	[]	1788975217607
+\.
+
+
+--
+-- Data for Name: cart_items; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.cart_items (session_id, product_id, quantity, unit_price_vnd, updated_at_ms) FROM stdin;
+ffaa7c52-2e5b-472b-99d1-22c28fad7e89	9	1	10000	1788778228145
+ffaa7c52-2e5b-472b-99d1-22c28fad7e89	10	1	3000	1788778228199
+ffaa7c52-2e5b-472b-99d1-22c28fad7e89	11	1	15000	1788778228247
+ffaa7c52-2e5b-472b-99d1-22c28fad7e89	12	1	60000	1788778228301
+43e1fe94-96d1-4304-a190-502a0b201aab	9	1	10000	1788965773593
+64befa28-e8e0-4840-9122-32ddfe672ac8	9	1	10000	1788971983772
+SESSION_1788971956218	10	1	3000	1788972628406
+d5d3f1d7-5b58-4546-8f4c-31807573b0c0	10	1	3000	1788974599432
+d5d3f1d7-5b58-4546-8f4c-31807573b0c0	9	2	10000	1788974604393
+\.
+
+
+--
+-- Data for Name: cartitems; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.cartitems (sessionid, productid, quantity, addedtime) FROM stdin;
+\.
+
+
+--
+-- Data for Name: customers; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.customers (id, name, membershiplevel, points, phonenumber) FROM stdin;
+CUSTOMER_999	Trần Thị B	Hội viên Kim Cương	8900	0909123456
+CUSTOMER_888	Nguyễn Văn A	Hội viên Vàng	3822	0987654321
+\.
+
+
+--
+-- Data for Name: ledger_entries; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.ledger_entries (id, transaction_id, account_number, entry_type, amount, balance_after, created_at) FROM stdin;
+2	263f9d4f-989e-416a-833c-c2f4ccf40ce1	ACC_CUSTOMER_01	DEBIT	135.00	865.00	2026-09-04 18:14:46.013102+07
+3	263f9d4f-989e-416a-833c-c2f4ccf40ce1	ACC_STORE_MAIN	CREDIT	135.00	135.00	2026-09-04 18:14:46.013102+07
+4	880d1f84-a300-4089-bd3c-dc685da8f32d	ACC_CUSTOMER_01	DEBIT	13500.00	486500.00	2026-09-05 11:09:08.097034+07
+5	880d1f84-a300-4089-bd3c-dc685da8f32d	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-05 11:09:08.097034+07
+6	11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c	ACC_CUSTOMER_01	DEBIT	10.00	486490.00	2026-09-05 11:17:23.584612+07
+7	11fdb6c7-538a-4e8f-ba43-c7a56d5dc56c	ACC_STORE_MAIN	CREDIT	10.00	10.00	2026-09-05 11:17:23.584612+07
+8	03af14b6-7366-4940-9ecf-0ad2fe6c7569	ACC_CUSTOMER_01	DEBIT	5.00	486485.00	2026-09-05 11:18:57.896921+07
+9	03af14b6-7366-4940-9ecf-0ad2fe6c7569	ACC_STORE_MAIN	CREDIT	5.00	5.00	2026-09-05 11:18:57.896921+07
+10	f7604d5a-7b0d-420f-9ea1-9a1a0e46d014	ACC_CUSTOMER_01	DEBIT	5.00	486480.00	2026-09-05 11:19:00.905961+07
+11	f7604d5a-7b0d-420f-9ea1-9a1a0e46d014	ACC_STORE_MAIN	CREDIT	5.00	5.00	2026-09-05 11:19:00.905961+07
+12	db7ee622-3369-49df-b1dd-1631082fbd28	ACC_CUSTOMER_01	DEBIT	13500.00	472980.00	2026-09-05 11:21:12.140067+07
+13	db7ee622-3369-49df-b1dd-1631082fbd28	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-05 11:21:12.140067+07
+14	12ea541f-4c52-42a6-a1c2-d3d622fb6949	ACC_CUSTOMER_01	DEBIT	11250.00	461730.00	2026-09-05 11:29:15.563472+07
+15	12ea541f-4c52-42a6-a1c2-d3d622fb6949	ACC_STORE_MAIN	CREDIT	11250.00	11250.00	2026-09-05 11:29:15.563472+07
+16	b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0	ACC_CUSTOMER_01	DEBIT	13500.00	448230.00	2026-09-05 11:43:27.22175+07
+17	b2fa98ce-da47-4c3c-b2fe-8fb9540b42d0	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-05 11:43:27.22175+07
+18	06f7b2d3-37ad-4c3a-961b-b3b988612874	ACC_CUSTOMER_01	DEBIT	11250.00	436980.00	2026-09-05 11:46:51.602584+07
+19	06f7b2d3-37ad-4c3a-961b-b3b988612874	ACC_STORE_MAIN	CREDIT	11250.00	11250.00	2026-09-05 11:46:51.602584+07
+20	af37d4c7-4da1-494c-ae92-89219fa49e1b	ACC_CUSTOMER_01	DEBIT	30600.00	406380.00	2026-09-05 16:33:17.275221+07
+21	af37d4c7-4da1-494c-ae92-89219fa49e1b	ACC_STORE_MAIN	CREDIT	30600.00	30600.00	2026-09-05 16:33:17.275221+07
+22	c25e7b96-7587-4e9e-9bae-3ff4614d79b8	ACC_CUSTOMER_01	DEBIT	13500.00	392880.00	2026-09-09 23:51:06.315052+07
+23	c25e7b96-7587-4e9e-9bae-3ff4614d79b8	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-09 23:51:06.315052+07
+24	125c7a78-bf16-43f8-9fbb-af76c8ac6291	ACC_CUSTOMER_01	DEBIT	13500.00	1079380.00	2026-09-10 00:22:41.552667+07
+25	125c7a78-bf16-43f8-9fbb-af76c8ac6291	ACC_STORE_MAIN	CREDIT	13500.00	13500.00	2026-09-10 00:22:41.552667+07
+26	3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b	ACC_CUSTOMER_01	DEBIT	2340.00	1977040.00	2026-09-10 00:34:08.965132+07
+27	3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b	ACC_STORE_MAIN	CREDIT	2340.00	2340.00	2026-09-10 00:34:08.965132+07
+\.
+
+
+--
+-- Data for Name: products; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.products (id, barcode, name, price, imageurl, category, stock, sku, vision_class, price_vnd, expected_weight_g, weight_tolerance_g, active, created_at_ms, updated_at_ms) FROM stdin;
+1	8934563123456	Sữa tươi tiệt trùng ít đường 1L	34000.00	sua_vinamilk.jpg	Đồ uống	100	\N	\N	34000	0	0	1	1788746300000	1788746300000
+6	8936079015024	Nước khoáng La Vie 500ml	6000.00	lavie_500ml.jpg	Đồ uống	100	\N	\N	6000	0	0	1	1788746300000	1788746300000
+5	8934563123460	Mì tôm Hảo Hảo chua cay	4500.00	hao_hao.jpg	Bánh kẹo	100	\N	\N	4500	0	0	1	1788746300000	1788746300000
+3	8934563123458	Táo Envy New Zealand	125000.00	tao_envy.jpg	Thực phẩm tươi	100	\N	\N	125000	0	0	1	1788746300000	1788746300000
+2	8934563123457	Bơ sáp loại 1 (KG)	45000.00	bo_sap.jpg	Thực phẩm tươi	100	\N	\N	45000	0	0	1	1788746300000	1788746300000
+7	8935001239841	Bánh quy kẹp kem Oreo socola 137g	18000.00	oreo_socola.jpg	Bánh kẹo	100	\N	\N	18000	0	0	1	1788746300000	1788746300000
+8	8935001239842	Nước ngọt Coca Cola lon 330ml	10000.00	coca_cola_330ml.jpg	Đồ uống	100	\N	\N	10000	0	0	1	1788746300000	1788746300000
+4	8934563123459	Nước khoáng Aquafina 500ml	6000.00	aquafina_500ml.jpg	Đồ uống	100	\N	\N	6000	0	0	1	1788746300000	1788746300000
+9	8935005801135	La Vie 500 ml	10000.00	lavie_500ml.jpg	Đồ uống	100	lavie_500ml	lavie_500ml	10000	500	20	1	1788746300000	1788746300000
+10	6975493200982	Bánh Sữa Chua 20g	3000.00	banh_sua_chua.jpg	Đồ uống	100	banh_sua_chua_20g	banh_sua_chua_20g	3000	20	5	1	1788746300000	1788746300000
+11	8938556329004	Pocari Sweat 500 ml	15000.00	pocari_sweat.jpg	Đồ uống	100	pocari_sweat_500ml	pocari_sweat_500ml	15000	500	20	1	1788746300000	1788746300000
+12	8936154640613	Siro EUCA Super Extra 125 ml	60000.00	siro_euca.jpg	Đồ uống	100	siro_ho_euca_super_extra_125ml	siro_ho_euca_super_extra_125ml	60000	150	15	1	1788746300000	1788746300000
+\.
+
+
+--
+-- Data for Name: sensor_events; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.sensor_events (id, session_id, source, event_type, barcode, ai_class, ai_confidence, weight_g, delta_weight_g, decision, metadata_json, created_at_ms) FROM stdin;
+\.
+
+
+--
+-- Data for Name: shopping_sessions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.shopping_sessions (id, status, started_at_ms, ended_at_ms) FROM stdin;
+ffaa7c52-2e5b-472b-99d1-22c28fad7e89	completed	1788778227958	1788778228384
+43e1fe94-96d1-4304-a190-502a0b201aab	active	1788965773515	\N
+SESSION_TEST	active	1788969983909	\N
+250e1fd3-82c4-4987-b8ab-7bb086e7516b	active	1788971787757	\N
+64befa28-e8e0-4840-9122-32ddfe672ac8	active	1788971799463	\N
+SESSION_1788971956218	active	1788972024537	\N
+8a32c5d1-87a6-44d7-95f0-115e202c2beb	active	1788973460847	\N
+SESSION_DEFAULT	completed	1788971723165	1788974561580
+918ceee5-f65f-4ef5-a450-3d69ab03f6e6	completed	1788974424453	1788974571581
+79fce9b1-c458-4886-be87-9c2f3a43964a	active	1788974571797	\N
+567e2b59-c69d-4061-a306-c18ea44d827e	completed	1788974571866	1788974575192
+d5d3f1d7-5b58-4546-8f4c-31807573b0c0	active	1788974575476	\N
+f5951acf-ecf5-44fc-9300-b2937f60b66a	completed	1788975175264	1788975258799
+241c568f-ec7c-424a-9bd2-b643adaaa698	active	1788975259032	\N
+60406c12-8354-4a0d-a54f-f07407bc6bb4	active	1788975259147	\N
+\.
+
+
+--
+-- Data for Name: shoppingsessions; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.shoppingsessions (id, customerid, strollerid, starttime, endtime, status) FROM stdin;
+SESSION_TEST	\N	\N	2026-08-08 18:35:50.66326	\N	active
+43e1fe94-96d1-4304-a190-502a0b201aab	\N	\N	2026-09-09 21:56:13.55041	\N	active
+250e1fd3-82c4-4987-b8ab-7bb086e7516b	\N	\N	2026-09-09 23:36:27.796221	\N	active
+64befa28-e8e0-4840-9122-32ddfe672ac8	\N	\N	2026-09-09 23:36:39.492563	\N	active
+SESSION_1788971956218	\N	\N	2026-09-09 23:40:24.542428	\N	active
+8a32c5d1-87a6-44d7-95f0-115e202c2beb	\N	\N	2026-09-10 00:04:21.022864	\N	active
+SESSION_DEFAULT	\N	\N	2026-08-08 18:51:09.402974	2026-09-10 00:22:41.579009	completed
+918ceee5-f65f-4ef5-a450-3d69ab03f6e6	\N	\N	2026-09-10 00:20:24.492648	2026-09-10 00:22:51.608882	completed
+79fce9b1-c458-4886-be87-9c2f3a43964a	\N	\N	2026-09-10 00:22:51.823429	\N	active
+567e2b59-c69d-4061-a306-c18ea44d827e	\N	\N	2026-09-10 00:22:51.891163	2026-09-10 00:22:55.224058	completed
+d5d3f1d7-5b58-4546-8f4c-31807573b0c0	\N	\N	2026-09-10 00:22:55.502146	\N	active
+f5951acf-ecf5-44fc-9300-b2937f60b66a	\N	\N	2026-09-10 00:32:55.301694	2026-09-10 00:34:18.825318	completed
+241c568f-ec7c-424a-9bd2-b643adaaa698	\N	\N	2026-09-10 00:34:19.057054	\N	active
+60406c12-8354-4a0d-a54f-f07407bc6bb4	\N	\N	2026-09-10 00:34:19.175936	\N	active
+\.
+
+
+--
+-- Data for Name: strollers; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.strollers (id, status) FROM stdin;
+1	in_use
+2	in_use
+3	in_use
+8	maintenance
+15	idle
+16	in_use
+17	in_use
+18	in_use
+\.
+
+
+--
+-- Data for Name: thingsboard_outbox; Type: TABLE DATA; Schema: public; Owner: -
+--
+
+COPY public.thingsboard_outbox (id, reference_type, reference_id, telemetry_json, status, attempts, next_attempt_at_ms, last_error, created_at_ms, sent_at_ms) FROM stdin;
+1	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 1, "cart_total_vnd": 10000, "last_action": "add", "last_barcode": "8935005801135"}	pending	0	\N	\N	1788778228145	\N
+2	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 2, "cart_total_vnd": 13000, "last_action": "add", "last_barcode": "6975493200982"}	pending	0	\N	\N	1788778228199	\N
+3	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 3, "cart_total_vnd": 28000, "last_action": "add", "last_barcode": "8938556329004"}	pending	0	\N	\N	1788778228247	\N
+4	cart	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "cart_quantity": 4, "cart_total_vnd": 88000, "last_action": "add", "last_barcode": "8936154640613"}	pending	0	\N	\N	1788778228301	\N
+5	session	ffaa7c52-2e5b-472b-99d1-22c28fad7e89	{"session_id": "ffaa7c52-2e5b-472b-99d1-22c28fad7e89", "status": "completed", "completed_at_ms": 1788778228384}	pending	0	\N	\N	1788778228384	\N
+6	cart_event	5	{"event_id": 5, "event_type": "cart_decision", "session_id": "43e1fe94-96d1-4304-a190-502a0b201aab", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.95, "delta_weight_g": 500.0, "weight_source": "simulated", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788965773593}	pending	0	\N	\N	1788965773593	\N
+7	cart_event	6	{"event_id": 6, "event_type": "cart_decision", "session_id": "43e1fe94-96d1-4304-a190-502a0b201aab", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.95, "delta_weight_g": -50.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "weight_out_of_tolerance,weight_direction_mismatch", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788965773649}	pending	0	\N	\N	1788965773649	\N
+8	cart_event	7	{"event_id": 7, "event_type": "cart_decision", "session_id": "64befa28-e8e0-4840-9122-32ddfe672ac8", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "8935005801135", "ai_confidence": 0.98, "delta_weight_g": 520.0, "weight_source": "loadcell", "decision": "rejected", "rejection_reasons": "ai_class_mismatch", "cart_quantity": 0, "cart_total_vnd": 0, "timestamp": 1788971973447}	pending	0	\N	\N	1788971973447	\N
+9	cart_event	8	{"event_id": 8, "event_type": "cart_decision", "session_id": "64befa28-e8e0-4840-9122-32ddfe672ac8", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.98, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788971983772}	pending	0	\N	\N	1788971983772	\N
+10	cart_event	9	{"event_id": 9, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.98, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972024537}	pending	0	\N	\N	1788972024537	\N
+11	cart_event	10	{"event_id": 10, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972186852}	pending	0	\N	\N	1788972186852	\N
+12	cart_event	11	{"event_id": 11, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972189165}	pending	0	\N	\N	1788972189165	\N
+13	cart_event	12	{"event_id": 12, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972189297}	pending	0	\N	\N	1788972189297	\N
+14	cart_event	13	{"event_id": 13, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972195993}	pending	0	\N	\N	1788972195993	\N
+15	cart_event	14	{"event_id": 14, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972197954}	pending	0	\N	\N	1788972197954	\N
+16	cart_event	15	{"event_id": 15, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972199060}	pending	0	\N	\N	1788972199060	\N
+17	cart_event	16	{"event_id": 16, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972200783}	pending	0	\N	\N	1788972200783	\N
+18	cart_event	17	{"event_id": 17, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972201904}	pending	0	\N	\N	1788972201904	\N
+19	cart_event	18	{"event_id": 18, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972209901}	pending	0	\N	\N	1788972209901	\N
+20	cart_event	19	{"event_id": 19, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972210724}	pending	0	\N	\N	1788972210724	\N
+21	cart_event	20	{"event_id": 20, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972210894}	pending	0	\N	\N	1788972210894	\N
+22	cart_event	21	{"event_id": 21, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972212746}	pending	0	\N	\N	1788972212746	\N
+23	cart_event	22	{"event_id": 22, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972212907}	pending	0	\N	\N	1788972212907	\N
+24	cart_event	23	{"event_id": 23, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "banh_sua_chua_20g", "product_name": "UNKNOWN", "ai_class": "banh_sua_chua_20g", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972220971}	pending	0	\N	\N	1788972220971	\N
+25	cart_event	24	{"event_id": 24, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "lavie_500ml", "product_name": "UNKNOWN", "ai_class": "lavie_500ml", "ai_confidence": 1.0, "delta_weight_g": -500.0, "weight_source": "simulated", "decision": "rejected", "rejection_reasons": "product_not_found", "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972221730}	pending	0	\N	\N	1788972221730	\N
+26	cart_event	25	{"event_id": 25, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": -20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972388946}	pending	0	\N	\N	1788972388946	\N
+27	cart_event	26	{"event_id": 26, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 0, "cart_total_vnd": 0, "timestamp": 1788972534973}	pending	0	\N	\N	1788972534973	\N
+28	cart_event	27	{"event_id": 27, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972567541}	pending	0	\N	\N	1788972567541	\N
+29	cart_event	28	{"event_id": 28, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 20000, "timestamp": 1788972572126}	pending	0	\N	\N	1788972572126	\N
+30	cart_event	29	{"event_id": 29, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972583165}	pending	0	\N	\N	1788972583165	\N
+31	cart_event	30	{"event_id": 30, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": -20.0, "weight_source": "loadcell", "decision": "rejected", "rejection_reasons": "product_not_in_cart", "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788972619348}	pending	0	\N	\N	1788972619348	\N
+32	cart_event	31	{"event_id": 31, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788972628406}	pending	0	\N	\N	1788972628406	\N
+33	cart_event	32	{"event_id": 32, "event_type": "cart_decision", "session_id": "SESSION_1788971956218", "action": "remove", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": -505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788972635331}	pending	0	\N	\N	1788972635331	\N
+34	qr_payment	ORD_1788972646436	{"event":"qr_payment_completed","order_id":"ORD_1788972646436","session_id":"SESSION_DEFAULT","amount_tokens":13500,"transaction_id":"c25e7b96-7587-4e9e-9bae-3ff4614d79b8","completed_at_ms":1788972666351}	pending	0	\N	\N	1788972666351	\N
+35	cart_event	33	{"event_id": 33, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788974530136}	pending	0	\N	\N	1788974530136	\N
+36	cart_event	34	{"event_id": 34, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788974538530}	pending	0	\N	\N	1788974538530	\N
+37	cart_event	35	{"event_id": 35, "event_type": "cart_decision", "session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 16000, "timestamp": 1788974540680}	pending	0	\N	\N	1788974540680	\N
+38	qr_payment	ORD_1788974554860	{"event":"qr_payment_completed","order_id":"ORD_1788974554860","session_id":"SESSION_DEFAULT","amount_tokens":13500,"transaction_id":"125c7a78-bf16-43f8-9fbb-af76c8ac6291","completed_at_ms":1788974561580}	pending	0	\N	\N	1788974561580	\N
+39	session	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	{"session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "status": "completed", "completed_at_ms": 1788974571479}	pending	0	\N	\N	1788974571479	\N
+40	session	918ceee5-f65f-4ef5-a450-3d69ab03f6e6	{"session_id": "918ceee5-f65f-4ef5-a450-3d69ab03f6e6", "status": "completed", "completed_at_ms": 1788974571581}	pending	0	\N	\N	1788974571581	\N
+41	session	567e2b59-c69d-4061-a306-c18ea44d827e	{"session_id": "567e2b59-c69d-4061-a306-c18ea44d827e", "status": "completed", "completed_at_ms": 1788974575192}	pending	0	\N	\N	1788974575192	\N
+42	cart_event	36	{"event_id": 36, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 3000, "timestamp": 1788974599432}	pending	0	\N	\N	1788974599432	\N
+43	cart_event	37	{"event_id": 37, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788974602335}	pending	0	\N	\N	1788974602335	\N
+44	cart_event	38	{"event_id": 38, "event_type": "cart_decision", "session_id": "d5d3f1d7-5b58-4546-8f4c-31807573b0c0", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 23000, "timestamp": 1788974604393}	pending	0	\N	\N	1788974604393	\N
+45	cart_event	39	{"event_id": 39, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 1, "cart_total_vnd": 10000, "timestamp": 1788975201218}	pending	0	\N	\N	1788975201218	\N
+46	cart_event	40	{"event_id": 40, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 2, "cart_total_vnd": 13000, "timestamp": 1788975203232}	pending	0	\N	\N	1788975203232	\N
+47	cart_event	41	{"event_id": 41, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "6975493200982", "product_name": "Bánh Sữa Chua 20g", "ai_class": "banh_sua_chua_20g", "ai_confidence": 0.99, "delta_weight_g": 20.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 3, "cart_total_vnd": 16000, "timestamp": 1788975213842}	pending	0	\N	\N	1788975213842	\N
+48	cart_event	42	{"event_id": 42, "event_type": "cart_decision", "session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "action": "add", "barcode": "8935005801135", "product_name": "La Vie 500 ml", "ai_class": "lavie_500ml", "ai_confidence": 0.99, "delta_weight_g": 505.0, "weight_source": "loadcell", "decision": "accepted", "rejection_reasons": null, "cart_quantity": 4, "cart_total_vnd": 26000, "timestamp": 1788975217607}	pending	0	\N	\N	1788975217607	\N
+49	qr_payment	ORD_1788975236849	{"event":"qr_payment_completed","order_id":"ORD_1788975236849","session_id":"f5951acf-ecf5-44fc-9300-b2937f60b66a","amount_tokens":2340,"transaction_id":"3a6961f4-ecb4-4ff3-adb2-bffaa9f7577b","completed_at_ms":1788975248989}	pending	0	\N	\N	1788975248989	\N
+50	session	f5951acf-ecf5-44fc-9300-b2937f60b66a	{"session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "status": "completed", "completed_at_ms": 1788975258652}	pending	0	\N	\N	1788975258652	\N
+51	session	f5951acf-ecf5-44fc-9300-b2937f60b66a	{"session_id": "f5951acf-ecf5-44fc-9300-b2937f60b66a", "status": "completed", "completed_at_ms": 1788975258799}	pending	0	\N	\N	1788975258799	\N
+\.
+
+
+--
+-- Name: cart_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.cart_events_id_seq', 42, true);
+
+
+--
+-- Name: ledger_entries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.ledger_entries_id_seq', 27, true);
+
+
+--
+-- Name: products_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.products_id_seq', 12, true);
+
+
+--
+-- Name: sensor_events_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.sensor_events_id_seq', 1, false);
+
+
+--
+-- Name: strollers_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.strollers_id_seq', 1, false);
+
+
+--
+-- Name: thingsboard_outbox_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
+--
+
+SELECT pg_catalog.setval('public.thingsboard_outbox_id_seq', 51, true);
+
+
+--
+-- Name: bank_accounts bank_accounts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_accounts
+    ADD CONSTRAINT bank_accounts_pkey PRIMARY KEY (account_number);
+
+
+--
+-- Name: bank_transactions bank_transactions_idempotency_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_transactions
+    ADD CONSTRAINT bank_transactions_idempotency_key_key UNIQUE (idempotency_key);
+
+
+--
+-- Name: bank_transactions bank_transactions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_transactions
+    ADD CONSTRAINT bank_transactions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cart_events cart_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cart_events
+    ADD CONSTRAINT cart_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: cart_items cart_items_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cart_items
+    ADD CONSTRAINT cart_items_pkey PRIMARY KEY (session_id, product_id);
+
+
+--
+-- Name: cartitems cartitems_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cartitems
+    ADD CONSTRAINT cartitems_pkey PRIMARY KEY (sessionid, productid);
+
+
+--
+-- Name: customers customers_phonenumber_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customers
+    ADD CONSTRAINT customers_phonenumber_key UNIQUE (phonenumber);
+
+
+--
+-- Name: customers customers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.customers
+    ADD CONSTRAINT customers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ledger_entries ledger_entries_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_entries
+    ADD CONSTRAINT ledger_entries_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: products products_barcode_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_barcode_key UNIQUE (barcode);
+
+
+--
+-- Name: products products_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.products
+    ADD CONSTRAINT products_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: sensor_events sensor_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sensor_events
+    ADD CONSTRAINT sensor_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: shopping_sessions shopping_sessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shopping_sessions
+    ADD CONSTRAINT shopping_sessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: shoppingsessions shoppingsessions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shoppingsessions
+    ADD CONSTRAINT shoppingsessions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: strollers strollers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.strollers
+    ADD CONSTRAINT strollers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: thingsboard_outbox thingsboard_outbox_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.thingsboard_outbox
+    ADD CONSTRAINT thingsboard_outbox_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ix_products_barcode; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX ix_products_barcode ON public.products USING btree (barcode);
+
+
+--
+-- Name: bank_transactions bank_transactions_from_account_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_transactions
+    ADD CONSTRAINT bank_transactions_from_account_fkey FOREIGN KEY (from_account) REFERENCES public.bank_accounts(account_number);
+
+
+--
+-- Name: bank_transactions bank_transactions_to_account_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.bank_transactions
+    ADD CONSTRAINT bank_transactions_to_account_fkey FOREIGN KEY (to_account) REFERENCES public.bank_accounts(account_number);
+
+
+--
+-- Name: cart_events cart_events_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cart_events
+    ADD CONSTRAINT cart_events_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cart_events cart_events_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cart_events
+    ADD CONSTRAINT cart_events_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.shopping_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: cart_items cart_items_product_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cart_items
+    ADD CONSTRAINT cart_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: cart_items cart_items_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cart_items
+    ADD CONSTRAINT cart_items_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.shopping_sessions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: cartitems cartitems_productid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cartitems
+    ADD CONSTRAINT cartitems_productid_fkey FOREIGN KEY (productid) REFERENCES public.products(id) ON DELETE CASCADE;
+
+
+--
+-- Name: cartitems cartitems_sessionid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.cartitems
+    ADD CONSTRAINT cartitems_sessionid_fkey FOREIGN KEY (sessionid) REFERENCES public.shoppingsessions(id) ON DELETE CASCADE;
+
+
+--
+-- Name: ledger_entries ledger_entries_account_number_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_entries
+    ADD CONSTRAINT ledger_entries_account_number_fkey FOREIGN KEY (account_number) REFERENCES public.bank_accounts(account_number);
+
+
+--
+-- Name: ledger_entries ledger_entries_transaction_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.ledger_entries
+    ADD CONSTRAINT ledger_entries_transaction_id_fkey FOREIGN KEY (transaction_id) REFERENCES public.bank_transactions(id);
+
+
+--
+-- Name: sensor_events sensor_events_session_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.sensor_events
+    ADD CONSTRAINT sensor_events_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.shopping_sessions(id) ON DELETE SET NULL;
+
+
+--
+-- Name: shoppingsessions shoppingsessions_customerid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shoppingsessions
+    ADD CONSTRAINT shoppingsessions_customerid_fkey FOREIGN KEY (customerid) REFERENCES public.customers(id) ON DELETE SET NULL;
+
+
+--
+-- Name: shoppingsessions shoppingsessions_strollerid_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.shoppingsessions
+    ADD CONSTRAINT shoppingsessions_strollerid_fkey FOREIGN KEY (strollerid) REFERENCES public.strollers(id) ON DELETE SET NULL;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
+\unrestrict 8FwTd9NQIcDCl7n0583nZXv4ERdqZXJYslQieYAxlBfiW1b8N9fklXyZdUbvZ9r
+
