@@ -13,3 +13,14 @@ cd "C:\Users\LE THI HAU\.gemini\antigravity\scratch\StrollerApp\server" ; node s
 ```
 
 *(Lệnh này tự động kích hoạt đồng thời cả Shop Server cổng 3000, Mock Bank Server cổng 4000 và đường hầm HTTPS Ngrok).*
+
+---
+
+## 📌 Lệnh @push: Tự động đẩy toàn bộ thay đổi lên GitHub
+Bất kỳ khi nào người dùng gõ `@push` (hoặc nhắc tới lệnh `@push`):
+
+➡️ **TỰ ĐỘNG THỰC HIỆN NGAY QUY TRÌNH PUSH CODE:**
+1. Chạy `git add .` để gom toàn bộ file đã chỉnh sửa / tạo mới.
+2. Chạy `git commit -m "..."` tạo ghi chú commit phù hợp với các thay đổi vừa làm (hoặc "Update project changes" nếu không có mô tả chi tiết).
+3. Chạy `git push origin main` đẩy mã nguồn lên GitHub.
+4. Báo cáo ngắn gọn kết quả thành công và kèm link GitHub kho chứa.
