@@ -632,8 +632,10 @@ def process_cart_decision(decision: CartDecisionRequest):
 
             expected_weight = product.get("expected_weight_g")
             tolerance = product.get("weight_tolerance_g")
+            if tolerance is None or tolerance <= 0:
+                tolerance = 50.0  # Dung sai an toàn mặc định 50g
             if decision.delta_weight_g is not None:
-                if expected_weight and expected_weight > 0 and tolerance is not None:
+                if expected_weight and expected_weight > 0:
                     if abs(abs(decision.delta_weight_g) - expected_weight) > tolerance:
                         reasons.append("weight_out_of_tolerance")
 

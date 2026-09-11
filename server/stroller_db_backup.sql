@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict cnZMVWi9M846bgJAX8NJaJ7y0QF78gnHHS9cUJfXVp9j35x9IRRMmLXLC3qPr5s
+\restrict 19aOwfl8FzWVRz9VuOP0PaDgyTlafeIdYpvcVU5zqMgDzZ1fu0A0l5cc0axTVKz
 
 -- Dumped from database version 18.4
 -- Dumped by pg_dump version 18.4
@@ -553,20 +553,20 @@ COPY public.ledger_entries (id, transaction_id, account_number, entry_type, amou
 --
 
 COPY public.products (id, barcode, name, price, imageurl, category, stock, sku, vision_class, price_vnd, expected_weight_g, weight_tolerance_g, active, created_at_ms, updated_at_ms) FROM stdin;
-77	8934673573344	Sữa tươi tiệt trùng Vinamilk 100% Có đường 180ml	9500.00	8934673573344.jpg	Đồ uống	100	8934673573344	\N	9500	180	0	1	1789149378604	1789149378604
-78	8935217400454	Sữa tươi tiệt trùng TH true MILK Socola 180ml	9500.00	8935217400454.jpg	Đồ uống	100	8935217400454	\N	9500	180	0	1	1789149378604	1789149378604
-30	8934673200325	Sữa đặc Ông Thọ đỏ tuýp 165g	20000.00	ong_tho_do.jpg	Sữa & Bơ	100	8934673200325	\N	20000	165	0	1	1789141100827	1789149378604
-31	8936079120382	Snack Poca bắp ngọt xóc bơ gói 32g	6000.00	snack_poca_bap.jpg	Bánh kẹo	100	8936079120382	\N	6000	32	0	1	1789141100827	1789149378604
-4	8934588063145	Nước khoáng Aquafina 500ml	6000.00	aquafina_500ml.jpg	Đồ uống	100	8934588063145	\N	6000	500	0	1	1788746300000	1789149378604
-5	8934563138165	Mì tôm Hảo Hảo chua cay	4500.00	hao_hao.jpg	Bánh kẹo	100	8934563138165	\N	4500	75	0	1	1788746300000	1789149378604
-6	8935005801135	Nước khoáng La Vie 500ml	6000.00	lavie_500ml.jpg	Đồ uống	100	8935005801135	\N	6000	500	0	1	1788746300000	1789149378604
-11	8938556329004	Pocari Sweat 500 ml	15000.00	pocari_sweat.jpg	Đồ uống	100	8938556329004	[null]	15000	500	0	1	1788746300000	1789149378604
-23	8936040077271	Khăn ướt Puri không mùi 20 tờ	8800.00	khan_uot_puri.jpg	Hóa mỹ phẩm	100	8936040077271	\N	8800	40	0	1	1789141100827	1789149378604
-24	8935024120187	Cà phê G7 hòa tan đen 15 gói	47000.00	ca_phe_g7.jpg	Đồ uống	100	8935024120187	\N	47000	30	0	1	1789141100827	1789149378604
-25	8938558334556	Khăn giấy Premier 100 tờ 3 lớp	9500.00	khan_giay_premier.jpg	Hóa mỹ phẩm	100	8938558334556	\N	9500	34	0	1	1789141100827	1789149378604
-22	8936120311028	Muối tinh sấy i-ốt Sosal Group 500 g	4100.00	muoi_tinh_sosal.jpg	Gia vị	100	8936120311028	\N	4100	500	0	1	1789141100827	1789149378604
-28	8935049501503	Nước ngọt Coca Cola lon 330ml	10900.00	coke_sleek_lon.jpg	Đồ uống	100	8935049501503	\N	10900	330	0	1	1789141100827	1789149378604
-29	8934561010022	Phở gà Vifon gói 65g	9900.00	pho_ga_vifon.jpg	Thực phẩm khô	100	8934561010022	\N	9900	65	0	1	1789141100827	1789149378604
+78	8935217400454	Sữa tươi tiệt trùng TH true MILK Socola 180ml	9500.00	8935217400454.jpg	Đồ uống	100	8935217400454	\N	9500	180	30	1	1789149378604	1789157958794
+4	8934588063145	Nước khoáng Aquafina 500ml	6000.00	aquafina_500ml.jpg	Đồ uống	100	8934588063145	\N	6000	500	50	1	1788746300000	1789157958794
+5	8934563138165	Mì tôm Hảo Hảo chua cay	4500.00	hao_hao.jpg	Bánh kẹo	100	8934563138165	\N	4500	75	20	1	1788746300000	1789157958794
+6	8935005801135	Nước khoáng La Vie 500ml	6000.00	lavie_500ml.jpg	Đồ uống	100	lavie_500ml	lavie_500ml	6000	500	50	1	1788746300000	1789157958794
+11	8938556329004	Pocari Sweat 500 ml	15000.00	pocari_sweat.jpg	Đồ uống	100	pocari_sweat_500ml	pocari_sweat_500ml	15000	500	50	1	1788746300000	1789157958794
+22	8936120311028	Muối tinh sấy i-ốt Sosal Group 500 g	4100.00	muoi_tinh_sosal.jpg	Gia vị	100	8936120311028	\N	4100	500	50	1	1789141100827	1789157958794
+23	8936040077271	Khăn ướt Puri không mùi 20 tờ	8800.00	khan_uot_puri.jpg	Hóa mỹ phẩm	100	8936040077271	\N	8800	40	20	1	1789141100827	1789157958794
+24	8935024120187	Cà phê G7 hòa tan đen 15 gói	47000.00	ca_phe_g7.jpg	Đồ uống	100	8935024120187	\N	47000	30	15	1	1789141100827	1789157958794
+25	8938558334556	Khăn giấy Premier 100 tờ 3 lớp	9500.00	khan_giay_premier.jpg	Hóa mỹ phẩm	100	8938558334556	\N	9500	34	15	1	1789141100827	1789157958794
+28	8935049501503	Nước ngọt Coca Cola lon 330ml	10900.00	coke_sleek_lon.jpg	Đồ uống	100	8935049501503	\N	10900	330	50	1	1789141100827	1789157958794
+29	8934561010022	Phở gà Vifon gói 65g	9900.00	pho_ga_vifon.jpg	Thực phẩm khô	100	8934561010022	\N	9900	65	20	1	1789141100827	1789157958794
+30	8934673200325	Sữa đặc Ông Thọ đỏ tuýp 165g	20000.00	ong_tho_do.jpg	Sữa & Bơ	100	8934673200325	\N	20000	165	30	1	1789141100827	1789157958794
+31	8936079120382	Snack Poca bắp ngọt xóc bơ gói 32g	6000.00	snack_poca_bap.jpg	Bánh kẹo	100	8936079120382	\N	6000	32	15	1	1789141100827	1789157958794
+77	8934673573344	Sữa tươi tiệt trùng Vinamilk 100% Có đường 180ml	9500.00	8934673573344.jpg	Đồ uống	100	8934673573344	\N	9500	180	30	1	1789149378604	1789157958794
 \.
 
 
@@ -716,7 +716,7 @@ SELECT pg_catalog.setval('public.ledger_entries_id_seq', 27, true);
 -- Name: products_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
 
-SELECT pg_catalog.setval('public.products_id_seq', 78, true);
+SELECT pg_catalog.setval('public.products_id_seq', 92, true);
 
 
 --
@@ -983,5 +983,5 @@ ALTER TABLE ONLY public.shoppingsessions
 -- PostgreSQL database dump complete
 --
 
-\unrestrict cnZMVWi9M846bgJAX8NJaJ7y0QF78gnHHS9cUJfXVp9j35x9IRRMmLXLC3qPr5s
+\unrestrict 19aOwfl8FzWVRz9VuOP0PaDgyTlafeIdYpvcVU5zqMgDzZ1fu0A0l5cc0axTVKz
 
