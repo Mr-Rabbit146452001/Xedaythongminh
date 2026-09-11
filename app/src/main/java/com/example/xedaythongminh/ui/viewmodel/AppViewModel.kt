@@ -513,10 +513,9 @@ class AppViewModel constructor(
                                     _invalidScannedProduct.value = InvalidProductViolation(
                                         product = com.example.xedaythongminh.data.models.Product(
                                             id = "LOADCELL_ANOMALY",
-                                            barcode = "LOADCELL_ANOMALY",
                                             name = "Vật lạ / Sản phẩm chưa quét mã vạch",
-                                            price = 0.0,
-                                            category = "Cảm biến trọng lượng",
+                                            sku = "LOADCELL_ANOMALY",
+                                            unitPrice = 0L,
                                             imageUrl = ""
                                         ),
                                         scannedQuantity = 1,
