@@ -71,7 +71,7 @@ fun SessionEndedScreen(
                     modifier = modifier,
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(2dp)
+                    elevation = CardDefaults.cardElevation(2    dp)
                 ) {
                     Column(
                         modifier = Modifier

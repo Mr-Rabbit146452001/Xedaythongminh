@@ -163,7 +163,7 @@ export default function CustomerWalletPage() {
         </div>
         <ul className="text-xs text-[#1A1A1A] space-y-2 pl-4 list-disc font-medium">
           <li>Mỗi giao dịch thanh toán đều yêu cầu nhập mã PIN 6 số bí mật.</li>
-          <li>Mã PIN thử nghiệm mặc định: <b className="text-[#0D47A1] font-mono font-black bg-white px-1.5 py-0.5 rounded border border-blue-300">123456</b></li>
+          <li>Mã PIN chủ thử nghiệm thanh toán: <b className="text-[#0D47A1] font-mono font-black bg-white px-2 py-0.5 rounded border border-blue-300">652001</b></li>
           <li>Hệ thống liên kết đồng bộ tức thời với cơ chế mở cổng tự động Exit Gate.</li>
         </ul>
       </div>

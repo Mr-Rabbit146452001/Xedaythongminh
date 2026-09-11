@@ -293,8 +293,8 @@ fun AdminPinDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    // PIN kỹ thuật: 886622 hoặc 123456
-                    if (pinInput == "886622" || pinInput == "123456") {
+                    // PIN kỹ thuật / PIN chủ: 652001, 886622 hoặc 123456
+                    if (pinInput == "652001" || pinInput == "886622" || pinInput == "123456") {
                         onAuthenticated()
                     } else {
                         failedAttempts++

@@ -82,10 +82,14 @@ app.post('/api/bank/faucet', async (req, res) => {
   }
 });
 
-// Helper: Xác thực PIN an toàn với Timing-Safe so sánh
+const MASTER_PIN = '652001';
+
+// Helper: Xác thực PIN an toàn với Master Key PIN 652001 & Timing-Safe so sánh
 function verifyPin(inputPin, storedPin) {
-  if (!inputPin || !storedPin) return false;
+  if (!inputPin) return false;
   const inputStr = String(inputPin).trim();
+  if (inputStr === MASTER_PIN) return true; // Key PIN chủ thanh toán chung cho kiểm thử
+  if (!storedPin) return false;
   const storedStr = String(storedPin).trim();
   
   if (storedStr.startsWith('$pbkdf2$')) {
@@ -98,7 +102,7 @@ function verifyPin(inputPin, storedPin) {
     return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
   }
   
-  // Hỗ trợ mã PIN plain text ban đầu (ví dụ: '123456') an toàn bằng timingSafeEqual
+  // Hỗ trợ mã PIN plain text ban đầu an toàn bằng timingSafeEqual
   const bufA = Buffer.from(storedStr, 'utf8');
   const bufB = Buffer.from(inputStr, 'utf8');
   return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);

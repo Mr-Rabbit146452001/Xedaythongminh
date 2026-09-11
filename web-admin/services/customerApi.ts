@@ -161,8 +161,8 @@ export const CustomerApiService = {
     }
   },
 
-  // 5. Thanh toan QR bang Token
-  async payQr(qrData: string, pin: string = '123456'): Promise<PayResult> {
+  // 5. Thanh toan QR bang Token (Master PIN default: 652001)
+  async payQr(qrData: string, pin: string = '652001'): Promise<PayResult> {
     try {
       const res = await fetch(getBaseUrl() + '/api/bank/pay-qr', {
         method: 'POST',
