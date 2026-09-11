@@ -79,7 +79,7 @@ export default function CustomerWalletPage() {
           <div className="flex items-center gap-2">
             <CreditCard className="w-6 h-6 text-amber-300" />
             <span className="text-xs font-black text-white uppercase tracking-widest">
-              SMART STROLLER TITANIUM
+              SMARTCART TITANIUM
             </span>
           </div>
           <span className="text-[10px] font-extrabold text-[#0D47A1] uppercase tracking-wider bg-white px-2 py-0.5 rounded-full shadow-sm">

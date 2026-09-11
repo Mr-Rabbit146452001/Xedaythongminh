@@ -29,20 +29,18 @@ export default function MobileHeader({
       <div className="flex items-center justify-between">
         {/* Brand & Stroller Logo & ID */}
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-md border border-white/30 flex items-center justify-center shrink-0">
-            <img
-              src="/img_smart_cart_logo.png"
-              alt="Smart Cart Logo"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo.png';
-              }}
-            />
-          </div>
+          <img
+            src="/img_smart_cart_logo.png"
+            alt="Smart Cart Logo"
+            className="w-10 h-10 object-contain drop-shadow"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/logo.png';
+            }}
+          />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-black tracking-tight text-white uppercase">SMART STROLLER</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-extrabold border border-white/40">
+              <span className="text-sm font-black tracking-tight text-white uppercase">SMARTCART</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-extrabold border border-white/40 shadow-sm">
                 PWA
               </span>
             </div>

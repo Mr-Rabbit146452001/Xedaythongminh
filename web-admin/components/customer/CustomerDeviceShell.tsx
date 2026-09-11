@@ -118,12 +118,10 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
   if (isMobileScreen === null || isCheckingAuth || (!isAuthenticated && pathname !== '/customer/login')) {
     return (
       <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-[#0D47A1] p-2 flex items-center justify-center shadow-xl shadow-blue-900/20 mb-4 animate-bounce border border-blue-400">
-          <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-full h-full object-contain" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
-        </div>
+        <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-20 h-20 object-contain mb-4 animate-bounce" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
         <div className="w-6 h-6 rounded-full border-2 border-[#0D47A1] border-t-transparent animate-spin mb-3" />
-        <h3 className="text-sm font-bold text-[#0D47A1]">Đang kết nối Cổng Đăng Nhập Xe Đẩy...</h3>
-        <p className="text-xs text-[#666666] mt-1">Vui lòng đăng nhập tài khoản để vào hệ sinh thái Smart Cart</p>
+        <h3 className="text-sm font-black text-[#0D47A1]">Đang kết nối Cổng Đăng Nhập SMARTCART...</h3>
+        <p className="text-xs text-[#666666] font-semibold mt-1">Vui lòng đăng nhập tài khoản để vào hệ sinh thái SMARTCART MEMBER</p>
       </div>
     );
   }
@@ -163,12 +161,10 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
           <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg bg-white p-0.5 shadow-sm flex items-center justify-center">
-              <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-full h-full object-contain" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
-            </div>
-            <span className="text-xs font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
+            <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-7 h-7 object-contain" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
+            <span className="text-xs font-black text-slate-100 tracking-tight flex items-center gap-1.5 uppercase">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              Smart Cart PWA
+              SMARTCART PWA
             </span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-bold border border-blue-400/30">
               Mobile Studio

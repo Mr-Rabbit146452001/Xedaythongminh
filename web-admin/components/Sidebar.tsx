@@ -52,21 +52,19 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         {/* Brand & Mobile Close Button */}
         <div className="flex items-center justify-between px-2 mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-white p-1 shadow-md border border-[#0D47A1]/20 flex items-center justify-center shrink-0">
-              <img
-                src="/img_smart_cart_logo.png"
-                alt="Smart Cart Logo"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/logo.png';
-                }}
-              />
-            </div>
+            <img
+              src="/img_smart_cart_logo.png"
+              alt="Smart Cart Logo"
+              className="w-10 h-10 object-contain drop-shadow"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo.png';
+              }}
+            />
             <div>
-              <h1 className="text-lg font-black text-[#0D47A1] tracking-tight uppercase">SMART STROLLER</h1>
+              <h1 className="text-lg font-black text-[#0D47A1] tracking-tight uppercase">SMARTCART</h1>
               <p className="text-[11px] font-bold text-emerald-700 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                IoT Admin Intelligence
+                Retail Intelligence
               </p>
             </div>
           </div>

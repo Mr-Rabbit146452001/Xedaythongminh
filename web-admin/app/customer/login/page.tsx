@@ -257,78 +257,74 @@ export default function CustomerLoginPage() {
 
       <div className="flex-1 max-w-md w-full mx-auto px-4 py-6 flex flex-col justify-center">
         {/* Brand Banner */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white shadow-xl border-2 border-[#0D47A1]/20 p-2.5 mb-3">
-            <img
-              src="/img_smart_cart_logo.png"
-              alt="Smart Cart Logo"
-              className="w-full h-full object-contain"
-              onError={(e) => {
-                (e.target as HTMLImageElement).src = '/logo.png';
-              }}
-            />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-[#0D47A1] uppercase">
-            SMART STROLLER MEMBER
+        <div className="text-center mb-5">
+          <img
+            src="/img_smart_cart_logo.png"
+            alt="Smart Cart Logo"
+            className="w-28 h-28 sm:w-32 sm:h-32 object-contain mx-auto mb-1"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/logo.png';
+            }}
+          />
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0D47A1] uppercase">
+            SMARTCART MEMBER
           </h1>
           <p className="text-xs font-semibold text-[#666666] mt-1 max-w-xs mx-auto">
-            Hệ sinh thái xe đẩy thông minh & Ví thanh toán không chạm
+            Hệ sinh thái mua sắm thông minh & Ví thanh toán không chạm
           </p>
         </div>
 
         {/* Status Alerts */}
         {errorMessage && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5 animate-fadeIn">
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-            <div className="flex-1 font-medium">{errorMessage}</div>
+          <div className="mb-4 p-3 rounded-xl bg-[#FFEBEE] border border-[#D32F2F]/30 text-[#D32F2F] text-xs flex items-start gap-2.5 animate-fadeIn font-bold shadow-sm">
+            <AlertCircle className="w-4 h-4 text-[#D32F2F] shrink-0 mt-0.5" />
+            <div className="flex-1 font-bold">{errorMessage}</div>
           </div>
         )}
 
         {successMessage && (
-          <div className="mb-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-start gap-2.5 animate-fadeIn">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-            <div className="flex-1 font-medium">{successMessage}</div>
+          <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs flex items-start gap-2.5 animate-fadeIn font-bold shadow-sm">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex-1 font-bold">{successMessage}</div>
           </div>
         )}
 
         {/* ALREADY LOGGED IN: PROFILE VIEW */}
         {currentUser ? (
           <div className="space-y-4 animate-fadeIn">
-            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 border border-emerald-500/30 p-5 shadow-xl shadow-emerald-500/5">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
-              
+            <div className="relative overflow-hidden rounded-3xl bg-white border border-[#E0E0E0] p-5 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-400 font-black text-lg">
+                  <div className="w-12 h-12 rounded-full bg-[#0D47A1] text-white flex items-center justify-center font-black text-lg shadow-md">
                     {currentUser.name.charAt(0)}
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-100">{currentUser.name}</h3>
-                    <p className="text-xs text-slate-400 font-mono">{currentUser.phoneNumber}</p>
+                    <h3 className="text-base font-black text-[#1A1A1A]">{currentUser.name}</h3>
+                    <p className="text-xs font-mono font-bold text-[#666666]">{currentUser.phoneNumber}</p>
                   </div>
                 </div>
-                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                  <Award className="w-3 h-3 text-amber-400" />
+                <span className="px-3 py-1 rounded-full text-[11px] font-black bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-sm">
+                  <Award className="w-3.5 h-3.5 text-amber-600" />
                   {currentUser.membershipLevel}
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-slate-800/80">
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Coins className="w-3 h-3 text-emerald-400" />
+              <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-gray-200">
+                <div className="p-3.5 rounded-2xl bg-[#E3F2FD] border border-blue-200">
+                  <div className="text-[11px] text-[#0D47A1] font-bold flex items-center gap-1">
+                    <Coins className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Số Dư Ví Token</span>
                   </div>
-                  <div className="text-base font-black text-emerald-400 mt-1">
+                  <div className="text-lg font-black text-[#0D47A1] mt-1 font-mono">
                     {Number(currentUser.tokenBalance || 0).toLocaleString('vi-VN')} T
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
-                  <div className="text-[11px] text-slate-400 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-400" />
+                <div className="p-3.5 rounded-2xl bg-[#E3F2FD] border border-blue-200">
+                  <div className="text-[11px] text-[#0D47A1] font-bold flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
                     <span>Điểm Tích Lũy</span>
                   </div>
-                  <div className="text-base font-black text-amber-400 mt-1">
+                  <div className="text-lg font-black text-[#0D47A1] mt-1 font-mono">
                     {currentUser.points} điểm
                   </div>
                 </div>
@@ -336,15 +332,15 @@ export default function CustomerLoginPage() {
 
               {/* Perks & Vouchers */}
               {currentUser.vouchers && currentUser.vouchers.length > 0 && (
-                <div className="mt-3.5 pt-3 border-t border-slate-800/80">
-                  <div className="text-[11px] font-bold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                    <Gift className="w-3.5 h-3.5 text-pink-400" />
+                <div className="mt-3.5 pt-3 border-t border-gray-200">
+                  <div className="text-[11px] font-black text-[#1A1A1A] mb-1.5 flex items-center gap-1.5">
+                    <Gift className="w-3.5 h-3.5 text-pink-600" />
                     <span>Ưu đãi & Voucher khả dụng</span>
                   </div>
                   <div className="space-y-1">
                     {currentUser.vouchers.map((v, i) => (
-                      <div key={i} className="text-xs text-slate-300 bg-pink-500/10 border border-pink-500/20 px-2.5 py-1.5 rounded-lg flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-pink-400"></span>
+                      <div key={i} className="text-xs font-bold text-pink-900 bg-pink-50 border border-pink-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
                         <span className="truncate">{v}</span>
                       </div>
                     ))}
@@ -357,7 +353,7 @@ export default function CustomerLoginPage() {
             <div className="space-y-2.5">
               <Link
                 href="/customer"
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-sm shadow-lg shadow-emerald-500/25 transition-all active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-[#0D47A1] hover:bg-[#1565C0] text-white font-black text-sm shadow-xl shadow-blue-900/20 transition-all active:scale-[0.98]"
               >
                 <ShoppingBag className="w-4 h-4 stroke-[2.5]" />
                 <span>Tiếp Tục Mua Sắm Trên Xe {strollerId}</span>
@@ -365,7 +361,7 @@ export default function CustomerLoginPage() {
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-slate-900 border border-slate-800 text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 text-xs font-semibold transition-all active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-[#FFEBEE] hover:bg-red-100 border border-[#D32F2F]/30 text-[#D32F2F] text-xs font-extrabold transition-all active:scale-[0.98]"
               >
                 <LogOut className="w-4 h-4" />
                 <span>Đăng Xuất Tài Khoản</span>
@@ -463,7 +459,7 @@ export default function CustomerLoginPage() {
                   className="w-full py-3.5 px-4 rounded-2xl bg-[#0D47A1] hover:bg-[#1565C0] text-white font-black text-sm shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
                       <span>ĐĂNG NHẬP NGAY</span>
@@ -473,35 +469,35 @@ export default function CustomerLoginPage() {
                 </button>
 
                 {/* Quick Demo Fill Buttons from CSDL */}
-                <div className="pt-2 border-t border-slate-800/80">
-                  <div className="text-[11px] text-slate-400 mb-2 flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-amber-400" />
+                <div className="pt-3 border-t border-gray-200">
+                  <div className="text-[11px] font-bold text-[#666666] mb-2 flex items-center gap-1">
+                    <Zap className="w-3.5 h-3.5 text-amber-600" />
                     <span>Chọn nhanh tài khoản mẫu từ CSDL:</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => { setPhoneNumber('0987654321'); setPassword('123456'); clearNotifications(); }}
-                      className="py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-[11px] text-slate-300 hover:text-emerald-400 transition-all text-center truncate"
+                      className="py-2 px-2 rounded-xl bg-[#E3F2FD] border border-blue-200 hover:bg-blue-100 text-[11px] text-[#0D47A1] font-bold transition-all text-center truncate shadow-sm active:scale-95"
                       title="Nguyễn Văn A - Hội viên Vàng"
                     >
-                      <span className="font-bold text-amber-400">Vàng</span> • A
+                      <span className="font-black text-amber-600">Vàng</span> • A
                     </button>
                     <button
                       type="button"
                       onClick={() => { setPhoneNumber('0909123456'); setPassword('123456'); clearNotifications(); }}
-                      className="py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-[11px] text-slate-300 hover:text-emerald-400 transition-all text-center truncate"
+                      className="py-2 px-2 rounded-xl bg-[#E3F2FD] border border-blue-200 hover:bg-blue-100 text-[11px] text-[#0D47A1] font-bold transition-all text-center truncate shadow-sm active:scale-95"
                       title="Trần Thị B - Hội viên Kim Cương"
                     >
-                      <span className="font-bold text-purple-400">Kim Cương</span> • B
+                      <span className="font-black text-purple-600">Kim Cương</span> • B
                     </button>
                     <button
                       type="button"
                       onClick={() => { setPhoneNumber('0918889999'); setPassword('123456'); clearNotifications(); }}
-                      className="py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-emerald-500/50 text-[11px] text-slate-300 hover:text-emerald-400 transition-all text-center truncate"
+                      className="py-2 px-2 rounded-xl bg-[#E3F2FD] border border-blue-200 hover:bg-blue-100 text-[11px] text-[#0D47A1] font-bold transition-all text-center truncate shadow-sm active:scale-95"
                       title="Lê Hoàng Long - Hội viên VIP"
                     >
-                      <span className="font-bold text-emerald-400">VIP</span> • Long
+                      <span className="font-black text-emerald-700">VIP</span> • Long
                     </button>
                   </div>
                 </div>
