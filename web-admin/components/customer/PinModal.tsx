@@ -45,11 +45,11 @@ export default function PinModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-md bg-gradient-to-b from-slate-900 to-slate-950 border-t sm:border border-slate-800 rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl flex flex-col items-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-white border-t sm:border border-[#E0E0E0] rounded-t-[32px] sm:rounded-3xl p-6 shadow-2xl flex flex-col items-center text-[#1A1A1A]">
         {/* Header */}
         <div className="w-full flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-emerald-400">
+          <div className="flex items-center gap-2 text-[#0D47A1]">
             <ShieldCheck className="w-5 h-5 stroke-[2.5]" />
             <span className="text-xs font-black tracking-wider uppercase">Bảo Mật Giao Dịch FinTech</span>
           </div>
@@ -58,19 +58,19 @@ export default function PinModal({
               handleClear();
               onClose();
             }}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors active:scale-90"
+            className="p-2 rounded-xl text-slate-400 hover:text-[#0D47A1] hover:bg-gray-100 transition-colors active:scale-90"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <h3 className="text-lg font-black text-slate-100 text-center mb-1">{title}</h3>
+        <h3 className="text-lg font-black text-[#0D47A1] text-center mb-1">{title}</h3>
         {amountToken > 0 && (
           <div className="text-center mb-6">
-            <span className="text-2xl font-black text-emerald-400 font-mono">
+            <span className="text-2xl font-black text-[#0D47A1] font-mono">
               {amountToken.toLocaleString('vi-VN')} Token
             </span>
-            <span className="block text-xs text-slate-400 mt-0.5 font-mono">
+            <span className="block text-xs text-[#666666] mt-0.5 font-mono font-medium">
               ≈ {amountVnd.toLocaleString('vi-VN')} VNĐ (Tỷ giá 1:10)
             </span>
           </div>
@@ -85,8 +85,8 @@ export default function PinModal({
                 key={idx}
                 className={`w-4 h-4 rounded-full transition-all duration-200 ${
                   isFilled
-                    ? 'bg-emerald-400 shadow-lg shadow-emerald-500/60 scale-110'
-                    : 'bg-slate-800 border border-slate-700'
+                    ? 'bg-[#0D47A1] shadow-md scale-110'
+                    : 'bg-gray-200 border border-gray-300'
                 }`}
               />
             );
@@ -101,7 +101,7 @@ export default function PinModal({
               type="button"
               disabled={isLoading}
               onClick={() => handleKeyPress(num)}
-              className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:scale-95 border border-slate-700/60 text-xl font-bold font-mono text-slate-100 transition-all flex items-center justify-center shadow-md select-none"
+              className="h-14 rounded-2xl bg-[#E3F2FD] hover:bg-blue-100 active:scale-95 border border-blue-200 text-xl font-black font-mono text-[#0D47A1] transition-all flex items-center justify-center shadow-sm select-none"
             >
               {num}
             </button>
@@ -110,7 +110,7 @@ export default function PinModal({
             type="button"
             disabled={isLoading || pin.length === 0}
             onClick={handleClear}
-            className="h-14 rounded-2xl bg-slate-800/40 text-slate-400 hover:text-slate-200 active:scale-95 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center select-none"
+            className="h-14 rounded-2xl bg-gray-100 text-[#666666] hover:text-[#1A1A1A] active:scale-95 text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center select-none"
           >
             Xóa hết
           </button>
@@ -118,7 +118,7 @@ export default function PinModal({
             type="button"
             disabled={isLoading}
             onClick={() => handleKeyPress('0')}
-            className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 active:scale-95 border border-slate-700/60 text-xl font-bold font-mono text-slate-100 transition-all flex items-center justify-center shadow-md select-none"
+            className="h-14 rounded-2xl bg-[#E3F2FD] hover:bg-blue-100 active:scale-95 border border-blue-200 text-xl font-black font-mono text-[#0D47A1] transition-all flex items-center justify-center shadow-sm select-none"
           >
             0
           </button>
@@ -126,14 +126,14 @@ export default function PinModal({
             type="button"
             disabled={isLoading || pin.length === 0}
             onClick={handleDelete}
-            className="h-14 rounded-2xl bg-slate-800/40 text-slate-400 hover:text-rose-400 active:scale-95 transition-all flex items-center justify-center select-none"
+            className="h-14 rounded-2xl bg-gray-100 text-[#666666] hover:text-[#D32F2F] active:scale-95 transition-all flex items-center justify-center select-none"
           >
             <Delete className="w-5 h-5" />
           </button>
         </div>
 
-        <p className="text-[11px] text-slate-400 text-center">
-          Mã PIN thử nghiệm mặc định: <span className="text-emerald-400 font-mono font-bold bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700">123456</span>
+        <p className="text-[11px] text-[#666666] text-center font-medium">
+          Mã PIN thử nghiệm mặc định: <span className="text-[#0D47A1] font-mono font-black bg-[#E3F2FD] px-1.5 py-0.5 rounded border border-blue-200">123456</span>
         </p>
       </div>
     </div>

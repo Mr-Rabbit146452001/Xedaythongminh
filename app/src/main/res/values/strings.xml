@@ -47,8 +47,8 @@
     <string name="btn_back">Quay lại</string>
     <string name="payment_success_title">Thanh toán thành công!</string>
     <string name="payment_success_desc">Cảm ơn bạn đã mua sắm. Giao dịch của bạn đã được xử lý an toàn.</string>
-    <string name="btn_download_receipt">Tải hóa đơn</string>
-    <string name="btn_send_email">Gửi email</string>
+    <string name="btn_download_receipt">Xuất hóa đơn</string>
+    <string name="btn_send_email">Gửi hóa đơn qua Gmail</string>
     <string name="receipt_title">Hóa đơn điện tử</string>
     <string name="receipt_date">Ngày:</string>
     <string name="receipt_id">Mã GD:</string>

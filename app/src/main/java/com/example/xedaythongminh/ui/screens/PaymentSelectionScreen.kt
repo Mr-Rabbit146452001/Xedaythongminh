@@ -52,13 +52,11 @@ fun PaymentSelectionScreen(
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
     }
 
-    var selectedPaymentMethod by remember { mutableStateOf("⚡ Tự động (Auto-Pay)") }
+    var selectedPaymentMethod by remember { mutableStateOf("QR Banking") }
 
     val paymentMethods = listOf(
-        PaymentMethodItem("⚡ Tự động (Auto-Pay)", Icons.Default.Bolt),
         PaymentMethodItem("QR Banking", Icons.Default.QrCode2),
         PaymentMethodItem("Ví điện tử", Icons.Default.AccountBalanceWallet),
-        PaymentMethodItem("Thẻ thành viên", Icons.Default.Badge),
         PaymentMethodItem("Tại quầy", Icons.Default.Storefront)
     )
 
@@ -99,14 +97,6 @@ fun PaymentSelectionScreen(
                                     .padding(vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFFE0E0E0))
-                                )
-                                Spacer(modifier = Modifier.width(12.dp))
-                                
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = item.product.name,
@@ -209,7 +199,7 @@ fun PaymentSelectionScreen(
                     
                     // Grid of Payment Methods
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
+                        columns = GridCells.Adaptive(minSize = 150.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.heightIn(max = 220.dp)

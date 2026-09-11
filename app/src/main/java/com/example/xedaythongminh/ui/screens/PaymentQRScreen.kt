@@ -81,7 +81,7 @@ fun PaymentQRScreen(
         if (lockRemainingSeconds > 0) {
             Toast.makeText(
                 context,
-                "Hệ thống đang khóa 1 phút đầu để đồng bộ máy chủ (còn ${lockRemainingSeconds}s), vui lòng đợi!",
+                "Hệ thống đang tạm khóa để đồng bộ máy chủ (còn ${lockRemainingSeconds}s), vui lòng đợi!",
                 Toast.LENGTH_SHORT
             ).show()
         } else {
@@ -159,18 +159,6 @@ fun PaymentQRScreen(
                                         .padding(12.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(RoundedCornerShape(8.dp))
-                                            .background(Color(0xFFE0E0E0)),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray)
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.width(12.dp))
-                                    
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = item.product.name,
@@ -434,45 +422,8 @@ fun PaymentQRInstructionsBox(
             color = PrimaryBlue,
             lineHeight = 44.sp
         )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "Sử dụng ứng dụng Ngân hàng (MockBank) của bạn để quét mã QR chuyển Token.",
-            fontSize = 15.sp,
-            color = TextGray,
-            lineHeight = 22.sp
-        )
         
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Banner khóa 1 phút đầu để đồng bộ máy chủ
-        if (lockRemainingSeconds > 0) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = Color(0xFFFFF8E1),
-                border = BorderStroke(1.dp, Color(0xFFFFB300)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = null,
-                        tint = Color(0xFFE65100),
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "1 phút đầu: Khóa màn hình để đồng bộ máy chủ (${lockRemainingSeconds}s)",
-                        color = Color(0xFFBF360C),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
+        Spacer(modifier = Modifier.height(24.dp))
         
         // Status & Timer
         Row(
@@ -533,16 +484,19 @@ fun PaymentQRInstructionsBox(
                     }
                 },
                 enabled = lockRemainingSeconds <= 0,
-                modifier = Modifier
-                    .weight(1f)
-                    .height(48.dp),
+                modifier = if (isExpired) Modifier.weight(1f).height(48.dp) else Modifier.fillMaxWidth().height(48.dp),
                 shape = RoundedCornerShape(10.dp),
                 border = BorderStroke(1.dp, if (lockRemainingSeconds > 0) Color.LightGray else PrimaryBlue)
             ) {
                 if (lockRemainingSeconds > 0) {
                     Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Khóa (${lockRemainingSeconds}s)", color = Color.Gray, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(
+                        text = "Tạm khóa (${lockRemainingSeconds}s)",
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 } else {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
@@ -562,35 +516,6 @@ fun PaymentQRInstructionsBox(
                     Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Làm mới QR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-                }
-            } else {
-                // Trạng thái lắng nghe giao dịch tự động từ Ngân hàng (Không cho phép client tự xác nhận)
-                Surface(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    color = Color(0xFFE8F5E9),
-                    border = BorderStroke(1.dp, Color(0xFF81C784))
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                            color = Color(0xFF2E7D32)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Đang chờ ngân hàng...",
-                            color = Color(0xFF2E7D32),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
                 }
             }
         }

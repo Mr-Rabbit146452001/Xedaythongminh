@@ -133,37 +133,37 @@ export default function CustomerHomePage() {
         )}
 
         {/* Card Trạng Thái Xe Đẩy & Phiên IoT */}
-        <div className="bg-gradient-to-br from-slate-900 via-slate-900/90 to-slate-950 border border-slate-800 rounded-3xl p-4 shadow-xl flex items-center justify-between">
+        <div className="bg-[#0D47A1] text-white border border-[#0A3880] rounded-3xl p-4 shadow-xl flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-inner">
+            <div className="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shadow-inner">
               <ShoppingBag className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400 font-medium">Phiên mua sắm IoT</span>
+                <span className="text-[11px] text-blue-100 font-bold uppercase tracking-wider">Phiên mua sắm IoT</span>
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                 </span>
               </div>
-              <p className="text-base font-black text-slate-100 mt-0.5 tracking-tight">
-                Xe đẩy: <span className="text-emerald-400 font-mono">{strollerId}</span>
+              <p className="text-base font-black text-white mt-0.5 tracking-tight">
+                Xe đẩy: <span className="text-amber-300 font-mono bg-black/20 px-1.5 py-0.5 rounded">{strollerId}</span>
               </p>
             </div>
           </div>
-          <div className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs font-bold text-emerald-400 flex items-center gap-1.5 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <div className="px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-black flex items-center gap-1.5 shadow-md">
+            <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
             <span>Đã kết nối</span>
           </div>
         </div>
 
         {/* Cảnh báo trọng lượng bất thường nếu có */}
         {cart.anomalyDetected && (
-          <div className="bg-rose-500/10 border border-rose-500/40 rounded-2xl p-3.5 flex items-start gap-3 animate-pulse shadow-lg shadow-rose-500/5">
-            <ShieldAlert className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
+          <div className="bg-[#FFEBEE] border border-[#D32F2F]/40 rounded-2xl p-3.5 flex items-start gap-3 animate-pulse shadow-md">
+            <ShieldAlert className="w-5 h-5 text-[#D32F2F] flex-shrink-0 mt-0.5" />
             <div className="text-xs">
-              <p className="font-bold text-rose-300">Cảnh báo chênh lệch trọng lượng!</p>
-              <p className="text-rose-200/80 mt-0.5 leading-relaxed">
+              <p className="font-bold text-[#D32F2F]">Cảnh báo chênh lệch trọng lượng!</p>
+              <p className="text-[#D32F2F]/90 mt-0.5 leading-relaxed">
                 Hệ thống cảm biến phát hiện trọng lượng trong giỏ không khớp với mã sản phẩm vừa quét. Vui lòng kiểm tra lại món hàng.
               </p>
             </div>
@@ -173,18 +173,18 @@ export default function CustomerHomePage() {
         {/* Tiêu đề danh sách giỏ hàng & Badge số lượng */}
         <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+            <div className="w-7 h-7 rounded-lg bg-[#E3F2FD] border border-blue-200 flex items-center justify-center text-[#0D47A1]">
               <ShoppingBag className="w-4 h-4" />
             </div>
-            <h2 className="text-sm font-bold text-slate-100 uppercase tracking-wider">
+            <h2 className="text-sm font-black text-[#1A1A1A] uppercase tracking-wider">
               Sản Phẩm Trong Xe
             </h2>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/30">
+            <span className="px-2 py-0.5 rounded-full bg-[#0D47A1] text-white font-mono font-bold text-xs shadow-sm">
               {cart.totalQuantity}
             </span>
           </div>
-          <span className="text-[11px] text-slate-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[11px] text-[#666666] font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse" />
             Live Sync
           </span>
         </div>
@@ -193,21 +193,21 @@ export default function CustomerHomePage() {
         {isLoading ? (
           <div className="space-y-3 py-4">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 bg-slate-900/60 rounded-2xl animate-pulse border border-slate-800" />
+              <div key={i} className="h-20 bg-gray-200 rounded-2xl animate-pulse border border-gray-300" />
             ))}
           </div>
         ) : cart.items.length === 0 ? (
-          <div className="bg-slate-900/40 border border-dashed border-slate-800 rounded-3xl p-8 text-center flex flex-col items-center justify-center my-4">
-            <div className="w-16 h-16 rounded-3xl bg-slate-800/60 border border-slate-700/40 flex items-center justify-center text-slate-500 mb-3 shadow-inner">
-              <ShoppingBag className="w-8 h-8 stroke-[1.5] text-slate-400" />
+          <div className="bg-white border-2 border-dashed border-[#E0E0E0] rounded-3xl p-8 text-center flex flex-col items-center justify-center my-4 shadow-sm">
+            <div className="w-16 h-16 rounded-3xl bg-[#E3F2FD] border border-blue-200 flex items-center justify-center text-[#0D47A1] mb-3 shadow-inner">
+              <ShoppingBag className="w-8 h-8 stroke-[1.75]" />
             </div>
-            <h3 className="text-base font-bold text-slate-200 mb-1">Giỏ hàng đang trống</h3>
-            <p className="text-xs text-slate-400 max-w-[240px] leading-relaxed mb-5">
+            <h3 className="text-base font-bold text-[#1A1A1A] mb-1">Giỏ hàng đang trống</h3>
+            <p className="text-xs text-[#666666] max-w-[240px] leading-relaxed mb-5">
               Hãy quét mã vạch sản phẩm và đặt vào xe đẩy thông minh để bắt đầu mua sắm!
             </p>
             <Link
               href="/customer/products"
-              className="px-5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-bold text-emerald-400 border border-emerald-500/30 transition-all flex items-center gap-2 active:scale-95"
+              className="px-5 py-2.5 rounded-xl bg-[#0D47A1] hover:bg-[#1565C0] text-xs font-bold text-white shadow-md transition-all flex items-center gap-2 active:scale-95"
             >
               <PackageSearch className="w-4 h-4" />
               <span>Khám phá sản phẩm</span>
@@ -220,10 +220,10 @@ export default function CustomerHomePage() {
               return (
                 <div
                   key={item.Id || item.Barcode}
-                  className="bg-slate-900/90 border border-slate-800/80 hover:border-emerald-500/40 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-md transition-all active:scale-[0.99]"
+                  className="bg-white border border-[#E0E0E0] hover:border-[#0D47A1]/40 rounded-2xl p-3.5 flex items-center gap-3.5 shadow-sm transition-all active:scale-[0.99]"
                 >
                   {/* Ảnh sản phẩm */}
-                  <div className="w-16 h-16 rounded-xl bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700/60 relative">
+                  <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center border border-gray-200 relative">
                     {item.ImageUrl ? (
                       <img
                         src={item.ImageUrl.startsWith('http') ? item.ImageUrl : `/images/${item.ImageUrl.replace(/^(\/images\/|\/products\/|\/)/, '')}`}
@@ -234,24 +234,24 @@ export default function CustomerHomePage() {
                         }}
                       />
                     ) : (
-                      <ShoppingBag className="w-7 h-7 text-slate-600" />
+                      <ShoppingBag className="w-7 h-7 text-slate-400" />
                     )}
                     {/* Badge số lượng trên ảnh */}
-                    <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-black/80 backdrop-blur-sm text-[10px] font-bold font-mono text-emerald-400 border border-emerald-500/30">
+                    <span className="absolute bottom-1 right-1 px-1.5 py-0.5 rounded-md bg-[#0D47A1] text-white text-[10px] font-black font-mono shadow-sm">
                       x{item.Quantity}
                     </span>
                   </div>
 
                   {/* Thông tin sản phẩm */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-slate-100 truncate tracking-tight">
+                    <h4 className="text-sm font-bold text-[#1A1A1A] truncate tracking-tight">
                       {item.Name}
                     </h4>
-                    <p className="text-xs text-slate-400 mt-1">
-                      {item.Price.toLocaleString('vi-VN')} đ × <span className="font-bold text-emerald-400">{item.Quantity}</span>
+                    <p className="text-xs text-[#666666] mt-1">
+                      {item.Price.toLocaleString('vi-VN')} đ × <span className="font-bold text-[#0D47A1]">{item.Quantity}</span>
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-slate-500 font-mono bg-slate-800/80 px-1.5 py-0.5 rounded border border-slate-700/50">
+                      <span className="text-[10px] text-slate-500 font-mono bg-gray-100 px-1.5 py-0.5 rounded border border-gray-200">
                         {item.Barcode}
                       </span>
                     </div>
@@ -259,11 +259,11 @@ export default function CustomerHomePage() {
 
                   {/* Giá thành & Token */}
                   <div className="text-right flex-shrink-0">
-                    <span className="text-sm font-black text-slate-100 block tracking-tight">
+                    <span className="text-sm font-black text-[#0D47A1] block tracking-tight">
                       {itemTotal.toLocaleString('vi-VN')} đ
                     </span>
-                    <span className="text-[11px] text-emerald-400 font-bold flex items-center justify-end gap-1 mt-0.5">
-                      <Coins className="w-3 h-3 text-emerald-400" />
+                    <span className="text-[11px] text-emerald-700 font-bold flex items-center justify-end gap-1 mt-0.5">
+                      <Coins className="w-3 h-3 text-emerald-600" />
                       {Math.ceil(itemTotal / 10).toLocaleString('vi-VN')} T
                     </span>
                   </div>
@@ -275,45 +275,45 @@ export default function CustomerHomePage() {
 
         {/* Tóm Tắt Chi Phí & Nút Thanh Toán Nổi Bật (Thumb-friendly dock) */}
         {cart.items.length > 0 && (
-          <div className="bg-gradient-to-b from-slate-900/90 to-slate-950 border border-slate-800/90 rounded-3xl p-4 space-y-3.5 shadow-2xl mt-4">
+          <div className="bg-white border border-[#E0E0E0] rounded-3xl p-4 space-y-3.5 shadow-xl mt-4">
             {/* Chi tiết tính tiền */}
-            <div className="space-y-2 text-xs text-slate-400 pb-3.5 border-b border-slate-800">
+            <div className="space-y-2 text-xs text-[#666666] pb-3.5 border-b border-gray-200">
               <div className="flex justify-between">
                 <span>Số lượng sản phẩm:</span>
-                <span className="font-semibold text-slate-200 font-mono">{cart.totalQuantity} món</span>
+                <span className="font-bold text-[#1A1A1A] font-mono">{cart.totalQuantity} món</span>
               </div>
               <div className="flex justify-between">
                 <span>Tổng tiền hàng:</span>
-                <span className="font-semibold text-slate-200 font-mono">{cart.totalAmount.toLocaleString('vi-VN')} VNĐ</span>
+                <span className="font-bold text-[#1A1A1A] font-mono">{cart.totalAmount.toLocaleString('vi-VN')} VNĐ</span>
               </div>
-              <div className="flex justify-between text-emerald-400">
+              <div className="flex justify-between text-emerald-700 font-bold">
                 <span className="flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" />
+                  <Sparkles className="w-3 h-3 text-emerald-600" />
                   <span>Ưu đãi thành viên:</span>
                 </span>
-                <span className="font-bold">Miễn phí dịch vụ IoT</span>
+                <span>Miễn phí dịch vụ IoT</span>
               </div>
             </div>
 
             {/* Tổng cộng & Quy đổi Token */}
             <div className="flex items-center justify-between pt-0.5">
               <div>
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
+                <span className="text-[10px] uppercase tracking-wider text-[#666666] block font-bold">
                   Tổng Thanh Toán
                 </span>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="text-2xl font-black text-slate-100 tracking-tight">
+                  <span className="text-2xl font-black text-[#0D47A1] tracking-tight">
                     {cart.totalAmount.toLocaleString('vi-VN')}
                   </span>
-                  <span className="text-xs font-semibold text-slate-400">VNĐ</span>
+                  <span className="text-xs font-bold text-[#666666]">VNĐ</span>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
+                <span className="text-[10px] uppercase tracking-wider text-[#666666] block font-bold">
                   Quy Đổi Ví Token
                 </span>
-                <span className="text-xl font-black text-emerald-400 flex items-center justify-end gap-1 mt-0.5">
-                  <Coins className="w-4 h-4 text-emerald-400" />
+                <span className="text-xl font-black text-emerald-700 flex items-center justify-end gap-1 mt-0.5">
+                  <Coins className="w-4 h-4 text-emerald-600" />
                   {tokenAmount.toLocaleString('vi-VN')}
                 </span>
               </div>
@@ -322,7 +322,7 @@ export default function CustomerHomePage() {
             {/* Nút Thanh Toán Nổi Bật Chuẩn FinTech */}
             <Link
               href="/customer/checkout"
-              className="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-400 hover:from-emerald-400 hover:to-teal-300 active:scale-[0.98] text-slate-950 font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-emerald-500/25 transition-all mt-3 select-none"
+              className="w-full h-14 rounded-2xl bg-[#0D47A1] hover:bg-[#1565C0] active:scale-[0.98] text-white font-black text-base flex items-center justify-center gap-2 shadow-xl shadow-blue-900/20 transition-all mt-3 select-none"
             >
               <span>Thanh Toán Bằng Ví Token</span>
               <ArrowRight className="w-5 h-5 stroke-[2.5]" />

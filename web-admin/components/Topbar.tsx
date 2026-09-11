@@ -43,11 +43,11 @@ export default function Topbar({ onRefresh, onToggleMobileSidebar }: TopbarProps
         {/* Switch View Button to Mobile Customer */}
         <Link
           href="/customer"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 border border-emerald-500/30 text-xs font-bold transition-all active:scale-95 shadow-sm"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0D47A1] hover:bg-[#1565C0] text-white text-xs font-bold transition-all active:scale-95 shadow-md"
           title="Chuyển sang giao diện Mobile Khách Hàng (PWA)"
         >
-          <span className="material-symbols-outlined text-base text-emerald-600">smartphone</span>
-          <span className="hidden md:inline">Giao Diện Khách Hàng</span>
+          <img src="/img_smart_cart_logo.png" alt="Logo" className="w-4 h-4 object-contain bg-white rounded-full p-0.5" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
+          <span className="hidden md:inline">Giao Diện Khách Hàng (PWA)</span>
         </Link>
 
         <button

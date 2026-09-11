@@ -25,26 +25,33 @@ export default function MobileHeader({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3">
+    <header className="sticky top-0 z-40 bg-[#0D47A1] text-white shadow-md border-b border-[#0A3880] px-4 py-2.5">
       <div className="flex items-center justify-between">
-        {/* Brand & Stroller ID */}
+        {/* Brand & Stroller Logo & ID */}
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-300 flex items-center justify-center shadow-lg shadow-emerald-500/25 border border-emerald-400/30">
-            <ShoppingCart className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+          <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-md border border-white/30 flex items-center justify-center shrink-0">
+            <img
+              src="/img_smart_cart_logo.png"
+              alt="Smart Cart Logo"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo.png';
+              }}
+            />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-black text-slate-100 tracking-tight">SMART CART</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
+              <span className="text-sm font-black tracking-tight text-white uppercase">SMART STROLLER</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-extrabold border border-white/40">
                 PWA
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 mt-0.5">
+            <div className="flex items-center gap-1.5 text-[11px] text-blue-100 mt-0.5">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
               </span>
-              <span>Xe: <b className="text-slate-200 font-mono">{strollerId}</b></span>
+              <span>Xe: <b className="text-white font-mono bg-white/10 px-1 py-0.2 rounded">{strollerId}</b></span>
             </div>
           </div>
         </div>
@@ -56,30 +63,30 @@ export default function MobileHeader({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/30 active:scale-95 transition-all shadow-sm"
+              className="p-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white active:scale-95 transition-all shadow-sm"
               title="Làm mới giỏ hàng"
             >
-              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-emerald-400' : ''}`} />
+              <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-amber-300' : ''}`} />
             </button>
           )}
 
           {/* User Auth Quick Link */}
           <Link
             href="/customer/login"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-emerald-500/40 text-xs font-semibold shadow-sm transition-all text-slate-200 hover:text-emerald-400"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white text-[#0D47A1] hover:bg-blue-50 text-xs font-bold shadow-md transition-all active:scale-95"
             title={user ? `Tài khoản: ${user.name}` : 'Đăng nhập / Đăng ký'}
           >
             {user ? (
               <>
-                <div className="w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-[10px] font-black border border-emerald-400/40">
+                <div className="w-4 h-4 rounded-full bg-[#0D47A1] text-white flex items-center justify-center text-[10px] font-black">
                   {user.name.charAt(0)}
                 </div>
-                <span className="text-[11px] max-w-[80px] truncate font-medium">{user.name.split(' ').slice(-1)[0]}</span>
+                <span className="text-[11px] max-w-[80px] truncate font-bold">{user.name.split(' ').slice(-1)[0]}</span>
               </>
             ) : (
               <>
-                <User className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-[11px] text-slate-300">Đăng nhập</span>
+                <User className="w-3.5 h-3.5 text-[#0D47A1]" />
+                <span className="text-[11px] text-[#0D47A1]">Đăng nhập</span>
               </>
             )}
           </Link>

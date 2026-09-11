@@ -336,39 +336,7 @@ fun CartDetailScreen(
                             Text("Tiếp tục mua sắm", fontWeight = FontWeight.Medium)
                         }
                         
-                        Spacer(modifier = Modifier.height(24.dp))
-                        
-                        // Tip / Promo Box
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(LightBlueBg, RoundedCornerShape(12.dp))
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.Top
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Stars,
-                                contentDescription = "Promo",
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column {
-                                Text(
-                                    text = "Mẹo ưu đãi",
-                                    fontWeight = FontWeight.Bold,
-                                    color = PrimaryBlue,
-                                    fontSize = 14.sp
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "Quét mã thành viên để nhận ưu đãi giảm giá lên tới 20% cho các sản phẩm Organic.",
-                                    fontSize = 12.sp,
-                                    color = PrimaryBlue,
-                                    lineHeight = 18.sp
-                                )
-                            }
-                        }
+
                     }
                 }
             }

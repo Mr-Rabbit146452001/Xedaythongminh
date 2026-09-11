@@ -64,19 +64,19 @@ fun SessionEndedScreen(
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
-            leftWeight = 0.55f,
-            rightWeight = 0.45f,
+            leftWeight = 0.70f,
+            rightWeight = 0.30f,
             leftContent = { modifier ->
                 Card(
                     modifier = modifier,
                     colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(16.dp),
-                    elevation = CardDefaults.cardElevation(2.dp)
+                    shape = RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(2dp)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(16.dp)
+                            .padding(24.dp)
                             .verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
@@ -113,19 +113,19 @@ fun SessionEndedScreen(
                             color = TextGray,
                             textAlign = TextAlign.Center,
                             lineHeight = 28.sp,
-                            modifier = Modifier.widthIn(max = 600.dp)
+                            modifier = Modifier.widthIn(max = 680.dp)
                         )
                         
-                        Spacer(modifier = Modifier.height(48.dp))
+                        Spacer(modifier = Modifier.height(44.dp))
                         
                         Box(
                             modifier = Modifier
                                 .background(LightBlueBg, RoundedCornerShape(24.dp))
-                                .padding(horizontal = 24.dp, vertical = 12.dp)
+                                .padding(horizontal = 28.dp, vertical = 14.dp)
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(Icons.Default.LocalParking, contentDescription = null, tint = PrimaryBlue)
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = "Khu vực trả xe: Cổng A & Cổng B",
                                     color = PrimaryBlue,
@@ -138,65 +138,97 @@ fun SessionEndedScreen(
                 }
             },
             rightContent = { modifier ->
+                val isCompact = windowSize == WindowWidthSizeClass.Compact
+                val columnModifier = if (isCompact) {
+                    modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                } else {
+                    modifier.fillMaxHeight()
+                }
+
                 Column(
-                    modifier = modifier
-                        .verticalScroll(rememberScrollState()),
+                    modifier = columnModifier,
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Security Box
+                    // Security Box (Mở rộng theo chiều dọc để lấp đầy cân đối)
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = if (isCompact) Modifier.fillMaxWidth().wrapContentHeight() else Modifier.fillMaxWidth().weight(1f),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
-                        shape = RoundedCornerShape(16.dp),
-                        elevation = CardDefaults.cardElevation(2.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(24.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(56.dp)
-                                    .background(Color(0xFFEEEEEE), RoundedCornerShape(12.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(Icons.Default.Security, contentDescription = "Security", tint = TextDark, modifier = Modifier.size(28.dp))
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column {
-                                Text("Bảo mật thông tin", fontWeight = FontWeight.Bold, color = TextDark)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text("Dữ liệu cá nhân của bạn đã được xóa an\ntoàn khỏi hệ thống.", fontSize = 14.sp, color = TextGray)
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Next Session Call-to-Action
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = PrimaryBlue),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(20.dp),
                         elevation = CardDefaults.cardElevation(2.dp)
                     ) {
                         Column(
-                            modifier = Modifier.fillMaxWidth().padding(24.dp),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(54.dp)
+                                    .background(LightBlueBg, RoundedCornerShape(14.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Security,
+                                    contentDescription = "Security",
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(28.dp)
+                                )
+                            }
+                            
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            Text(
+                                text = "Bảo mật thông tin",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text(
+                                text = "Dữ liệu cá nhân của bạn đã được xóa an toàn khỏi hệ thống.",
+                                fontSize = 14.sp,
+                                color = TextGray,
+                                lineHeight = 22.sp
+                            )
+                        }
+                    }
+                    
+                    // Next Session Call-to-Action (Mở rộng theo chiều dọc để lấp đầy cân đối)
+                    Card(
+                        modifier = if (isCompact) Modifier.fillMaxWidth().wrapContentHeight() else Modifier.fillMaxWidth().weight(1f),
+                        colors = CardDefaults.cardColors(containerColor = PrimaryBlue),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(24.dp),
                             verticalArrangement = Arrangement.Center
                         ) {
                             Text(
                                 text = "Sẵn sàng cho lượt tiếp theo?",
-                                fontSize = 22.sp,
+                                fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             )
-                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Spacer(modifier = Modifier.height(10.dp))
+                            
                             Text(
                                 text = "Hệ thống đã sẵn sàng để phục vụ khách hàng mới.",
-                                fontSize = 15.sp,
-                                color = Color(0xCCFFFFFF)
+                                fontSize = 14.sp,
+                                color = Color(0xDDFFFFFF),
+                                lineHeight = 22.sp
                             )
-                            Spacer(modifier = Modifier.height(20.dp))
+                            
+                            Spacer(modifier = Modifier.height(26.dp))
+                            
                             Button(
                                 onClick = { 
                                     appViewModel.terminateSessionImmediately()
@@ -204,43 +236,25 @@ fun SessionEndedScreen(
                                         popUpTo(0) { inclusive = true }
                                     } 
                                 },
-                                modifier = Modifier.fillMaxWidth().height(46.dp),
-                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(48.dp),
+                                shape = RoundedCornerShape(12.dp),
                                 colors = ButtonDefaults.buttonColors(containerColor = Color.White)
                             ) {
-                                Icon(Icons.Default.Refresh, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = null,
+                                    tint = PrimaryBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Bắt đầu phiên mới", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-                    
-                    // Image Box
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(Color(0xFFDDDDDD))
-                    ) {
-                        // Placeholder for supermarket aisle image
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                             Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(64.dp))
-                        }
-                        // Overlay Text
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomStart)
-                                .fillMaxWidth()
-                                .background(Color(0x80000000))
-                                .padding(16.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Hẹn gặp lại quý khách", color = Color.White, fontSize = 14.sp)
+                                Text(
+                                    text = "Bắt đầu phiên mới",
+                                    color = PrimaryBlue,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }

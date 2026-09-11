@@ -141,7 +141,7 @@ fun WelcomeImageSection(modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(id = R.drawable.img_smart_cart_logo),
             contentDescription = "Smart Cart 3D Liquid Glass Logo",
-            modifier = Modifier.size(320.dp),
+            modifier = Modifier.size(500.dp),
             contentScale = ContentScale.Fit
         )
     }
@@ -184,9 +184,9 @@ fun TopBar(
             Image(
                 painter = painterResource(id = R.drawable.img_smart_cart_logo),
                 contentDescription = "Logo",
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(50.dp)
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(5.dp))
             Text(
                 text = stringResource(R.string.logo_text),
                 fontWeight = FontWeight.Bold,

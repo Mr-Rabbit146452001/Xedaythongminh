@@ -117,13 +117,13 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
   // Prevent flash during hydration or while redirecting unauthenticated users to login
   if (isMobileScreen === null || isCheckingAuth || (!isAuthenticated && pathname !== '/customer/login')) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-6 text-center">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-300 flex items-center justify-center shadow-xl shadow-emerald-500/25 mb-4 animate-bounce">
-          <ShoppingCart className="w-7 h-7 text-slate-950 stroke-[2.5]" />
+      <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-14 h-14 rounded-2xl bg-[#0D47A1] p-2 flex items-center justify-center shadow-xl shadow-blue-900/20 mb-4 animate-bounce border border-blue-400">
+          <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-full h-full object-contain" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
         </div>
-        <div className="w-6 h-6 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin mb-3" />
-        <h3 className="text-sm font-bold text-slate-200">Đang chuyển đến cổng đăng nhập...</h3>
-        <p className="text-xs text-slate-400 mt-1">Vui lòng đăng nhập tài khoản để vào hệ sinh thái Smart Cart</p>
+        <div className="w-6 h-6 rounded-full border-2 border-[#0D47A1] border-t-transparent animate-spin mb-3" />
+        <h3 className="text-sm font-bold text-[#0D47A1]">Đang kết nối Cổng Đăng Nhập Xe Đẩy...</h3>
+        <p className="text-xs text-[#666666] mt-1">Vui lòng đăng nhập tài khoản để vào hệ sinh thái Smart Cart</p>
       </div>
     );
   }
@@ -131,7 +131,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
   // 1. MOBILE DEVICE VIEW: 100% Full Viewport, Edge-to-Edge Native PWA
   if (isMobileScreen) {
     return (
-      <div className="min-h-screen w-full bg-slate-950 text-slate-100 flex flex-col relative pb-20 selection:bg-emerald-500 selection:text-slate-950">
+      <div className="min-h-screen w-full bg-[#F8F9FA] text-[#1A1A1A] flex flex-col relative pb-20 selection:bg-[#0D47A1] selection:text-white">
         {children}
         {isAuthenticated && <CustomerBottomNav />}
       </div>
@@ -142,18 +142,18 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
   const deviceWidth = deviceType === 'iphone' ? 'w-[393px]' : deviceType === 'android' ? 'w-[412px]' : 'w-full max-w-md';
 
   return (
-    <div className="min-h-screen bg-[#07090E] text-slate-100 flex flex-col items-center justify-start relative overflow-x-hidden selection:bg-emerald-500 selection:text-slate-950 py-4 px-4">
+    <div className="min-h-screen bg-[#0A121E] text-slate-100 flex flex-col items-center justify-start relative overflow-x-hidden selection:bg-[#0D47A1] selection:text-white py-4 px-4">
       {/* Studio Ambient Backlight Glows */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-emerald-500/10 blur-[130px] rounded-full pointer-events-none" />
-      <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-primary/15 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[500px] bg-[#0D47A1]/20 blur-[130px] rounded-full pointer-events-none" />
+      <div className="absolute top-1/3 left-1/3 w-[400px] h-[400px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none" />
 
       {/* Studio Header Toolbar */}
-      <header className="w-full max-w-5xl mb-4 z-20 flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 backdrop-blur-xl border border-slate-800/80 rounded-2xl px-4 py-2.5 shadow-2xl">
+      <header className="w-full max-w-5xl mb-4 z-20 flex flex-wrap items-center justify-between gap-3 bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl px-4 py-2.5 shadow-2xl">
         {/* Left: Back to Admin & App Brand */}
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/50 text-xs font-semibold text-slate-200 transition-all hover:text-emerald-400 active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0D47A1] hover:bg-[#1565C0] text-xs font-bold text-white transition-all active:scale-95 shadow-md"
             title="Quay lại trang quản trị cửa hàng"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -163,11 +163,14 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
           <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
           <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-lg bg-white p-0.5 shadow-sm flex items-center justify-center">
+              <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-full h-full object-contain" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
+            </div>
             <span className="text-xs font-bold text-slate-100 tracking-tight flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               Smart Cart PWA
             </span>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-bold border border-blue-400/30">
               Mobile Studio
             </span>
           </div>
@@ -180,7 +183,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
             onClick={() => setDeviceType('iphone')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
               deviceType === 'iphone'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                ? 'bg-[#0D47A1] text-white font-bold shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -191,7 +194,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
             onClick={() => setDeviceType('android')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
               deviceType === 'android'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                ? 'bg-[#0D47A1] text-white font-bold shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -202,7 +205,7 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
             onClick={() => setDeviceType('responsive')}
             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all ${
               deviceType === 'responsive'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
+                ? 'bg-[#0D47A1] text-white font-bold shadow-md'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -275,9 +278,9 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
 
             {/* Hardware Outer Bezel */}
             <div 
-              className={`${deviceWidth} h-[844px] bg-slate-950 border-[10px] ${
+              className={`${deviceWidth} h-[844px] bg-[#F8F9FA] text-[#1A1A1A] border-[10px] ${
                 deviceType === 'iphone' ? 'border-[#262b35] rounded-[54px]' : 'border-[#1e232d] rounded-[44px]'
-              } shadow-[0_25px_70px_-15px_rgba(0,0,0,0.95),0_0_50px_rgba(16,185,129,0.12)] ring-1 ring-white/10 relative overflow-hidden flex flex-col transform-gpu`}
+              } shadow-[0_25px_70px_-15px_rgba(0,0,0,0.95),0_0_50px_rgba(13,71,161,0.25)] ring-1 ring-white/10 relative overflow-hidden flex flex-col transform-gpu`}
             >
               {/* Glass Reflection Highlight on Bezel */}
               <div className="absolute top-0 right-0 w-44 h-44 bg-gradient-to-bl from-white/5 to-transparent rounded-full pointer-events-none z-50" />

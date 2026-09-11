@@ -232,25 +232,25 @@ export default function CustomerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-24">
+    <div className="min-h-screen bg-[#F8F9FA] text-[#1A1A1A] flex flex-col pb-24">
       {/* Top Header */}
-      <div className="sticky top-0 z-30 bg-slate-950/85 backdrop-blur-xl border-b border-slate-800/80 px-4 py-3 flex items-center justify-between">
+      <div className="sticky top-0 z-30 bg-[#0D47A1] text-white shadow-md px-4 py-3 flex items-center justify-between">
         {currentUser ? (
           <Link
             href="/customer"
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-colors p-1 -ml-1 rounded-lg"
+            className="flex items-center gap-1.5 text-xs font-bold text-white hover:text-blue-200 transition-colors p-1 -ml-1 rounded-lg"
           >
             <ChevronLeft className="w-4 h-4" />
             <span>Về Giỏ Hàng</span>
           </Link>
         ) : (
-          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">
-            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#0D47A1] bg-white px-2.5 py-1 rounded-full shadow-sm">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#0D47A1]" />
             <span>Cổng Đăng Nhập</span>
           </div>
         )}
-        <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-          {currentUser ? 'Tài Khoản Thành Viên' : mode === 'login' ? 'Đăng Nhập' : mode === 'register' ? 'Đăng Ký Mới' : 'Quên Mật Khẩu'}
+        <span className="text-xs font-black text-white uppercase tracking-wider">
+          {currentUser ? 'Tài Khoản Thành Viên' : mode === 'login' ? 'Đăng Nhập Xe Đẩy' : mode === 'register' ? 'Đăng Ký Mới' : 'Quên Mật Khẩu'}
         </span>
         <div className="w-16"></div>
       </div>
@@ -258,14 +258,21 @@ export default function CustomerLoginPage() {
       <div className="flex-1 max-w-md w-full mx-auto px-4 py-6 flex flex-col justify-center">
         {/* Brand Banner */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-300 shadow-xl shadow-emerald-500/20 border border-emerald-400/40 mb-3">
-            <User className="w-7 h-7 text-slate-950 stroke-[2.5]" />
+          <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-white shadow-xl border-2 border-[#0D47A1]/20 p-2.5 mb-3">
+            <img
+              src="/img_smart_cart_logo.png"
+              alt="Smart Cart Logo"
+              className="w-full h-full object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).src = '/logo.png';
+              }}
+            />
           </div>
-          <h1 className="text-2xl font-black tracking-tight text-slate-100">
-            Smart Cart Member
+          <h1 className="text-2xl font-black tracking-tight text-[#0D47A1] uppercase">
+            SMART STROLLER MEMBER
           </h1>
-          <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
-            Hệ sinh thái mua sắm thông minh & Ví thanh toán không chạm Smart Cart
+          <p className="text-xs font-semibold text-[#666666] mt-1 max-w-xs mx-auto">
+            Hệ sinh thái xe đẩy thông minh & Ví thanh toán không chạm
           </p>
         </div>
 
@@ -367,16 +374,16 @@ export default function CustomerLoginPage() {
           </div>
         ) : (
           /* AUTH FORMS (LOGIN / REGISTER / FORGOT) */
-          <div className="bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 shadow-2xl backdrop-blur-xl">
+          <div className="bg-white border border-[#E0E0E0] rounded-3xl p-5 shadow-xl">
             {/* Mode Tabs */}
-            <div className="grid grid-cols-2 p-1 bg-slate-950/80 rounded-xl border border-slate-800/80 mb-5">
+            <div className="grid grid-cols-2 p-1 bg-[#E3F2FD] rounded-2xl border border-blue-200 mb-5">
               <button
                 type="button"
                 onClick={() => switchMode('login')}
-                className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                className={`py-2 text-xs font-black rounded-xl transition-all ${
                   mode === 'login'
-                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#0D47A1] text-white shadow-md'
+                    : 'text-[#0D47A1] hover:bg-white/50'
                 }`}
               >
                 Đăng Nhập
@@ -384,10 +391,10 @@ export default function CustomerLoginPage() {
               <button
                 type="button"
                 onClick={() => switchMode('register')}
-                className={`py-2 text-xs font-bold rounded-lg transition-all ${
+                className={`py-2 text-xs font-black rounded-xl transition-all ${
                   mode === 'register'
-                    ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-[#0D47A1] text-white shadow-md'
+                    : 'text-[#0D47A1] hover:bg-white/50'
                 }`}
               >
                 Đăng Ký Mới
@@ -399,17 +406,17 @@ export default function CustomerLoginPage() {
               <form onSubmit={handleLogin} className="space-y-4">
                 {/* Phone field */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-[#1A1A1A] mb-1.5">
                     Số điện thoại
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="0987654321"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-3 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
                   </div>
@@ -418,31 +425,31 @@ export default function CustomerLoginPage() {
                 {/* Password field */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-semibold text-slate-300">
+                    <label className="text-xs font-bold text-[#1A1A1A]">
                       Mật khẩu
                     </label>
                     <button
                       type="button"
                       onClick={() => switchMode('forgot')}
-                      className="text-xs text-emerald-400 hover:text-emerald-300 font-medium transition-colors"
+                      className="text-xs text-[#0D47A1] hover:underline font-bold transition-colors"
                     >
                       Quên mật khẩu?
                     </button>
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-10 py-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-10 py-3 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -453,7 +460,7 @@ export default function CustomerLoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#0D47A1] hover:bg-[#1565C0] text-white font-black text-sm shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {loading ? (
                     <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
