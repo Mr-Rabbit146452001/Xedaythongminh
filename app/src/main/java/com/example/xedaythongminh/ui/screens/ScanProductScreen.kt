@@ -186,14 +186,7 @@ fun ScanProductScreen(
                 confirmButton = {
                     Button(
                         onClick = {
-                            // Giả lập gửi tín hiệu giải quyết lỗi về server để xóa cảnh báo
-                            scope.launch {
-                                try {
-                                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.rootCheck() // test connection
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                }
-                            }
+                            appViewModel.resolveWeightAnomaly()
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
                     ) {

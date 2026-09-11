@@ -89,6 +89,19 @@ class AppViewModel constructor(
 
     fun resolveInvalidScannedProduct() {
         _invalidScannedProduct.value = null
+        resolveWeightAnomaly()
+    }
+
+    fun resolveWeightAnomaly() {
+        _hasUnscannedProduct.value = false
+        if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
+            _invalidScannedProduct.value = null
+        }
+        viewModelScope.launch {
+            try {
+                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.setWeightAnomaly(mapOf("detected" to false))
+            } catch (ignored: Exception) {}
+        }
     }
 
     fun triggerCartNotification(productName: String, type: NotificationType) {
@@ -487,6 +500,37 @@ class AppViewModel constructor(
                             // ignore transient error
                         }
                     }
+
+                    // Đồng bộ trạng thái cảm biến trọng lượng bất thường (Vật lạ / sản phẩm chưa quét)
+                    try {
+                        val statusResponse = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartStatus()
+                        if (statusResponse.isSuccessful) {
+                            val hasUnscanned = statusResponse.body()?.data?.hasUnscannedProduct ?: false
+                            _hasUnscannedProduct.value = hasUnscanned
+
+                            if (hasUnscanned) {
+                                if (_isCartLocked.value && _invalidScannedProduct.value == null) {
+                                    _invalidScannedProduct.value = InvalidProductViolation(
+                                        product = com.example.xedaythongminh.data.models.Product(
+                                            id = "LOADCELL_ANOMALY",
+                                            barcode = "LOADCELL_ANOMALY",
+                                            name = "Vật lạ / Sản phẩm chưa quét mã vạch",
+                                            price = 0.0,
+                                            category = "Cảm biến trọng lượng",
+                                            imageUrl = ""
+                                        ),
+                                        scannedQuantity = 1,
+                                        detectedAt = System.currentTimeMillis(),
+                                        source = ViolationSource.LOADCELL_ANOMALY
+                                    )
+                                }
+                            } else {
+                                if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
+                                    _invalidScannedProduct.value = null
+                                }
+                            }
+                        }
+                    } catch (ignoredStatus: Exception) {}
                 }
                 kotlinx.coroutines.delay(1500)
             }
