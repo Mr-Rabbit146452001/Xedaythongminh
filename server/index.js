@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const pool = require('./db');
 const { initCustomersDatabase } = require('./init_customers_db');
 const { syncProductsDatabase } = require('./sync_products_db');
@@ -51,8 +52,19 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 // Phục vụ các tệp hình ảnh sản phẩm tĩnh từ thư mục public/images (hỗ trợ cả /images và /products)
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
-app.use('/products', express.static(path.join(__dirname, 'public/images')));
+const staticImageDir = path.join(__dirname, 'public/images');
+app.use('/images', express.static(staticImageDir));
+app.use('/products', express.static(staticImageDir));
+
+// Fallback: Nếu tệp ảnh không tìm thấy trên đĩa, tự động trả về ảnh sản phẩm mặc định (HTTP 200) thay vì 404
+app.use(['/images/:file', '/products/:file'], (req, res) => {
+  const fallback = path.join(staticImageDir, 'sua_vinamilk.jpg');
+  if (fs.existsSync(fallback)) {
+    return res.sendFile(fallback);
+  }
+  res.status(404).end();
+});
+
 // Phục vụ tải tệp cài đặt Mock Bank App APK
 app.use('/download', express.static(path.join(__dirname, 'public/download')));
 

@@ -22,7 +22,10 @@ const products = [
   { barcode: '8935049500018', name: 'Nước ngọt Coke Sleek lon 330ml', price: 10900, imageurl: 'coke_sleek_lon.jpg', category: 'Đồ uống' },
   { barcode: '8934561010022', name: 'Phở gà Vifon gói 65g', price: 9900, imageurl: 'pho_ga_vifon.jpg', category: 'Thực phẩm khô' },
   { barcode: '8934673500014', name: 'Sữa đặc Ông Thọ đỏ tuýp 165g', price: 20000, imageurl: 'ong_tho_do.jpg', category: 'Sữa & Bơ' },
-  { barcode: '8934680020015', name: 'Snack Poca bắp ngọt xóc bơ gói 32g', price: 6000, imageurl: 'snack_poca_bap.jpg', category: 'Bánh kẹo' }
+  { barcode: '8934680020015', name: 'Snack Poca bắp ngọt xóc bơ gói 32g', price: 6000, imageurl: 'snack_poca_bap.jpg', category: 'Bánh kẹo' },
+  { barcode: '8936079120382', name: 'Nước khoáng thiên nhiên La Vie 350ml', price: 5000, imageurl: '8936079120382.jpg', category: 'Đồ uống' },
+  { barcode: '8934673573344', name: 'Sữa tươi tiệt trùng Vinamilk 100% Có đường 180ml', price: 9500, imageurl: '8934673573344.jpg', category: 'Đồ uống' },
+  { barcode: '8935217400454', name: 'Sữa tươi tiệt trùng TH true MILK Socola 180ml', price: 9500, imageurl: '8935217400454.jpg', category: 'Đồ uống' }
 ];
 
 async function syncProductsDatabase() {
