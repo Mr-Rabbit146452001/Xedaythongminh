@@ -59,8 +59,50 @@ tb_worker = ThingsBoardWorker(
     interval_seconds=THINGSBOARD_SYNC_INTERVAL
 )
 
+def ensure_database_schema():
+    try:
+        conn = get_db_connection()
+        conn.autocommit = True
+        cur = conn.cursor()
+        
+        # 1. Đảm bảo các cột bảng products
+        columns_to_add = [
+            ("sku", "TEXT"),
+            ("vision_class", "TEXT"),
+            ("price_vnd", "INTEGER"),
+            ("expected_weight_g", "REAL DEFAULT 0"),
+            ("weight_tolerance_g", "REAL DEFAULT 0"),
+            ("active", "INTEGER DEFAULT 1"),
+            ("created_at_ms", "BIGINT DEFAULT 0"),
+            ("updated_at_ms", "BIGINT DEFAULT 0"),
+            ("imageurl", "VARCHAR(255)"),
+            ("category", "VARCHAR(100) DEFAULT 'Đồ uống'"),
+            ("stock", "INTEGER DEFAULT 100")
+        ]
+        for col_name, col_type in columns_to_add:
+            try:
+                cur.execute(f"ALTER TABLE products ADD COLUMN IF NOT EXISTS {col_name} {col_type};")
+            except Exception:
+                pass
+                
+        # 2. Đồng bộ giá trị mặc định cho products
+        try:
+            cur.execute("UPDATE products SET price_vnd = ROUND(price)::int WHERE price_vnd IS NULL AND price IS NOT NULL;")
+            cur.execute("UPDATE products SET active = 1 WHERE active IS NULL;")
+            cur.execute("UPDATE products SET sku = barcode WHERE sku IS NULL AND barcode IS NOT NULL;")
+        except Exception:
+            pass
+
+        cur.close()
+        conn.close()
+        print("✅ [FastAPI Schema] Đã đồng bộ cấu trúc bảng products chuẩn bàn giao.")
+    except Exception as e:
+        print(f"⚠️ [FastAPI Schema] Không thể đồng bộ schema: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Tự động đồng bộ các cột còn thiếu trong PostgreSQL
+    ensure_database_schema()
     # Khởi động ThingsBoard Outbox worker
     tb_worker.start()
     yield
@@ -93,11 +135,11 @@ if os.path.exists(image_dir):
 # ==========================================
 class ProductItem(BaseModel):
     id: Optional[int] = None
-    barcode: str
+    barcode: Optional[str] = ""
     sku: Optional[str] = None
-    name: str
-    vision_class: Optional[str] = None
-    price_vnd: int
+    name: Optional[str] = "Sản phẩm"
+    vision_class: Optional[str] = "unknown"
+    price_vnd: Optional[int] = 0
     expected_weight_g: Optional[float] = 0.0
     weight_tolerance_g: Optional[float] = 0.0
     active: Optional[int] = 1
@@ -202,15 +244,63 @@ def get_products():
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cur.execute("""
-            SELECT id, barcode, sku, name, vision_class, price_vnd, 
-                   expected_weight_g, weight_tolerance_g, active, 
-                   created_at_ms, updated_at_ms 
+            SELECT 
+                id, 
+                barcode, 
+                COALESCE(sku, barcode, '') AS sku, 
+                COALESCE(name, 'Sản phẩm') AS name, 
+                COALESCE(vision_class, 'unknown') AS vision_class, 
+                COALESCE(price_vnd, ROUND(COALESCE(price, 0))::int, 0) AS price_vnd, 
+                COALESCE(expected_weight_g, 0.0) AS expected_weight_g, 
+                COALESCE(weight_tolerance_g, 0.0) AS weight_tolerance_g, 
+                COALESCE(active, 1) AS active, 
+                COALESCE(created_at_ms, 0) AS created_at_ms, 
+                COALESCE(updated_at_ms, 0) AS updated_at_ms 
             FROM products 
-            WHERE active = 1 
+            WHERE active IS NULL OR active = 1 
             ORDER BY id ASC
         """)
         rows = cur.fetchall()
-        return [dict(r) for r in rows]
+        result = []
+        for r in rows:
+            d = dict(r)
+            d["id"] = int(d["id"]) if d.get("id") is not None else None
+            d["barcode"] = str(d.get("barcode") or "")
+            d["sku"] = str(d.get("sku") or d.get("barcode") or "")
+            d["name"] = str(d.get("name") or "Sản phẩm")
+            d["vision_class"] = str(d.get("vision_class") or "unknown")
+            d["price_vnd"] = int(d.get("price_vnd") or 0)
+            d["expected_weight_g"] = float(d.get("expected_weight_g") or 0.0)
+            d["weight_tolerance_g"] = float(d.get("weight_tolerance_g") or 0.0)
+            d["active"] = int(d.get("active") or 1)
+            d["created_at_ms"] = int(d.get("created_at_ms") or 0) if d.get("created_at_ms") else None
+            d["updated_at_ms"] = int(d.get("updated_at_ms") or 0) if d.get("updated_at_ms") else None
+            result.append(d)
+        return result
+    except Exception as err:
+        print(f"⚠️ [FastAPI get_products] Lỗi truy vấn: {err}")
+        try:
+            cur.execute("SELECT id, barcode, name, price FROM products ORDER BY id ASC")
+            fallback_rows = cur.fetchall()
+            return [
+                {
+                    "id": r["id"],
+                    "barcode": str(r.get("barcode") or ""),
+                    "sku": str(r.get("barcode") or ""),
+                    "name": str(r.get("name") or "Sản phẩm"),
+                    "vision_class": "unknown",
+                    "price_vnd": int(float(r.get("price") or 0)),
+                    "expected_weight_g": 0.0,
+                    "weight_tolerance_g": 0.0,
+                    "active": 1,
+                    "created_at_ms": None,
+                    "updated_at_ms": None
+                }
+                for r in fallback_rows
+            ]
+        except Exception as e2:
+            print(f"❌ [FastAPI fallback error]: {e2}")
+            return []
     finally:
         cur.close()
         conn.close()
@@ -222,11 +312,11 @@ def get_products_legacy():
         "status": "Thành công",
         "data": [
             {
-                "Id": p.id,
-                "Barcode": p.barcode,
-                "Name": p.name,
-                "Price": p.price_vnd,
-                "ImageUrl": f"{p.barcode}.jpg"
+                "Id": (p.id if hasattr(p, 'id') else p.get('id')),
+                "Barcode": (p.barcode if hasattr(p, 'barcode') else p.get('barcode')),
+                "Name": (p.name if hasattr(p, 'name') else p.get('name')),
+                "Price": (p.price_vnd if hasattr(p, 'price_vnd') else p.get('price_vnd', 0)),
+                "ImageUrl": f"{(p.barcode if hasattr(p, 'barcode') else p.get('barcode'))}.jpg"
             }
             for p in products
         ]
@@ -368,8 +458,15 @@ def get_product_by_qr(req: ProductLookupReq):
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cur.execute("""
-            SELECT id, barcode, sku, name, vision_class, price_vnd, 
-                   expected_weight_g, weight_tolerance_g 
+            SELECT 
+                id, 
+                barcode, 
+                COALESCE(sku, barcode, '') AS sku, 
+                COALESCE(name, 'Sản phẩm') AS name, 
+                COALESCE(vision_class, 'unknown') AS vision_class, 
+                COALESCE(price_vnd, ROUND(COALESCE(price, 0))::int, 0) AS price_vnd, 
+                COALESCE(expected_weight_g, 0.0) AS expected_weight_g, 
+                COALESCE(weight_tolerance_g, 0.0) AS weight_tolerance_g 
             FROM products 
             WHERE barcode = %s OR sku = %s 
             LIMIT 1
@@ -380,16 +477,38 @@ def get_product_by_qr(req: ProductLookupReq):
         return {
             "found": True,
             "id": row["id"],
-            "barcode": row["barcode"],
-            "sku": row["sku"] or row["barcode"],
-            "name": row["name"],
-            "vision_class": row["vision_class"] or "unknown",
-            "price_vnd": row["price_vnd"],
-            "price": row["price_vnd"],
+            "barcode": str(row["barcode"]),
+            "sku": str(row["sku"] or row["barcode"]),
+            "name": str(row["name"]),
+            "vision_class": str(row["vision_class"] or "unknown"),
+            "price_vnd": int(row["price_vnd"] or 0),
+            "price": int(row["price_vnd"] or 0),
             "expected_weight_g": float(row["expected_weight_g"] or 0),
             "weight_tolerance_g": float(row["weight_tolerance_g"] or 0),
             "message": "Tìm thấy sản phẩm"
         }
+    except Exception as err:
+        print(f"⚠️ [FastAPI get_product_by_qr] Lỗi: {err}")
+        try:
+            cur.execute("SELECT id, barcode, name, price FROM products WHERE barcode = %s LIMIT 1", (target_code,))
+            r = cur.fetchone()
+            if r:
+                return {
+                    "found": True,
+                    "id": r["id"],
+                    "barcode": str(r["barcode"]),
+                    "sku": str(r["barcode"]),
+                    "name": str(r["name"]),
+                    "vision_class": "unknown",
+                    "price_vnd": int(float(r["price"] or 0)),
+                    "price": int(float(r["price"] or 0)),
+                    "expected_weight_g": 0.0,
+                    "weight_tolerance_g": 0.0,
+                    "message": "Tìm thấy sản phẩm"
+                }
+        except Exception:
+            pass
+        return {"found": False, "message": "Không tìm thấy sản phẩm"}
     finally:
         cur.close()
         conn.close()
