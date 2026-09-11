@@ -13,6 +13,9 @@ import com.example.xedaythongminh.data.models.CartNotification
 import com.example.xedaythongminh.data.models.NotificationType
 import com.example.xedaythongminh.data.remote.dto.toDomainModel
 import com.example.xedaythongminh.data.remote.dto.toDomainCartItem
+import com.example.xedaythongminh.domain.model.CartLockSnapshot
+import com.example.xedaythongminh.domain.model.InvalidProductViolation
+import com.example.xedaythongminh.domain.model.ViolationSource
 
 class AppViewModel constructor(
     private val cartRepository: CartRepository,
@@ -52,8 +55,41 @@ class AppViewModel constructor(
     private val _scanEventTimestamp = MutableStateFlow<Long>(0L)
     val scanEventTimestamp: StateFlow<Long> = _scanEventTimestamp.asStateFlow()
 
+    // Trạng thái khóa giỏ hàng khi chuyển sang quy trình thanh toán
+    private val _isCartLocked = MutableStateFlow<Boolean>(false)
+    val isCartLocked: StateFlow<Boolean> = _isCartLocked.asStateFlow()
+
+    // Ảnh chụp giỏ hàng tại thời điểm khóa
+    private val _lockedCartSnapshot = MutableStateFlow<CartLockSnapshot?>(null)
+    val lockedCartSnapshot: StateFlow<CartLockSnapshot?> = _lockedCartSnapshot.asStateFlow()
+
+    // Sản phẩm vi phạm quét không hợp lệ khi giỏ hàng đã chốt
+    private val _invalidScannedProduct = MutableStateFlow<InvalidProductViolation?>(null)
+    val invalidScannedProduct: StateFlow<InvalidProductViolation?> = _invalidScannedProduct.asStateFlow()
+
     private var notificationJob: kotlinx.coroutines.Job? = null
     private var qrPollingJob: kotlinx.coroutines.Job? = null
+
+    fun lockCart() {
+        val currentItems = _cartItemsState.value
+        val itemsMap = currentItems.associate { (it.product.sku.ifBlank { it.product.id }) to it.quantity }
+        _lockedCartSnapshot.value = CartLockSnapshot(
+            lockedAtTimestamp = System.currentTimeMillis(),
+            itemsMap = itemsMap
+        )
+        _isCartLocked.value = true
+        _invalidScannedProduct.value = null
+    }
+
+    fun unlockCart() {
+        _isCartLocked.value = false
+        _lockedCartSnapshot.value = null
+        _invalidScannedProduct.value = null
+    }
+
+    fun resolveInvalidScannedProduct() {
+        _invalidScannedProduct.value = null
+    }
 
     fun triggerCartNotification(productName: String, type: NotificationType) {
         notificationJob?.cancel()
@@ -103,6 +139,17 @@ class AppViewModel constructor(
             if (result.isSuccess) {
                 val product = result.getOrNull()
                 if (product != null) {
+                    // KIỂM TRA BẢO MẬT: Nếu giỏ hàng đã bị khóa sau khi next qua giỏ hàng (giai đoạn thanh toán)
+                    if (_isCartLocked.value) {
+                        _invalidScannedProduct.value = InvalidProductViolation(
+                            product = product,
+                            scannedQuantity = 1,
+                            detectedAt = System.currentTimeMillis(),
+                            source = ViolationSource.LOCAL_BARCODE_SCAN
+                        )
+                        return@launch
+                    }
+
                     // Cập nhật giỏ hàng nếu tìm thấy sản phẩm
                     val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
@@ -151,6 +198,17 @@ class AppViewModel constructor(
             if (result.isSuccess) {
                 val product = result.getOrNull()
                 if (product != null) {
+                    // KIỂM TRA BẢO MẬT: Nếu giỏ hàng đã bị khóa sau khi next qua giỏ hàng (giai đoạn thanh toán)
+                    if (_isCartLocked.value) {
+                        _invalidScannedProduct.value = InvalidProductViolation(
+                            product = product,
+                            scannedQuantity = quantity,
+                            detectedAt = System.currentTimeMillis(),
+                            source = ViolationSource.LOCAL_BARCODE_SCAN
+                        )
+                        return@launch
+                    }
+
                     val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
                         val updated = existingItem.copy(quantity = existingItem.quantity + quantity)
@@ -354,40 +412,71 @@ class AppViewModel constructor(
                                         _scanEventTimestamp.value = System.currentTimeMillis()
                                     }
                                 } else {
-                                    val currentList = _cartItemsState.value
-                                    val oldMap = currentList.associateBy { it.product.sku.ifBlank { it.product.id } }
-                                    val newMap = domainItems.associateBy { it.product.sku.ifBlank { it.product.id } }
+                                    // KIỂM TRA BẢO MẬT: Nếu giỏ hàng đang bị khóa (sau khi next qua khỏi giỏ hàng để thanh toán)
+                                    if (_isCartLocked.value && _lockedCartSnapshot.value != null) {
+                                        val snapshot = _lockedCartSnapshot.value!!
+                                        val snapshotMap = snapshot.itemsMap
+                                        val currentServerMap = domainItems.associateBy { it.product.sku.ifBlank { it.product.id } }
 
-                                    // 1. Phát hiện sản phẩm mới thêm hoặc tăng số lượng từ máy chủ / đầu quét xe đẩy
-                                    for ((key, newItem) in newMap) {
-                                        val oldItem = oldMap[key]
-                                        if (oldItem == null) {
-                                            _lastScannedItem.value = newItem
-                                            _scanEventTimestamp.value = System.currentTimeMillis()
-                                            triggerCartNotification(newItem.product.name, NotificationType.ADD)
-                                        } else if (newItem.quantity > oldItem.quantity) {
-                                            _lastScannedItem.value = newItem
-                                            _scanEventTimestamp.value = System.currentTimeMillis()
-                                            triggerCartNotification(newItem.product.name, NotificationType.ADD)
-                                        }
-                                    }
-
-                                    // 2. Phát hiện sản phẩm bị lấy ra khỏi giỏ
-                                    for ((key, oldItem) in oldMap) {
-                                        val newItem = newMap[key]
-                                        if (newItem == null) {
-                                            triggerCartNotification(oldItem.product.name, NotificationType.REMOVE)
-                                            if (_lastScannedItem.value?.let { it.product.sku.ifBlank { it.product.id } } == key) {
-                                                _lastScannedItem.value = domainItems.lastOrNull()
-                                                _scanEventTimestamp.value = System.currentTimeMillis()
+                                        // Kiểm tra xem có sản phẩm nào mới hoặc vượt quá số lượng đã chốt không
+                                        var foundViolation: InvalidProductViolation? = null
+                                        for ((key, item) in currentServerMap) {
+                                            val allowedQty = snapshotMap[key] ?: 0
+                                            if (item.quantity > allowedQty) {
+                                                foundViolation = InvalidProductViolation(
+                                                    product = item.product,
+                                                    scannedQuantity = item.quantity - allowedQty,
+                                                    detectedAt = System.currentTimeMillis(),
+                                                    source = ViolationSource.REMOTE_POLLER_SYNC
+                                                )
+                                                break
                                             }
-                                        } else if (newItem.quantity < oldItem.quantity) {
-                                            triggerCartNotification(oldItem.product.name, NotificationType.REMOVE)
                                         }
-                                    }
 
-                                    if (_cartItemsState.value != domainItems) {
-                                        _cartItemsState.value = domainItems
+                                        if (foundViolation != null) {
+                                            _invalidScannedProduct.value = foundViolation
+                                        } else {
+                                            // Nếu tất cả sản phẩm trên xe đã trở về đúng mức chốt -> Tự động giải tỏa cảnh báo!
+                                            if (_invalidScannedProduct.value != null) {
+                                                _invalidScannedProduct.value = null
+                                            }
+                                        }
+                                    } else {
+                                        val currentList = _cartItemsState.value
+                                        val oldMap = currentList.associateBy { it.product.sku.ifBlank { it.product.id } }
+                                        val newMap = domainItems.associateBy { it.product.sku.ifBlank { it.product.id } }
+
+                                        // 1. Phát hiện sản phẩm mới thêm hoặc tăng số lượng từ máy chủ / đầu quét xe đẩy
+                                        for ((key, newItem) in newMap) {
+                                            val oldItem = oldMap[key]
+                                            if (oldItem == null) {
+                                                _lastScannedItem.value = newItem
+                                                _scanEventTimestamp.value = System.currentTimeMillis()
+                                                triggerCartNotification(newItem.product.name, NotificationType.ADD)
+                                            } else if (newItem.quantity > oldItem.quantity) {
+                                                _lastScannedItem.value = newItem
+                                                _scanEventTimestamp.value = System.currentTimeMillis()
+                                                triggerCartNotification(newItem.product.name, NotificationType.ADD)
+                                            }
+                                        }
+
+                                        // 2. Phát hiện sản phẩm bị lấy ra khỏi giỏ
+                                        for ((key, oldItem) in oldMap) {
+                                            val newItem = newMap[key]
+                                            if (newItem == null) {
+                                                triggerCartNotification(oldItem.product.name, NotificationType.REMOVE)
+                                                if (_lastScannedItem.value?.let { it.product.sku.ifBlank { it.product.id } } == key) {
+                                                    _lastScannedItem.value = domainItems.lastOrNull()
+                                                    _scanEventTimestamp.value = System.currentTimeMillis()
+                                                }
+                                            } else if (newItem.quantity < oldItem.quantity) {
+                                                triggerCartNotification(oldItem.product.name, NotificationType.REMOVE)
+                                            }
+                                        }
+
+                                        if (_cartItemsState.value != domainItems) {
+                                            _cartItemsState.value = domainItems
+                                        }
                                     }
                                 }
                             } else if (v1Response.code() == 404) {
@@ -629,6 +718,9 @@ class AppViewModel constructor(
         _lastScannedItem.value = null
         _scanEventTimestamp.value = 0L
         _cartNotificationState.value = null
+        _isCartLocked.value = false
+        _lockedCartSnapshot.value = null
+        _invalidScannedProduct.value = null
         notificationJob?.cancel()
         qrPollingJob?.cancel()
         paymentPollingJob?.cancel()

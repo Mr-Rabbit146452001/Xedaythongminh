@@ -287,7 +287,10 @@ fun CartDetailScreen(
                         
                         // Action Buttons
                         Button(
-                            onClick = { navController.navigate("auto_payment") },
+                            onClick = { 
+                                appViewModel.lockCart()
+                                navController.navigate("auto_payment") 
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(54.dp),
@@ -302,7 +305,10 @@ fun CartDetailScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         OutlinedButton(
-                            onClick = { navController.navigate("payment_selection") },
+                            onClick = { 
+                                appViewModel.lockCart()
+                                navController.navigate("payment_selection") 
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),

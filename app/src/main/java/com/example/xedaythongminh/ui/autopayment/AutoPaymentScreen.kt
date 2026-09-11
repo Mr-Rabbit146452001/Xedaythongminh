@@ -533,7 +533,10 @@ fun AutoPaymentScreen(
                                     }
 
                                     OutlinedButton(
-                                        onClick = { navController.popBackStack() },
+                                        onClick = {
+                                            appViewModel.unlockCart()
+                                            navController.popBackStack()
+                                        },
                                         modifier = Modifier.fillMaxWidth().height(44.dp),
                                         shape = RoundedCornerShape(12.dp),
                                         border = BorderStroke(1.dp, BorderGray)

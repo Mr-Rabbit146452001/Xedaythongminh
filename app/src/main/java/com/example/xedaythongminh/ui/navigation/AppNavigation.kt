@@ -53,6 +53,7 @@ import com.example.xedaythongminh.ui.viewmodel.AppViewModel
 import com.example.xedaythongminh.ui.viewmodel.AppViewModelProvider
 import com.example.xedaythongminh.ui.theme.TextGray
 import com.example.xedaythongminh.ui.theme.PrimaryBlue
+import com.example.xedaythongminh.ui.components.InvalidProductLockOverlay
 
 @Composable
 fun AppNavigation(
@@ -107,6 +108,17 @@ fun AppNavigation(
             composable("connection_error") {
                 ConnectionErrorScreen(appViewModel = appViewModel, navController = navController, windowSize = windowSize)
             }
+        }
+
+        // 1. Overlay bảo mật toàn màn hình: Khóa khi phát hiện quét sản phẩm không hợp lệ sau khi đã chốt giỏ
+        val invalidViolation by appViewModel.invalidScannedProduct.collectAsState()
+        if (invalidViolation != null) {
+            InvalidProductLockOverlay(
+                violation = invalidViolation!!,
+                onResolveViolation = {
+                    appViewModel.resolveInvalidScannedProduct()
+                }
+            )
         }
 
         // Overlay toàn màn hình khóa tương tác khi mất mạng

@@ -303,7 +303,10 @@ fun PaymentSelectionScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                         
                         TextButton(
-                            onClick = { navController.popBackStack() },
+                            onClick = { 
+                                appViewModel.unlockCart()
+                                navController.popBackStack() 
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(42.dp)
