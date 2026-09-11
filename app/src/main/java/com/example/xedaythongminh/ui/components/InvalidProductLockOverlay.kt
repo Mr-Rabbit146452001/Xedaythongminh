@@ -40,7 +40,7 @@ import java.util.Locale
 @Composable
 fun InvalidProductLockOverlay(
     violation: InvalidProductViolation,
-    onResolveViolation: () -> Unit
+    onResolveViolation: () -> Unit = {}
 ) {
     // 1. Chặn hoàn toàn nút Back hệ thống (cả phím cứng và cử chỉ vuốt)
     BackHandler(enabled = true) {
@@ -254,30 +254,6 @@ fun InvalidProductLockOverlay(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFF64748B)
-                    )
-                }
-
-                // Nút xác nhận giải phóng vi phạm (Dành cho thử nghiệm hoặc xác nhận thủ công)
-                Button(
-                    onClick = { onResolveViolation() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF059669))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Đã lấy ra",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Đã lấy sản phẩm ra ngoài (Xác nhận)",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
                     )
                 }
             }
