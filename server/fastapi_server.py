@@ -619,8 +619,12 @@ def process_cart_decision(decision: CartDecisionRequest):
         # 3. Thuật toán kiểm chứng đa cảm biến (Sensor Fusion Logic):
         if product:
             expected_class = product.get("vision_class")
-            if expected_class and decision.ai_class:
-                if decision.ai_class.strip().lower() != expected_class.strip().lower():
+            if expected_class and expected_class != "[null]" and decision.ai_class:
+                ai_norm = decision.ai_class.strip().lower()
+                exp_norm = expected_class.strip().lower()
+                bc_norm = (product.get("barcode") or "").strip().lower()
+                sku_norm = (product.get("sku") or "").strip().lower()
+                if ai_norm != exp_norm and ai_norm != bc_norm and ai_norm != sku_norm:
                     reasons.append("ai_class_mismatch")
 
             if decision.ai_confidence is not None and decision.ai_confidence < AI_THRESHOLD:

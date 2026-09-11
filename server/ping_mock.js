@@ -34,7 +34,8 @@ const PRODUCTS = {
     aliases: ['lavie', 'nuoclavie', '8935005801135'],
     name: 'Nước khoáng La Vie 500ml',
     barcode: '8935005801135',
-    sku: '8935005801135',
+    sku: 'lavie_500ml',
+    vision_class: 'lavie_500ml',
     price: 6000,
     weight: 500
   },
@@ -42,7 +43,8 @@ const PRODUCTS = {
     aliases: ['pocari', 'pocarisweat', 'sweat', '8938556329004'],
     name: 'Pocari Sweat 500 ml',
     barcode: '8938556329004',
-    sku: '8938556329004',
+    sku: 'pocari_sweat_500ml',
+    vision_class: 'pocari_sweat_500ml',
     price: 15000,
     weight: 500
   },
@@ -273,13 +275,44 @@ async function clearCart(sessionId) {
   });
 }
 
-function sendDecision(sessionId, action, barcode, sku, weight, silent = false) {
+function getProductVisionClass(barcode) {
+  return new Promise((resolve) => {
+    http.get('http://127.0.0.1:3000/api/v1/products', (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const list = json.products || (Array.isArray(json) ? json : []);
+          const matched = list.find(p => p.barcode === barcode || p.sku === barcode);
+          if (matched && matched.vision_class && matched.vision_class !== '[null]') {
+            resolve(matched.vision_class);
+          } else {
+            resolve(null);
+          }
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    }).on('error', () => resolve(null));
+  });
+}
+
+async function sendDecision(sessionId, action, barcode, sku, weight, silent = false, visionClass = null) {
+  let aiClass = visionClass || sku || barcode;
+  try {
+    const dbVisionClass = await getProductVisionClass(barcode);
+    if (dbVisionClass) {
+      aiClass = dbVisionClass;
+    }
+  } catch (e) {}
+
   return new Promise((resolve) => {
     const payload = JSON.stringify({
       session_id: sessionId,
       action: action,
       barcode: barcode,
-      ai_class: sku,
+      ai_class: aiClass,
       ai_confidence: 0.99,
       delta_weight_g: action === 'add' ? weight : -weight,
       weight_source: 'loadcell'
@@ -462,7 +495,7 @@ async function main() {
   console.log(`⚡ Hành động:      ${action.toUpperCase()}`);
   console.log(`------------------------------------------------------`);
 
-  await sendDecision(sessionId, action, product.barcode, product.sku, product.weight, false);
+  await sendDecision(sessionId, action, product.barcode, product.sku, product.weight, false, product.vision_class);
 }
 
 main();
