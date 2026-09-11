@@ -46,14 +46,20 @@ class AppViewModel constructor(
     private val _cartNotificationState = MutableStateFlow<CartNotification?>(null)
     val cartNotificationState: StateFlow<CartNotification?> = _cartNotificationState.asStateFlow()
 
+    private val _lastScannedItem = MutableStateFlow<CartItem?>(null)
+    val lastScannedItem: StateFlow<CartItem?> = _lastScannedItem.asStateFlow()
+
+    private val _scanEventTimestamp = MutableStateFlow<Long>(0L)
+    val scanEventTimestamp: StateFlow<Long> = _scanEventTimestamp.asStateFlow()
+
     private var notificationJob: kotlinx.coroutines.Job? = null
     private var qrPollingJob: kotlinx.coroutines.Job? = null
 
     fun triggerCartNotification(productName: String, type: NotificationType) {
         notificationJob?.cancel()
         val message = when (type) {
-            NotificationType.ADD -> "Đã thêm $productName"
-            NotificationType.REMOVE -> "Đã lấy ra $productName"
+            NotificationType.ADD -> "Đã thêm: $productName"
+            NotificationType.REMOVE -> "Đã lấy ra: $productName"
         }
         _cartNotificationState.value = CartNotification(
             message = message,
@@ -61,7 +67,7 @@ class AppViewModel constructor(
             type = type
         )
         notificationJob = viewModelScope.launch {
-            kotlinx.coroutines.delay(2500L)
+            kotlinx.coroutines.delay(2800L)
             _cartNotificationState.value = null
         }
     }
@@ -100,9 +106,15 @@ class AppViewModel constructor(
                     // Cập nhật giỏ hàng nếu tìm thấy sản phẩm
                     val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
+                        val updated = existingItem.copy(quantity = existingItem.quantity + 1)
+                        _lastScannedItem.value = updated
+                        _scanEventTimestamp.value = System.currentTimeMillis()
                         increaseQuantity(existingItem)
                     } else {
-                        cartRepository.addCartItem(CartItem(product = product, quantity = 1))
+                        val newItem = CartItem(product = product, quantity = 1)
+                        _lastScannedItem.value = newItem
+                        _scanEventTimestamp.value = System.currentTimeMillis()
+                        cartRepository.addCartItem(newItem)
                         triggerCartNotification(product.name, NotificationType.ADD)
                     }
 
@@ -141,10 +153,16 @@ class AppViewModel constructor(
                 if (product != null) {
                     val existingItem = _cartItemsState.value.find { it.product.sku == barcode || it.product.id == barcode }
                     if (existingItem != null) {
+                        val updated = existingItem.copy(quantity = existingItem.quantity + quantity)
+                        _lastScannedItem.value = updated
+                        _scanEventTimestamp.value = System.currentTimeMillis()
                         cartRepository.updateQuantity(existingItem, existingItem.quantity + quantity)
                         triggerCartNotification(existingItem.product.name, NotificationType.ADD)
                     } else {
-                        cartRepository.addCartItem(CartItem(product = product, quantity = quantity))
+                        val newItem = CartItem(product = product, quantity = quantity)
+                        _lastScannedItem.value = newItem
+                        _scanEventTimestamp.value = System.currentTimeMillis()
+                        cartRepository.addCartItem(newItem)
                         triggerCartNotification(product.name, NotificationType.ADD)
                     }
                 } else {
@@ -164,6 +182,10 @@ class AppViewModel constructor(
         val currentList = _cartItemsState.value.toMutableList()
         currentList.removeAll { it.product.id == item.product.id || it.product.sku == item.product.sku }
         _cartItemsState.value = currentList
+        if (_lastScannedItem.value?.product?.sku == item.product.sku || _lastScannedItem.value?.product?.id == item.product.id) {
+            _lastScannedItem.value = currentList.lastOrNull()
+            _scanEventTimestamp.value = System.currentTimeMillis()
+        }
 
         // 2. Cập nhật Repository
         cartRepository.removeCartItem(item)
@@ -194,8 +216,11 @@ class AppViewModel constructor(
         val currentList = _cartItemsState.value.toMutableList()
         val idx = currentList.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
         if (idx != -1) {
-            currentList[idx] = currentList[idx].copy(quantity = currentList[idx].quantity + 1)
+            val updated = currentList[idx].copy(quantity = currentList[idx].quantity + 1)
+            currentList[idx] = updated
             _cartItemsState.value = currentList
+            _lastScannedItem.value = updated
+            _scanEventTimestamp.value = System.currentTimeMillis()
         }
         cartRepository.updateQuantity(item, item.quantity + 1)
 
@@ -225,8 +250,11 @@ class AppViewModel constructor(
             val currentList = _cartItemsState.value.toMutableList()
             val idx = currentList.indexOfFirst { it.product.id == item.product.id || it.product.sku == item.product.sku }
             if (idx != -1) {
-                currentList[idx] = currentList[idx].copy(quantity = currentList[idx].quantity - 1)
+                val updated = currentList[idx].copy(quantity = currentList[idx].quantity - 1)
+                currentList[idx] = updated
                 _cartItemsState.value = currentList
+                _lastScannedItem.value = updated
+                _scanEventTimestamp.value = System.currentTimeMillis()
             }
             cartRepository.updateQuantity(item, item.quantity - 1)
 
@@ -307,6 +335,7 @@ class AppViewModel constructor(
 
         // Real-time Cart Items Sync Poller (đồng bộ giỏ hàng từ /api/v1/cart/{sessionId})
         viewModelScope.launch {
+            var isFirstSync = true
             while (true) {
                 if (_isServerConnected.value) {
                     val currentSession = _activeSessionId.value
@@ -316,7 +345,51 @@ class AppViewModel constructor(
                             if (v1Response.isSuccessful && v1Response.body() != null) {
                                 val v1Data = v1Response.body()!!
                                 val domainItems = v1Data.items.map { it.toDomainCartItem() }
-                                _cartItemsState.value = domainItems
+
+                                if (isFirstSync) {
+                                    isFirstSync = false
+                                    _cartItemsState.value = domainItems
+                                    if (domainItems.isNotEmpty()) {
+                                        _lastScannedItem.value = domainItems.lastOrNull()
+                                        _scanEventTimestamp.value = System.currentTimeMillis()
+                                    }
+                                } else {
+                                    val currentList = _cartItemsState.value
+                                    val oldMap = currentList.associateBy { it.product.sku.ifBlank { it.product.id } }
+                                    val newMap = domainItems.associateBy { it.product.sku.ifBlank { it.product.id } }
+
+                                    // 1. Phát hiện sản phẩm mới thêm hoặc tăng số lượng từ máy chủ / đầu quét xe đẩy
+                                    for ((key, newItem) in newMap) {
+                                        val oldItem = oldMap[key]
+                                        if (oldItem == null) {
+                                            _lastScannedItem.value = newItem
+                                            _scanEventTimestamp.value = System.currentTimeMillis()
+                                            triggerCartNotification(newItem.product.name, NotificationType.ADD)
+                                        } else if (newItem.quantity > oldItem.quantity) {
+                                            _lastScannedItem.value = newItem
+                                            _scanEventTimestamp.value = System.currentTimeMillis()
+                                            triggerCartNotification(newItem.product.name, NotificationType.ADD)
+                                        }
+                                    }
+
+                                    // 2. Phát hiện sản phẩm bị lấy ra khỏi giỏ
+                                    for ((key, oldItem) in oldMap) {
+                                        val newItem = newMap[key]
+                                        if (newItem == null) {
+                                            triggerCartNotification(oldItem.product.name, NotificationType.REMOVE)
+                                            if (_lastScannedItem.value?.let { it.product.sku.ifBlank { it.product.id } } == key) {
+                                                _lastScannedItem.value = domainItems.lastOrNull()
+                                                _scanEventTimestamp.value = System.currentTimeMillis()
+                                            }
+                                        } else if (newItem.quantity < oldItem.quantity) {
+                                            triggerCartNotification(oldItem.product.name, NotificationType.REMOVE)
+                                        }
+                                    }
+
+                                    if (_cartItemsState.value != domainItems) {
+                                        _cartItemsState.value = domainItems
+                                    }
+                                }
                             } else if (v1Response.code() == 404) {
                                 // Nếu session chưa có trên server (ví dụ SESSION_DEFAULT) hoặc đã đóng, tự tạo session mới
                                 createShoppingSession()
@@ -553,6 +626,10 @@ class AppViewModel constructor(
         _isQrExpired.value = false
         _lastCompletedCartItems.value = emptyList()
         _sessionQrUrl.value = null
+        _lastScannedItem.value = null
+        _scanEventTimestamp.value = 0L
+        _cartNotificationState.value = null
+        notificationJob?.cancel()
         qrPollingJob?.cancel()
         paymentPollingJob?.cancel()
 

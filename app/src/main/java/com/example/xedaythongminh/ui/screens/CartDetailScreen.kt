@@ -42,6 +42,7 @@ import com.example.xedaythongminh.ui.components.ResponsiveLayout
 import com.example.xedaythongminh.ui.components.CartNotificationPill
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.zIndex
 
 @Composable
 fun CartDetailScreen(
@@ -369,12 +370,13 @@ fun CartDetailScreen(
     }
 }
 
-        // Thông báo nhỏ khi thêm/bớt/xóa sản phẩm
+        // Thông báo nổi bật khi thêm/bớt/xóa sản phẩm (nằm ngay dưới thanh TopBar)
         CartNotificationPill(
             notification = cartNotification,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 16.dp)
+                .padding(top = 76.dp)
+                .zIndex(100f)
         )
     }
 }

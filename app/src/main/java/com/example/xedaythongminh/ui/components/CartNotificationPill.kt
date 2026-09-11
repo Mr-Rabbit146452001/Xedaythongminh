@@ -22,6 +22,9 @@ import androidx.compose.ui.unit.sp
 import com.example.xedaythongminh.data.models.CartNotification
 import com.example.xedaythongminh.data.models.NotificationType
 
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.zIndex
+
 @Composable
 fun CartNotificationPill(
     notification: CartNotification?,
@@ -29,41 +32,48 @@ fun CartNotificationPill(
 ) {
     AnimatedVisibility(
         visible = notification != null,
-        enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-        exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
-        modifier = modifier
+        enter = slideInVertically(
+            initialOffsetY = { -it / 2 },
+            animationSpec = tween(300)
+        ) + fadeIn(animationSpec = tween(300)),
+        exit = slideOutVertically(
+            targetOffsetY = { -it / 2 },
+            animationSpec = tween(250)
+        ) + fadeOut(animationSpec = tween(250)),
+        modifier = modifier.zIndex(100f)
     ) {
         if (notification != null) {
             val isAdd = notification.type == NotificationType.ADD
-            val iconColor = if (isAdd) Color(0xFF10B981) else Color(0xFFEF4444)
-            val bgColor = if (isAdd) Color(0xFFECFDF5) else Color(0xFFFEF2F2)
-            val borderColor = if (isAdd) Color(0xFFA7F3D0) else Color(0xFFFECACA)
+            val iconColor = if (isAdd) Color(0xFF34D399) else Color(0xFFF87171)
+            // Màu nền tương phản cao, nổi bật trên cả nền sáng và nền tối
+            val bgColor = if (isAdd) Color(0xFF064E3B) else Color(0xFF7F1D1D)
+            val borderColor = if (isAdd) Color(0xFF10B981) else Color(0xFFEF4444)
 
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = bgColor),
-                modifier = Modifier
-                    .shadow(elevation = 6.dp, shape = RoundedCornerShape(24.dp))
-                    .border(width = 1.dp, color = borderColor, shape = RoundedCornerShape(24.dp))
-                    .padding(horizontal = 4.dp)
+            Surface(
+                shape = RoundedCornerShape(30.dp),
+                color = bgColor,
+                shadowElevation = 12.dp,
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, borderColor),
+                modifier = Modifier.padding(horizontal = 8.dp)
             ) {
                 Row(
                     modifier = Modifier
-                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Icon(
                         imageVector = if (isAdd) Icons.Default.AddCircle else Icons.Default.RemoveCircle,
                         contentDescription = if (isAdd) "Added" else "Removed",
                         tint = iconColor,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(24.dp)
                     )
                     Text(
                         text = notification.message,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E293B)
+                        color = Color.White,
+                        letterSpacing = 0.3.sp
                     )
                 }
             }

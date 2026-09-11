@@ -57,6 +57,7 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 import coil.compose.AsyncImage
+import androidx.compose.ui.zIndex
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,19 +68,45 @@ fun ScanProductScreen(
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
     val cartNotification by appViewModel.cartNotificationState.collectAsState()
-    
-    // Trạng thái sản phẩm đang được chọn hiển thị chi tiết ở khung bên trái
-    var selectedCartItem by remember { mutableStateOf<CartItem?>(null) }
+    val lastScannedItem by appViewModel.lastScannedItem.collectAsState()
+    val scanEventTimestamp by appViewModel.scanEventTimestamp.collectAsState()
+
+    // Khóa mã sản phẩm đang được hiển thị ở khung chi tiết bên trái
+    var selectedItemKey by remember { mutableStateOf<String?>(null) }
+    // Cờ đánh dấu: true = Ưu tiên sản phẩm vừa quét xong, false = Người dùng bấm vào danh sách để xem
+    var isJustScanned by remember { mutableStateOf(false) }
 
     val hasUnscannedProduct by appViewModel.hasUnscannedProduct.collectAsState()
     val scope = rememberCoroutineScope()
-    
-    // Tự động chọn sản phẩm cuối cùng vừa được thêm vào giỏ hàng
-    LaunchedEffect(cartItems) {
-        if (cartItems.isNotEmpty()) {
-            selectedCartItem = cartItems.last()
+
+    // 1. ƯU TIÊN SỐ 1: Khi có sản phẩm vừa quét xong (từ đầu đọc mã vạch, cảm biến hoặc server)
+    LaunchedEffect(scanEventTimestamp, lastScannedItem) {
+        if (lastScannedItem != null) {
+            val key = lastScannedItem?.product?.sku?.ifBlank { lastScannedItem?.product?.id }
+            if (!key.isNullOrBlank()) {
+                selectedItemKey = key
+                isJustScanned = true
+            }
+        }
+    }
+
+    // 2. Xác định sản phẩm hiển thị trên khung chi tiết:
+    // Luôn tham chiếu trực tiếp từ danh sách cartItems hiện hành để số lượng và đơn giá luôn tươi mới
+    val selectedCartItem: CartItem? = remember(cartItems, selectedItemKey, lastScannedItem) {
+        if (cartItems.isEmpty()) {
+            null
         } else {
-            selectedCartItem = null
+            val matched = cartItems.find { (it.product.sku.ifBlank { it.product.id }) == selectedItemKey }
+            if (matched != null) {
+                matched
+            } else {
+                // Nếu sản phẩm đang xem không còn trong giỏ, ưu tiên fallback về lastScannedItem
+                val lastMatched = lastScannedItem?.let { l ->
+                    val lk = l.product.sku.ifBlank { l.product.id }
+                    cartItems.find { (it.product.sku.ifBlank { it.product.id }) == lk }
+                }
+                lastMatched ?: cartItems.first()
+            }
         }
     }
 
@@ -101,7 +128,8 @@ fun ScanProductScreen(
                     ScanProductScannerSection(
                         modifier = modifier,
                         appViewModel = appViewModel,
-                        selectedCartItem = selectedCartItem
+                        selectedCartItem = selectedCartItem,
+                        isJustScanned = isJustScanned
                     )
                 },
                 rightContent = { modifier ->
@@ -110,7 +138,11 @@ fun ScanProductScreen(
                         appViewModel = appViewModel,
                         navController = navController,
                         selectedCartItem = selectedCartItem,
-                        onItemSelect = { selectedCartItem = it }
+                        onItemSelect = { item ->
+                            // 2. ƯU TIÊN TIẾP THEO: Khi người dùng chạm vào sản phẩm trong danh sách giỏ hàng
+                            selectedItemKey = item.product.sku.ifBlank { item.product.id }
+                            isJustScanned = false
+                        }
                     )
                 }
             )
@@ -173,12 +205,13 @@ fun ScanProductScreen(
             )
         }
 
-        // Thông báo nhỏ khi thêm/bớt/xóa sản phẩm
+        // Thông báo nổi bật khi thêm/bớt/xóa sản phẩm (nằm ngay dưới thanh TopBar)
         CartNotificationPill(
             notification = cartNotification,
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 16.dp)
+                .padding(top = 76.dp)
+                .zIndex(100f)
         )
     }
 }
@@ -187,7 +220,8 @@ fun ScanProductScreen(
 fun ScanProductScannerSection(
     modifier: Modifier = Modifier,
     appViewModel: AppViewModel,
-    selectedCartItem: CartItem?
+    selectedCartItem: CartItem?,
+    isJustScanned: Boolean = false
 ) {
     val errorMsg by appViewModel.errorState.collectAsState()
     val formatVnd = { amount: Long ->
@@ -258,7 +292,8 @@ fun ScanProductScannerSection(
             formatVnd = formatVnd,
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f)
+                .weight(1f),
+            isJustScanned = isJustScanned
         )
     }
 }
@@ -267,7 +302,8 @@ fun ScanProductScannerSection(
 fun ProductDetailBox(
     selectedCartItem: CartItem?,
     formatVnd: (Long) -> String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isJustScanned: Boolean = false
 ) {
     Box(
         modifier = modifier
@@ -294,23 +330,69 @@ fun ProductDetailBox(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .background(Color(0xFFE8F8F0), RoundedCornerShape(20.dp))
-                                .padding(horizontal = 12.dp, vertical = 6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Verified",
-                                tint = GreenAccent,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = "ĐÃ XÁC THỰC CẢM BIẾN",
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = GreenAccent
-                            )
+                            if (isJustScanned) {
+                                // Badge ƯU TIÊN: Sản phẩm vừa quét xong
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .background(Color(0xFFDCFCE7), RoundedCornerShape(20.dp))
+                                        .border(1.dp, Color(0xFF86EFAC), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Vừa quét",
+                                        tint = Color(0xFF16A34A),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "VỪA QUÉT XONG",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFF15803D)
+                                    )
+                                }
+                            } else {
+                                // Badge: Đang xem thông tin khi chạm vào trong danh sách
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .background(Color(0xFFEFF6FF), RoundedCornerShape(20.dp))
+                                        .border(1.dp, Color(0xFFBFDBFE), RoundedCornerShape(20.dp))
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.TouchApp,
+                                        contentDescription = "Đang xem",
+                                        tint = PrimaryBlue,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "ĐANG XEM CHI TIẾT",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = PrimaryBlue
+                                    )
+                                }
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .background(Color(0xFFF1F5F9), RoundedCornerShape(20.dp))
+                                    .padding(horizontal = 10.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = "CẢM BIẾN KHỚP",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF475569)
+                                )
+                            }
                         }
 
                         Box(
