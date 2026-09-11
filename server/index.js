@@ -3,10 +3,12 @@ const cors = require('cors');
 const path = require('path');
 const pool = require('./db');
 const { initCustomersDatabase } = require('./init_customers_db');
+const { syncProductsDatabase } = require('./sync_products_db');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-// Khởi tạo CSDL khách hàng tự động khi khởi động server
+// Khởi tạo CSDL khách hàng và đồng bộ sản phẩm/hình ảnh tự động khi khởi động server
 initCustomersDatabase().catch(err => console.warn('Lỗi initCustomersDatabase:', err.message));
+syncProductsDatabase().catch(err => console.warn('Lỗi syncProductsDatabase:', err.message));
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,8 +50,9 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Phục vụ các tệp hình ảnh sản phẩm tĩnh từ thư mục public/images
+// Phục vụ các tệp hình ảnh sản phẩm tĩnh từ thư mục public/images (hỗ trợ cả /images và /products)
 app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use('/products', express.static(path.join(__dirname, 'public/images')));
 // Phục vụ tải tệp cài đặt Mock Bank App APK
 app.use('/download', express.static(path.join(__dirname, 'public/download')));
 

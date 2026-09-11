@@ -91,11 +91,11 @@ export default function CustomerProductsPage() {
               <div className="w-16 h-16 rounded-xl bg-slate-800 overflow-hidden flex-shrink-0 flex items-center justify-center border border-slate-700/60">
                 {p.ImageUrl ? (
                   <img
-                    src={`/images/${p.ImageUrl.replace(/^\/images\//, '')}`}
+                    src={p.ImageUrl.startsWith('http') ? p.ImageUrl : `/images/${p.ImageUrl.replace(/^(\/images\/|\/products\/|\/)/, '')}`}
                     alt={p.Name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLElement).style.display = 'none';
+                      (e.target as HTMLImageElement).src = '/images/sua_vinamilk.jpg';
                     }}
                   />
                 ) : (

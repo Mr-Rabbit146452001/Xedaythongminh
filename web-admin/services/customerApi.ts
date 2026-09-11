@@ -97,7 +97,7 @@ export const CustomerApiService = {
         Price: it.Price || it.price || it.product?.Price || 0,
         Quantity: it.Quantity || it.quantity || 1,
         TotalPrice: it.TotalPrice || it.totalPrice || ((it.Price || it.price || it.product?.Price || 0) * (it.Quantity || it.quantity || 1)),
-        ImageUrl: it.ImageUrl || it.imageUrl || it.product?.ImageUrl || '/products/sua_vinamilk.jpg'
+        ImageUrl: it.ImageUrl || it.imageUrl || it.product?.ImageUrl || 'sua_vinamilk.jpg'
       }));
       const totalAmount = json.totalAmount || json.data?.totalAmount || items.reduce((sum, item) => sum + item.TotalPrice, 0);
       const totalQuantity = json.totalQuantity || json.data?.totalItems || items.reduce((sum, item) => sum + item.Quantity, 0);
@@ -118,7 +118,7 @@ export const CustomerApiService = {
             Price: it.product?.Price || 0,
             Quantity: it.quantity || 1,
             TotalPrice: (it.product?.Price || 0) * (it.quantity || 1),
-            ImageUrl: it.product?.ImageUrl || '/products/sua_vinamilk.jpg'
+            ImageUrl: it.product?.ImageUrl || 'sua_vinamilk.jpg'
           }));
           const totalAmount = json2.data?.totalAmount || items.reduce((sum, it) => sum + it.TotalPrice, 0);
           const totalQuantity = json2.data?.totalItems || items.reduce((sum, it) => sum + it.Quantity, 0);

@@ -143,6 +143,8 @@ class ProductItem(BaseModel):
     expected_weight_g: Optional[float] = 0.0
     weight_tolerance_g: Optional[float] = 0.0
     active: Optional[int] = 1
+    imageurl: Optional[str] = None
+    image_url: Optional[str] = None
     created_at_ms: Optional[int] = None
     updated_at_ms: Optional[int] = None
 
@@ -169,6 +171,8 @@ class CartItemDetail(BaseModel):
     quantity: int
     unit_price_vnd: int
     line_total_vnd: int
+    imageurl: Optional[str] = None
+    image_url: Optional[str] = None
 
 class CartResponse(BaseModel):
     session_id: str
@@ -254,6 +258,7 @@ def get_products():
                 COALESCE(expected_weight_g, 0.0) AS expected_weight_g, 
                 COALESCE(weight_tolerance_g, 0.0) AS weight_tolerance_g, 
                 COALESCE(active, 1) AS active, 
+                imageurl,
                 COALESCE(created_at_ms, 0) AS created_at_ms, 
                 COALESCE(updated_at_ms, 0) AS updated_at_ms 
             FROM products 
@@ -273,6 +278,9 @@ def get_products():
             d["expected_weight_g"] = float(d.get("expected_weight_g") or 0.0)
             d["weight_tolerance_g"] = float(d.get("weight_tolerance_g") or 0.0)
             d["active"] = int(d.get("active") or 1)
+            img = d.get("imageurl")
+            d["imageurl"] = str(img) if img else None
+            d["image_url"] = str(img) if img else None
             d["created_at_ms"] = int(d.get("created_at_ms") or 0) if d.get("created_at_ms") else None
             d["updated_at_ms"] = int(d.get("updated_at_ms") or 0) if d.get("updated_at_ms") else None
             result.append(d)
@@ -280,7 +288,7 @@ def get_products():
     except Exception as err:
         print(f"⚠️ [FastAPI get_products] Lỗi truy vấn: {err}")
         try:
-            cur.execute("SELECT id, barcode, name, price FROM products ORDER BY id ASC")
+            cur.execute("SELECT id, barcode, name, price, imageurl FROM products ORDER BY id ASC")
             fallback_rows = cur.fetchall()
             return [
                 {
@@ -293,6 +301,8 @@ def get_products():
                     "expected_weight_g": 0.0,
                     "weight_tolerance_g": 0.0,
                     "active": 1,
+                    "imageurl": str(r.get("imageurl")) if r.get("imageurl") else None,
+                    "image_url": str(r.get("imageurl")) if r.get("imageurl") else None,
                     "created_at_ms": None,
                     "updated_at_ms": None
                 }
@@ -466,7 +476,8 @@ def get_product_by_qr(req: ProductLookupReq):
                 COALESCE(vision_class, 'unknown') AS vision_class, 
                 COALESCE(price_vnd, ROUND(COALESCE(price, 0))::int, 0) AS price_vnd, 
                 COALESCE(expected_weight_g, 0.0) AS expected_weight_g, 
-                COALESCE(weight_tolerance_g, 0.0) AS weight_tolerance_g 
+                COALESCE(weight_tolerance_g, 0.0) AS weight_tolerance_g,
+                imageurl
             FROM products 
             WHERE barcode = %s OR sku = %s 
             LIMIT 1
@@ -474,6 +485,7 @@ def get_product_by_qr(req: ProductLookupReq):
         row = cur.fetchone()
         if not row:
             return {"found": False, "message": "Không tìm thấy sản phẩm"}
+        img = row.get("imageurl")
         return {
             "found": True,
             "id": row["id"],
@@ -485,14 +497,17 @@ def get_product_by_qr(req: ProductLookupReq):
             "price": int(row["price_vnd"] or 0),
             "expected_weight_g": float(row["expected_weight_g"] or 0),
             "weight_tolerance_g": float(row["weight_tolerance_g"] or 0),
+            "imageurl": str(img) if img else None,
+            "image_url": str(img) if img else None,
             "message": "Tìm thấy sản phẩm"
         }
     except Exception as err:
         print(f"⚠️ [FastAPI get_product_by_qr] Lỗi: {err}")
         try:
-            cur.execute("SELECT id, barcode, name, price FROM products WHERE barcode = %s LIMIT 1", (target_code,))
+            cur.execute("SELECT id, barcode, name, price, imageurl FROM products WHERE barcode = %s LIMIT 1", (target_code,))
             r = cur.fetchone()
             if r:
+                fb_img = r.get("imageurl")
                 return {
                     "found": True,
                     "id": r["id"],
@@ -504,6 +519,8 @@ def get_product_by_qr(req: ProductLookupReq):
                     "price": int(float(r["price"] or 0)),
                     "expected_weight_g": 0.0,
                     "weight_tolerance_g": 0.0,
+                    "imageurl": str(fb_img) if fb_img else None,
+                    "image_url": str(fb_img) if fb_img else None,
                     "message": "Tìm thấy sản phẩm"
                 }
         except Exception:
@@ -522,7 +539,7 @@ def get_cart(session_id: str):
     cur = conn.cursor(cursor_factory=RealDictCursor)
     try:
         cur.execute("""
-            SELECT p.barcode, p.sku, p.name, c.quantity, c.unit_price_vnd, (c.quantity * c.unit_price_vnd) AS line_total_vnd
+            SELECT p.barcode, p.sku, p.name, p.imageurl, c.quantity, c.unit_price_vnd, (c.quantity * c.unit_price_vnd) AS line_total_vnd
             FROM cart_items c
             JOIN products p ON c.product_id = p.id
             WHERE c.session_id = %s AND c.quantity > 0
@@ -537,13 +554,16 @@ def get_cart(session_id: str):
             qty = int(r["quantity"])
             unit_price = int(r["unit_price_vnd"])
             line_total = int(r["line_total_vnd"])
+            item_img = r.get("imageurl")
             items.append(CartItemDetail(
                 barcode=r["barcode"],
                 sku=r.get("sku"),
                 name=r["name"],
                 quantity=qty,
                 unit_price_vnd=unit_price,
-                line_total_vnd=line_total
+                line_total_vnd=line_total,
+                imageurl=str(item_img) if item_img else None,
+                image_url=str(item_img) if item_img else None
             ))
             total_quantity += qty
             total_vnd += line_total

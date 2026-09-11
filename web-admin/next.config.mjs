@@ -15,6 +15,14 @@ const nextConfig = {
         source: '/api/:path*',
         destination: 'http://127.0.0.1:3000/api/:path*',
       },
+      {
+        source: '/images/:path*',
+        destination: 'http://127.0.0.1:3000/images/:path*',
+      },
+      {
+        source: '/products/:path*',
+        destination: 'http://127.0.0.1:3000/products/:path*',
+      },
     ];
   },
 };
