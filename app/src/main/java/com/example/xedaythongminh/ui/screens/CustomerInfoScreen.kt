@@ -252,7 +252,12 @@ fun CustomerInfoScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Button(
-                            onClick = { navController.navigate("scan_product") },
+                            onClick = { 
+                                if (appViewModel.activeSessionId.value.isNullOrBlank()) {
+                                    appViewModel.syncOrAttachSession(forceNew = false)
+                                }
+                                navController.navigate("scan_product") 
+                            },
                             modifier = Modifier.fillMaxWidth().height(46.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
                             shape = RoundedCornerShape(10.dp)

@@ -81,6 +81,9 @@ fun ScanProductScreen(
 
     // 0. BẢO MẬT PHIÊN: Kiểm tra hàng tồn từ phiên trước khi bắt đầu phiên mua sắm mới
     LaunchedEffect(Unit) {
+        if (appViewModel.activeSessionId.value.isNullOrBlank()) {
+            appViewModel.syncOrAttachSession(forceNew = false)
+        }
         appViewModel.checkCartEmptyOnStart()
     }
 

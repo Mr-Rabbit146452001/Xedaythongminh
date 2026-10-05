@@ -184,6 +184,8 @@ class CartDecisionRequest(BaseModel):
     session_id: str
     action: Literal["add", "remove"]
     barcode: str
+    verification_mode: Optional[str] = "fusion"
+    client_event_id: Optional[str] = None
     ai_class: Optional[str] = None
     ai_confidence: Optional[float] = Field(default=None, ge=0, le=1)
     delta_weight_g: Optional[float] = None
@@ -670,7 +672,7 @@ def process_cart_decision(decision: CartDecisionRequest):
                 import urllib.request
                 sync_payload = json.dumps({"detected": False}).encode("utf-8")
                 sync_req = urllib.request.Request("http://127.0.0.1:3000/api/iot/set-weight-anomaly", data=sync_payload, headers={"Content-Type": "application/json"})
-                urllib.request.urlopen(sync_req, timeout=1)
+                urllib.request.urlopen(sync_req, timeout=0.2)
             except Exception:
                 pass
         else:
@@ -687,7 +689,7 @@ def process_cart_decision(decision: CartDecisionRequest):
                     "message": weight_anomaly_state["message"]
                 }).encode("utf-8")
                 sync_req = urllib.request.Request("http://127.0.0.1:3000/api/iot/set-weight-anomaly", data=sync_payload, headers={"Content-Type": "application/json"})
-                urllib.request.urlopen(sync_req, timeout=1)
+                urllib.request.urlopen(sync_req, timeout=0.2)
             except Exception:
                 pass
 
@@ -781,8 +783,10 @@ def process_cart_decision(decision: CartDecisionRequest):
 
         return {
             "event_id": cart_event_id,
+            "client_event_id": decision.client_event_id,
             "decision": decision_text,
             "reasons": reasons,
+            "verification_mode": decision.verification_mode,
             "product": dict(product) if product else None,
             "cart": {
                 "session_id": decision.session_id,

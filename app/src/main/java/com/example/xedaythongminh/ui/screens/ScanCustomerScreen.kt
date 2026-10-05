@@ -256,6 +256,9 @@ fun ScanCustomerInstructionBox(
                 onClick = {
                     // Dừng phiên polling đăng nhập QR trước khi chuyển màn hình
                     appViewModel.stopQrLoginSession()
+                    if (appViewModel.activeSessionId.value.isNullOrBlank()) {
+                        appViewModel.syncOrAttachSession(forceNew = false)
+                    }
                     navController.navigate("scan_product") {
                         popUpTo("scan_customer") { inclusive = true }
                     }

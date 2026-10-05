@@ -96,7 +96,7 @@ enum class AnomalyType(
                 normalized.contains(it.name.lowercase()) ||
                 it.name.lowercase().contains(normalized)
             } ?: when {
-                normalized.contains("unrecognized") || normalized.contains("pi_") -> PI_UNRECOGNIZED_ITEM
+                normalized.contains("scan_required") || normalized.contains("scan") || normalized.contains("unrecognized") || normalized.contains("pi_") -> PI_UNRECOGNIZED_ITEM
                 normalized.contains("tolerance") -> WEIGHT_OUT_OF_TOLERANCE
                 normalized.contains("conflict") || normalized.contains("direction") -> WEIGHT_DIRECTION_CONFLICT
                 normalized.contains("moving") || normalized.contains("noisy") -> SCALE_MOVING
