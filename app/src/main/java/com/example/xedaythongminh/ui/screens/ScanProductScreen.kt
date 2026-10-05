@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -78,6 +80,11 @@ fun ScanProductScreen(
 
     val hasUnscannedProduct by appViewModel.hasUnscannedProduct.collectAsState()
     val scope = rememberCoroutineScope()
+
+    // 0. BẢO MẬT PHIÊN: Kiểm tra nếu giỏ hàng còn hàng từ phiên trước thì kích hoạt khóa giỏ yêu cầu dọn sạch
+    LaunchedEffect(Unit) {
+        appViewModel.checkCartEmptyOnStart()
+    }
 
     // 1. ƯU TIÊN SỐ 1: Khi có sản phẩm vừa quét xong (từ đầu đọc mã vạch, cảm biến hoặc server)
     LaunchedEffect(scanEventTimestamp, lastScannedItem) {
@@ -148,53 +155,23 @@ fun ScanProductScreen(
             )
         }
 
-        // Popup cảnh báo sản phẩm chưa quét từ Server
+        // Popup cảnh báo thông minh các lỗi bất đồng bộ cảm biến & cân nặng
+        val activeAnomaly by appViewModel.activeAnomaly.collectAsState()
         if (hasUnscannedProduct) {
-            AlertDialog(
-                onDismissRequest = {}, // Khóa không cho dismiss khi click bên ngoài
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.Warning,
-                            contentDescription = "Cảnh báo",
-                            tint = Color(0xFFD32F2F),
-                            modifier = Modifier.size(28.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Sản phẩm chưa được quét!",
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFFD32F2F),
-                            fontSize = 20.sp
-                        )
-                    }
+            val anomaly = activeAnomaly ?: com.example.xedaythongminh.domain.model.SensorAnomaly(
+                type = com.example.xedaythongminh.domain.model.AnomalyType.GENERIC_UNSCANNED
+            )
+            com.example.xedaythongminh.ui.components.SensorAnomalyDialog(
+                anomaly = anomaly,
+                onResolve = {
+                    appViewModel.resolveWeightAnomaly()
                 },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            text = "Phát hiện có sản phẩm được đặt vào xe đẩy nhưng chưa được quét mã vạch trên hệ thống.",
-                            fontSize = 15.sp,
-                            color = TextDark
-                        )
-                        Text(
-                            text = "Vui lòng quét mã sản phẩm hoặc bỏ sản phẩm ra khỏi khay chứa đồ của xe đẩy để tiếp tục mua sắm.",
-                            fontSize = 14.sp,
-                            color = TextGray
-                        )
+                onSecondaryAction = if (anomaly.type == com.example.xedaythongminh.domain.model.AnomalyType.CART_CAMERA_DISAGREEMENT ||
+                    anomaly.type == com.example.xedaythongminh.domain.model.AnomalyType.SIMULTANEOUS_ACTIONS) {
+                    {
+                        navController.navigate("cart_detail")
                     }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            appViewModel.resolveWeightAnomaly()
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
-                    ) {
-                        Text("Đã giải quyết (Xóa cảnh báo)", color = Color.White)
-                    }
-                },
-                shape = RoundedCornerShape(16.dp),
-                containerColor = Color.White
+                } else null
             )
         }
 
@@ -807,13 +784,13 @@ fun CartSidebar(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Button(
+            GlassButton(
                 onClick = { navController.navigate("cart_detail") },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(46.dp),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                variant = GlassButtonVariant.Primary
             ) {
                 Text("Xem chi tiết giỏ hàng", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Spacer(modifier = Modifier.width(6.dp))

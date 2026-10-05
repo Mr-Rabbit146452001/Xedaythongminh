@@ -48,6 +48,7 @@ import com.example.xedaythongminh.ui.screens.PaymentQRScreen
 import com.example.xedaythongminh.ui.screens.PaymentSuccessScreen
 import com.example.xedaythongminh.ui.screens.SessionEndedScreen
 import com.example.xedaythongminh.ui.screens.ConnectionErrorScreen
+import com.example.xedaythongminh.ui.components.LeftoverCartWarningOverlay
 import com.example.xedaythongminh.ui.screens.ServerSettingsDialog
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
 import com.example.xedaythongminh.ui.viewmodel.AppViewModelProvider
@@ -117,6 +118,18 @@ fun AppNavigation(
                 violation = invalidViolation!!,
                 onResolveViolation = {
                     appViewModel.resolveInvalidScannedProduct()
+                }
+            )
+        }
+
+        // 2. Overlay bảo mật toàn màn hình: Khóa khi phát hiện trong giỏ còn hàng lúc bắt đầu phiên mua sắm mới
+        val hasLeftoverCartOnStart by appViewModel.hasLeftoverCartItemsOnStart.collectAsState()
+        if (hasLeftoverCartOnStart) {
+            val leftoverItems by appViewModel.cartItemsState.collectAsState()
+            LeftoverCartWarningOverlay(
+                items = leftoverItems,
+                onClearAll = {
+                    appViewModel.clearCartOnStart()
                 }
             )
         }

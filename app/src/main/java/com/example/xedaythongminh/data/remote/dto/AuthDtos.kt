@@ -51,7 +51,10 @@ data class CartStatusResponse(
 )
 
 data class CartStatusData(
-    @SerializedName("hasUnscannedProduct") val hasUnscannedProduct: Boolean
+    @SerializedName("hasUnscannedProduct") val hasUnscannedProduct: Boolean,
+    @SerializedName("anomalyCode") val anomalyCode: String? = null,
+    @SerializedName("anomalyReason") val anomalyReason: String? = null,
+    @SerializedName("anomalyMessage") val anomalyMessage: String? = null
 )
 
 data class CustomerResponse(

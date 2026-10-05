@@ -23,6 +23,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.R
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,8 +40,10 @@ import androidx.compose.ui.unit.sp
 import com.example.xedaythongminh.data.models.CartSummary
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.foundation.clickable
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 import com.example.xedaythongminh.ui.components.CartNotificationPill
+import com.example.xedaythongminh.ui.components.RemoveProductDialog
 import coil.compose.AsyncImage
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.zIndex
@@ -59,6 +63,8 @@ fun CartDetailScreen(
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
     }
+
+    var showRemoveDialog by remember { mutableStateOf(false) }
 
     // Trạng thái kiểm tra xem danh sách có đang bị cuộn xuống không
     val showScrollUp by remember {
@@ -132,6 +138,35 @@ fun CartDetailScreen(
                                     fontWeight = FontWeight.Medium,
                                     color = TextDark
                                 )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            // Nút thao tác nhanh bớt/xóa món trên thanh tiêu đề
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(Color(0xFFFFEBEE))
+                                    .border(1.dp, Color(0xFFFFCDD2), RoundedCornerShape(16.dp))
+                                    .clickable {
+                                        appViewModel.sendSystemRemoveCommand()
+                                        showRemoveDialog = true
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(
+                                        imageVector = Icons.Default.RemoveShoppingCart,
+                                        contentDescription = "Bớt món",
+                                        tint = Color(0xFFD32F2F),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "Bớt / Xóa món",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color(0xFFD32F2F)
+                                    )
+                                }
                             }
                             Spacer(modifier = Modifier.weight(1f))
                             if (cartItems.size >= 2) {
@@ -286,7 +321,7 @@ fun CartDetailScreen(
                         Spacer(modifier = Modifier.height(24.dp))
                         
                         // Action Buttons
-                        Button(
+                        GlassButton(
                             onClick = { 
                                 appViewModel.lockCart()
                                 navController.navigate("auto_payment") 
@@ -294,17 +329,17 @@ fun CartDetailScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(54.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Primary
                         ) {
-                            Icon(Icons.Default.Bolt, contentDescription = "Auto Pay", tint = Color(0xFFF39C12))
+                            Icon(Icons.Default.Bolt, contentDescription = "Auto Pay", tint = Color(0xFFFFD54F))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("⚡ Thanh toán tự động", fontSize = 17.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("⚡ Thanh toán tự động", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        OutlinedButton(
+                        GlassButton(
                             onClick = { 
                                 appViewModel.lockCart()
                                 navController.navigate("payment_selection") 
@@ -312,37 +347,76 @@ fun CartDetailScreen(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryBlue)
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Secondary
                         ) {
                             Icon(Icons.Default.CreditCard, contentDescription = "Other Pay", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text("Phương thức thanh toán khác", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
                         }
                         
-                        Spacer(modifier = Modifier.height(12.dp))
-                        
-                        OutlinedButton(
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Nút Bớt sản phẩm / Xóa món
+                        GlassButton(
+                            onClick = { 
+                                appViewModel.sendSystemRemoveCommand()
+                                showRemoveDialog = true 
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Danger
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.RemoveShoppingCart,
+                                contentDescription = "Bớt sản phẩm",
+                                tint = Color.White,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Bớt sản phẩm / Xóa món",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        GlassButton(
                             onClick = { navController.navigate("scan_product") },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = TextDark),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BorderGray)
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Ghost
                         ) {
-                            Icon(Icons.Default.AddShoppingCart, contentDescription = "Continue", modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.AddShoppingCart, contentDescription = "Continue", modifier = Modifier.size(18.dp), tint = PrimaryBlue)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Tiếp tục mua sắm", fontWeight = FontWeight.Medium)
+                            Text("Tiếp tục mua sắm", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
                         }
-                        
-
                     }
                 }
             }
         )
     }
 }
+
+        // Popup hướng dẫn quét mã vạch để bớt sản phẩm kèm đếm ngược 15s
+        if (showRemoveDialog) {
+            RemoveProductDialog(
+                cartItems = cartItems,
+                onBarcodeScanned = { barcode ->
+                    appViewModel.removeProductByBarcode(barcode)
+                },
+                onDismiss = {
+                    showRemoveDialog = false
+                }
+            )
+        }
 
         // Thông báo nổi bật khi thêm/bớt/xóa sản phẩm (nằm ngay dưới thanh TopBar)
         CartNotificationPill(
@@ -426,13 +500,13 @@ fun EmptyCartView(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Option 1: Tiếp tục mua hàng
-                    Button(
+                    GlassButton(
                         onClick = onContinueShopping,
                         modifier = Modifier
                             .weight(1f)
                             .height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        variant = GlassButtonVariant.Primary
                     ) {
                         Icon(
                             imageVector = Icons.Default.AddShoppingCart,
@@ -450,19 +524,18 @@ fun EmptyCartView(
                     }
 
                     // Option 2: Kết thúc phiên
-                    OutlinedButton(
+                    GlassButton(
                         onClick = onEndSession,
                         modifier = Modifier
                             .weight(1f)
                             .height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFE53935)),
-                        border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFFFCDD2))
+                        variant = GlassButtonVariant.Danger
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = "Kết thúc phiên",
-                            tint = Color(0xFFE53935),
+                            tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -470,7 +543,7 @@ fun EmptyCartView(
                             text = "Kết thúc phiên",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFFE53935)
+                            color = Color.White
                         )
                     }
                 }

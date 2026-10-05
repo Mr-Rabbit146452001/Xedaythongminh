@@ -149,11 +149,18 @@ function printHelpMenu() {
   }
 
   console.log(`----+---------------------------------------+----------+-------------------------+-------------------------`);
-  console.log(`💡 CÁC LỆNH HỆ THỐNG & CẢM BIẾN ĐẶC BIỆT:`);
-  console.log(`   🚨 Bỏ hàng KHÔNG quét mã (Loadcell tăng cân): node ping_mock.js unscanned [số_gram]`);
-  console.log(`   ✅ Lấy hàng chưa quét ra ngoài (Mở khóa xe):   node ping_mock.js resolve`);
-  console.log(`   🛒 Xem chi tiết giỏ hàng hiện tại:            node ping_mock.js status`);
-  console.log(`   🧹 Xóa sạch toàn bộ giỏ hàng:                 node ping_mock.js clear`);
+  console.log(`💡 CÁC LỆNH PING CẢNH BÁO BẤT ĐỒNG BỘ CẢM BIẾN / CÂN NẶNG:`);
+  console.log(`   ⚖️ Sai lệch dung sai cân nặng:     node ping_mock.js anomaly tolerance`);
+  console.log(`   🔄 Xung đột chiều cân nặng:         node ping_mock.js anomaly conflict`);
+  console.log(`   〰️ Xe rung lắc / Cân dao động:      node ping_mock.js anomaly moving`);
+  console.log(`   📤 Cân giảm chưa xác nhận món bớt: node ping_mock.js anomaly cam2_remove`);
+  console.log(`   📥 Cân tăng chưa xác nhận món thêm:node ping_mock.js anomaly cam_add`);
+  console.log(`   ⚡ Thao tác bỏ & rút hàng cùng lúc: node ping_mock.js anomaly simultaneous`);
+  console.log(`   📊 Sai lệch số lượng giỏ & CSDL:    node ping_mock.js anomaly mismatch`);
+  console.log(`   🚨 Bỏ hàng KHÔNG quét barcode:      node ping_mock.js unscanned [số_gram]`);
+  console.log(`   ✅ Giải tỏa cảnh báo (Mở khóa xe):  node ping_mock.js resolve`);
+  console.log(`   🛒 Xem chi tiết giỏ hàng hiện tại:  node ping_mock.js status`);
+  console.log(`   🧹 Xóa sạch toàn bộ giỏ hàng:       node ping_mock.js clear`);
   console.log(`========================================================================================\n`);
 }
 
@@ -174,9 +181,65 @@ async function getActiveSession() {
   });
 }
 
-function setWeightAnomaly(detected) {
+const ANOMALY_TYPES = {
+  tolerance: {
+    code: 'weight_out_of_tolerance',
+    title: 'Sai Lệch Dung Sai Trọng Lượng',
+    reason: 'Trọng lượng đo được trên xe đẩy chênh lệch bất thường so với định lượng chuẩn của sản phẩm.',
+    weight: 120
+  },
+  conflict: {
+    code: 'weight_direction_conflict',
+    title: 'Xung Đột Chiều Cân Nặng',
+    reason: 'Mâu thuẫn giữa Camera và cảm biến tải trọng (ví dụ: quét thêm hàng nhưng cân báo giảm tải trọng).',
+    weight: -200
+  },
+  moving: {
+    code: 'scale_moving',
+    title: 'Cảm Biến Cân Đang Rung Lắc / Bị Tì Đè',
+    reason: 'Cảm biến cân nặng đang bị dao động mạnh do xe di chuyển hoặc có người vịn tì vào thành giỏ.',
+    weight: 0
+  },
+  cam2_remove: {
+    code: 'cam2_outward_unconfirmed',
+    title: 'Yêu Cầu Quét Mã Bớt Hàng',
+    reason: 'Cân phát hiện giảm tải trọng nhưng Camera mép giỏ chưa xác nhận được món hàng nào được rút ra.',
+    weight: -180
+  },
+  cam_add: {
+    code: 'weight_add_identity_unconfirmed',
+    title: 'Phát Hiện Thêm Hàng Chưa Xác Nhận',
+    reason: 'Cân phát hiện tăng tải trọng nhưng Camera chưa đủ độ tin cậy để định danh sản phẩm.',
+    weight: 350
+  },
+  simultaneous: {
+    code: 'simultaneous_add_remove_possible',
+    title: 'Phát Hiện Thao Tác Bỏ & Rút Hàng Đồng Thời',
+    reason: 'Hệ thống nghi ngờ có hành vi đưa vật phẩm mới vào đồng thời rút vật phẩm cũ ra cùng lúc.',
+    weight: 150
+  },
+  mismatch: {
+    code: 'cart_camera_disagreement',
+    title: 'Sai Lệch Số Lượng Giỏ Hàng & CSDL',
+    reason: 'Số lượng sản phẩm Camera ghi nhận không khớp với số lượng lưu trong cơ sở dữ liệu hệ thống.',
+    weight: 0
+  },
+  unscanned: {
+    code: 'generic_unscanned',
+    title: 'Sản Phẩm Chưa Được Quét Mã',
+    reason: 'Phát hiện có sản phẩm được đặt vào xe đẩy nhưng chưa được quét mã vạch trên hệ thống.',
+    weight: 500
+  }
+};
+
+function setWeightAnomaly(detected, code = null, reason = null, message = null) {
   return new Promise((resolve) => {
-    const payload = JSON.stringify({ detected: Boolean(detected) });
+    const payload = JSON.stringify({
+      detected: Boolean(detected),
+      code: code,
+      reason: reason,
+      message: message
+    });
     const req = http.request({
       hostname: '127.0.0.1',
       port: 3000,
@@ -365,28 +428,30 @@ async function sendDecision(sessionId, action, barcode, sku, weight, silent = fa
   });
 }
 
-async function handleUnscannedAnomaly(weightDelta = 500) {
+async function handleUnscannedAnomaly(typeKey = 'unscanned', customWeight = null) {
   const sessionId = await getActiveSession();
+  const anomalyInfo = ANOMALY_TYPES[typeKey] || ANOMALY_TYPES['unscanned'];
+  const weightDelta = customWeight !== null ? customWeight : anomalyInfo.weight;
+
   console.log(`\n======================================================`);
-  console.log(`🚨 PING GIẢ LẬP: BỎ SẢN PHẨM VÀO XE MÀ KHÔNG QUÉT BARCODE`);
+  console.log(`🚨 PING GIẢ LẬP CẢNH BÁO BẤT THƯỜNG: ${anomalyInfo.title.toUpperCase()}`);
   console.log(`======================================================`);
   console.log(`🛒 Phiên giỏ hàng:               ${sessionId}`);
-  console.log(`⚖️ Cảm biến tải trọng (Loadcell): Phát hiện trọng lượng tăng +${weightDelta}g`);
-  console.log(`📷 Camera AI / Đầu quét mã:      KHÔNG phát hiện mã vạch hợp lệ!`);
+  console.log(`🏷️ Mã lỗi hệ thống (Code):        ${anomalyInfo.code}`);
+  console.log(`📝 Nguyên nhân chi tiết:          ${anomalyInfo.reason}`);
+  console.log(`⚖️ Độ biến thiên tải trọng:      ${weightDelta > 0 ? '+' : ''}${weightDelta}g`);
   console.log(`🚨 Kích hoạt cảnh báo hệ thống:  BẬT [weightAnomalyDetected = true]`);
   console.log(`------------------------------------------------------`);
 
-  await setWeightAnomaly(true);
-  await sendDecision(sessionId, 'add', 'UNSCANNED_ITEM', 'unknown', weightDelta, true);
+  await setWeightAnomaly(true, anomalyInfo.code, anomalyInfo.reason, anomalyInfo.title);
+  await sendDecision(sessionId, 'add', 'UNSCANNED_ITEM', anomalyInfo.code, weightDelta, true);
 
   console.log(`📱 PHẢN HỒI TRÊN ỨNG DỤNG XE ĐẨY (TABLET / APP):`);
-  console.log(`   1. Nếu khách đang ở Màn hình Mua sắm (ScanProduct):`);
-  console.log(`      👉 Hiện Popup đỏ cảnh báo: "Sản phẩm chưa được quét!"`);
-  console.log(`   2. Nếu khách đang ở Màn hình Thanh toán (sau khi chốt giỏ hàng):`);
-  console.log(`      👉 Bật màn hình mờ Full-Screen nhấp nháy đỏ báo động`);
-  console.log(`         Khóa 100% chức năng thanh toán cho đến khi lấy hàng ra!`);
+  console.log(`   👉 Bật Popup Cảnh Báo Chuyên Biệt: "${anomalyInfo.title}"`);
+  console.log(`   👉 Mã lỗi: [${anomalyInfo.code}]`);
+  console.log(`   👉 Hướng dẫn hành động tự động xuất hiện trên màn hình khách hàng!`);
   console.log(`------------------------------------------------------`);
-  console.log(`💡 Để giả lập lấy sản phẩm ra ngoài (hủy cảnh báo & mở khóa), chạy:`);
+  console.log(`💡 Để giải tỏa cảnh báo & mở khóa xe, chạy:`);
   console.log(`   node ping_mock.js resolve`);
   console.log(`======================================================\n`);
 }
@@ -433,8 +498,9 @@ async function main() {
   }
 
   if (['unscanned', 'anomaly', 'loadcell', 'can', 'canhbao'].includes(args[0])) {
-    const customWeight = parseInt(args[1], 10) || 500;
-    await handleUnscannedAnomaly(customWeight);
+    const typeKey = args[1] && ANOMALY_TYPES[args[1]] ? args[1] : (isNaN(args[1]) ? (args[1] || 'unscanned') : 'unscanned');
+    const customWeight = !isNaN(args[1]) ? parseInt(args[1], 10) : (!isNaN(args[2]) ? parseInt(args[2], 10) : null);
+    await handleUnscannedAnomaly(typeKey, customWeight);
     return;
   }
 

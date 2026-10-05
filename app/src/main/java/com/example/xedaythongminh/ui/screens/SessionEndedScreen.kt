@@ -20,6 +20,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -71,7 +73,7 @@ fun SessionEndedScreen(
                     modifier = modifier,
                     colors = CardDefaults.cardColors(containerColor = Color.White),
                     shape = RoundedCornerShape(20.dp),
-                    elevation = CardDefaults.cardElevation(2    dp)
+                    elevation = CardDefaults.cardElevation(2.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -229,7 +231,7 @@ fun SessionEndedScreen(
                             
                             Spacer(modifier = Modifier.height(26.dp))
                             
-                            Button(
+                            GlassButton(
                                 onClick = { 
                                     appViewModel.terminateSessionImmediately()
                                     navController.navigate("welcome") {
@@ -238,9 +240,9 @@ fun SessionEndedScreen(
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(48.dp),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+                                    .height(50.dp),
+                                shape = RoundedCornerShape(14.dp),
+                                variant = GlassButtonVariant.Secondary
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,

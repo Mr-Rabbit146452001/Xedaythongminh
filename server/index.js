@@ -73,6 +73,9 @@ const activeSessions = new Map();
 
 // Trạng thái cảm biến trọng lượng bất thường
 let weightAnomalyDetected = false;
+let weightAnomalyCode = null;
+let weightAnomalyReason = null;
+let weightAnomalyMessage = null;
 
 // Quản lý phiên thanh toán QR & Khóa đồng bộ đơn hàng
 const QR_VALIDITY_MS = 5 * 60 * 1000; // 5 phút hiệu lực mã QR (300 giây)
@@ -364,10 +367,34 @@ app.post('/api/iot/simulate-scan', async (req, res) => {
 
 // 8. API Bật/Tắt Cảnh báo Trọng lượng
 app.post('/api/iot/set-weight-anomaly', (req, res) => {
-  const { detected } = req.body;
+  const { detected, code, reason, message } = req.body;
   weightAnomalyDetected = Boolean(detected);
-  console.log(`⚠️ [Raspberry Pi Cảm biến Trọng lượng] Trạng thái bất thường: ${weightAnomalyDetected}`);
-  res.json({ status: 'Thành công', weightAnomalyDetected: weightAnomalyDetected });
+  weightAnomalyCode = weightAnomalyDetected ? (code || 'unscanned') : null;
+  weightAnomalyReason = weightAnomalyDetected ? (reason || null) : null;
+  weightAnomalyMessage = weightAnomalyDetected ? (message || null) : null;
+  console.log(`⚠️ [Raspberry Pi Cảm biến Trọng lượng] Trạng thái bất thường: ${weightAnomalyDetected}, Code: ${weightAnomalyCode}`);
+  res.json({
+    status: 'Thành công',
+    weightAnomalyDetected: weightAnomalyDetected,
+    weightAnomalyCode: weightAnomalyCode,
+    weightAnomalyReason: weightAnomalyReason,
+    weightAnomalyMessage: weightAnomalyMessage
+  });
+});
+
+// 8b. API Nhận lệnh điều khiển phần cứng từ Ứng dụng Xe Đẩy (lệnh 'r' bớt/xóa sản phẩm)
+app.post('/api/iot/command', (req, res) => {
+  const { command, action, sessionId } = req.body;
+  const cmd = (command || action || 'r').trim();
+  const session = sessionId || 'SESSION_DEFAULT';
+  console.log(`📡 [Hệ thống IoT Xe Đẩy] Nhận lệnh từ App: '${cmd}' cho phiên ${session}`);
+  res.json({
+    status: 'success',
+    message: `Đã truyền lệnh '${cmd}' xuống bộ điều khiển xe đẩy`,
+    command: cmd,
+    sessionId: session,
+    timestamp: Date.now()
+  });
 });
 
 // 9. API Kiểm tra trạng thái an toàn giỏ hàng
@@ -375,7 +402,10 @@ app.get('/api/cart/status', (req, res) => {
   res.json({
     status: 'success',
     data: {
-      hasUnscannedProduct: weightAnomalyDetected
+      hasUnscannedProduct: weightAnomalyDetected,
+      anomalyCode: weightAnomalyCode,
+      anomalyReason: weightAnomalyReason,
+      anomalyMessage: weightAnomalyMessage
     }
   });
 });

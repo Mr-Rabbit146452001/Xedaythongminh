@@ -23,6 +23,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,7 +69,7 @@ fun WelcomeScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
-                WelcomeImageSection(modifier = Modifier.fillMaxWidth().aspectRatio(1f))
+                WelcomeImageSection(modifier = Modifier.fillMaxWidth().aspectRatio(1654f / 951f))
                 WelcomeTextAndActionSection(navController = navController, modifier = Modifier.fillMaxWidth())
             }
         } else {
@@ -100,33 +102,28 @@ fun WelcomeTextAndActionSection(navController: NavController, modifier: Modifier
             lineHeight = 44.sp
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(
-            text = stringResource(R.string.welcome_desc),
-            fontSize = 16.sp,
-            color = TextGray,
-            lineHeight = 24.sp
-        )
+
         Spacer(modifier = Modifier.height(32.dp))
         
-        Button(
+        GlassButton(
             onClick = { navController.navigate("scan_customer") },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-            shape = RoundedCornerShape(12.dp)
+                .height(58.dp),
+            variant = GlassButtonVariant.Primary,
+            shape = RoundedCornerShape(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.ShoppingCart,
                 contentDescription = "Cart",
                 tint = Color.White
             )
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = stringResource(R.string.btn_start_shopping),
                 color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold
             )
         }
     }
@@ -141,7 +138,9 @@ fun WelcomeImageSection(modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(id = R.drawable.img_smart_cart_logo),
             contentDescription = "Smart Cart 3D Liquid Glass Logo",
-            modifier = Modifier.size(500.dp),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .aspectRatio(1654f / 951f),
             contentScale = ContentScale.Fit
         )
     }
@@ -184,9 +183,12 @@ fun TopBar(
             Image(
                 painter = painterResource(id = R.drawable.img_smart_cart_logo),
                 contentDescription = "Logo",
-                modifier = Modifier.size(50.dp)
+                modifier = Modifier
+                    .height(38.dp)
+                    .aspectRatio(1654f / 951f),
+                contentScale = ContentScale.Fit
             )
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = stringResource(R.string.logo_text),
                 fontWeight = FontWeight.Bold,

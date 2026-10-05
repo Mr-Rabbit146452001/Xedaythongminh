@@ -9,6 +9,7 @@ class StrollerApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         com.example.xedaythongminh.data.remote.RetrofitClient.initialize(this)
+        com.example.xedaythongminh.utils.SoundEffectManager.initialize(this)
         container = DefaultAppContainer()
     }
 }

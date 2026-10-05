@@ -16,6 +16,8 @@ import com.example.xedaythongminh.data.remote.dto.toDomainCartItem
 import com.example.xedaythongminh.domain.model.CartLockSnapshot
 import com.example.xedaythongminh.domain.model.InvalidProductViolation
 import com.example.xedaythongminh.domain.model.ViolationSource
+import com.example.xedaythongminh.domain.model.SensorAnomaly
+import com.example.xedaythongminh.domain.model.AnomalyType
 
 class AppViewModel constructor(
     private val cartRepository: CartRepository,
@@ -39,6 +41,9 @@ class AppViewModel constructor(
 
     private val _hasUnscannedProduct = MutableStateFlow<Boolean>(false)
     val hasUnscannedProduct: StateFlow<Boolean> = _hasUnscannedProduct.asStateFlow()
+
+    private val _activeAnomaly = MutableStateFlow<SensorAnomaly?>(null)
+    val activeAnomaly: StateFlow<SensorAnomaly?> = _activeAnomaly.asStateFlow()
 
     private val _sessionQrUrl = MutableStateFlow<String?>(null)
     val sessionQrUrl: StateFlow<String?> = _sessionQrUrl.asStateFlow()
@@ -67,8 +72,46 @@ class AppViewModel constructor(
     private val _invalidScannedProduct = MutableStateFlow<InvalidProductViolation?>(null)
     val invalidScannedProduct: StateFlow<InvalidProductViolation?> = _invalidScannedProduct.asStateFlow()
 
+    // Trạng thái phát hiện giỏ còn hàng khi bắt đầu phiên mua sắm mới
+    private val _hasLeftoverCartItemsOnStart = MutableStateFlow<Boolean>(false)
+    val hasLeftoverCartItemsOnStart: StateFlow<Boolean> = _hasLeftoverCartItemsOnStart.asStateFlow()
+    private var isSessionStartCheckDone = false
+
     private var notificationJob: kotlinx.coroutines.Job? = null
     private var qrPollingJob: kotlinx.coroutines.Job? = null
+
+    fun checkCartEmptyOnStart() {
+        if (!isSessionStartCheckDone) {
+            isSessionStartCheckDone = true
+            if (_cartItemsState.value.isNotEmpty()) {
+                _hasLeftoverCartItemsOnStart.value = true
+            }
+        }
+    }
+
+    fun clearCartOnStart() {
+        viewModelScope.launch {
+            try {
+                cartRepository.clearCart()
+                _cartItemsState.value = emptyList()
+                _hasLeftoverCartItemsOnStart.value = false
+                val sId = _activeSessionId.value
+                if (!sId.isNullOrBlank()) {
+                    val req = mapOf("sessionId" to sId, "action" to "clear")
+                    com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendIotCommand(req)
+                }
+                com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+            } catch (e: Exception) {
+                _cartItemsState.value = emptyList()
+                _hasLeftoverCartItemsOnStart.value = false
+            }
+        }
+    }
+
+    fun resetSessionStartCartCheck() {
+        isSessionStartCheckDone = false
+        _hasLeftoverCartItemsOnStart.value = false
+    }
 
     fun lockCart() {
         val currentItems = _cartItemsState.value
@@ -94,6 +137,7 @@ class AppViewModel constructor(
 
     fun resolveWeightAnomaly() {
         _hasUnscannedProduct.value = false
+        _activeAnomaly.value = null
         if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
             _invalidScannedProduct.value = null
         }
@@ -104,7 +148,23 @@ class AppViewModel constructor(
         }
     }
 
+    fun triggerSimulatedAnomaly(type: AnomalyType) {
+        _hasUnscannedProduct.value = true
+        _activeAnomaly.value = SensorAnomaly(type = type)
+        viewModelScope.launch {
+            try {
+                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.setWeightAnomaly(
+                    mapOf("detected" to true, "code" to type.code, "reason" to type.defaultDescription, "message" to type.title)
+                )
+            } catch (ignored: Exception) {}
+        }
+    }
+
     fun triggerCartNotification(productName: String, type: NotificationType) {
+        when (type) {
+            NotificationType.ADD -> com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+            NotificationType.REMOVE -> com.example.xedaythongminh.utils.SoundEffectManager.playRemoveSuccess()
+        }
         notificationJob?.cancel()
         val message = when (type) {
             NotificationType.ADD -> "Đã thêm: $productName"
@@ -126,6 +186,10 @@ class AppViewModel constructor(
         viewModelScope.launch {
             cartRepository.getCartItems().collect { items ->
                 _cartItemsState.value = items
+                if (_hasLeftoverCartItemsOnStart.value && items.isEmpty()) {
+                    _hasLeftoverCartItemsOnStart.value = false
+                    com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+                }
             }
         }
         fetchAllProducts()
@@ -351,7 +415,43 @@ class AppViewModel constructor(
         }
     }
 
+    /**
+     * Gửi tín hiệu/lệnh 'r' (remove) xuống hệ thống phần cứng / máy chủ xe đẩy
+     */
+    fun sendSystemRemoveCommand() {
+        val sId = _activeSessionId.value ?: "SESSION_DEFAULT"
+        viewModelScope.launch {
+            try {
+                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendIotCommand(
+                    mapOf("command" to "r", "action" to "remove", "sessionId" to sId)
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("AppViewModel", "Failed to send remove command to system", e)
+            }
+        }
+    }
+
+    /**
+     * Bớt/xóa món trong giỏ hàng theo mã vạch quét được
+     * Trả về true nếu tìm thấy và xóa thành công, false nếu không có trong giỏ hàng
+     */
+    fun removeProductByBarcode(barcode: String): Boolean {
+        val cleanBarcode = barcode.trim()
+        if (cleanBarcode.isBlank()) return false
+        val matchedItem = _cartItemsState.value.find {
+            it.product.sku.equals(cleanBarcode, ignoreCase = true) ||
+            it.product.id.equals(cleanBarcode, ignoreCase = true)
+        }
+        return if (matchedItem != null) {
+            decreaseQuantity(matchedItem)
+            true
+        } else {
+            false
+        }
+    }
+
     fun createShoppingSession(onSuccess: (String) -> Unit = {}) {
+        resetSessionStartCartCheck()
         viewModelScope.launch {
             try {
                 val res = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.createSessionV1()
@@ -490,6 +590,10 @@ class AppViewModel constructor(
                                         if (_cartItemsState.value != domainItems) {
                                             _cartItemsState.value = domainItems
                                         }
+                                        if (_hasLeftoverCartItemsOnStart.value && domainItems.isEmpty()) {
+                                            _hasLeftoverCartItemsOnStart.value = false
+                                            com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+                                        }
                                     }
                                 }
                             } else if (v1Response.code() == 404) {
@@ -505,16 +609,23 @@ class AppViewModel constructor(
                     try {
                         val statusResponse = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartStatus()
                         if (statusResponse.isSuccessful) {
-                            val hasUnscanned = statusResponse.body()?.data?.hasUnscannedProduct ?: false
+                            val data = statusResponse.body()?.data
+                            val hasUnscanned = data?.hasUnscannedProduct ?: false
                             _hasUnscannedProduct.value = hasUnscanned
 
                             if (hasUnscanned) {
+                                val anomalyType = AnomalyType.fromCode(data?.anomalyCode)
+                                _activeAnomaly.value = SensorAnomaly(
+                                    type = anomalyType,
+                                    customTitle = data?.anomalyMessage,
+                                    customDescription = data?.anomalyReason
+                                )
                                 if (_isCartLocked.value && _invalidScannedProduct.value == null) {
                                     _invalidScannedProduct.value = InvalidProductViolation(
                                         product = com.example.xedaythongminh.data.models.Product(
                                             id = "LOADCELL_ANOMALY",
-                                            name = "Vật lạ / Sản phẩm chưa quét mã vạch",
-                                            sku = "LOADCELL_ANOMALY",
+                                            name = data?.anomalyMessage ?: anomalyType.title,
+                                            sku = data?.anomalyCode ?: "LOADCELL_ANOMALY",
                                             unitPrice = 0L,
                                             imageUrl = ""
                                         ),
@@ -524,6 +635,7 @@ class AppViewModel constructor(
                                     )
                                 }
                             } else {
+                                _activeAnomaly.value = null
                                 if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
                                     _invalidScannedProduct.value = null
                                 }
@@ -745,6 +857,7 @@ class AppViewModel constructor(
         _userState.value = null
         _sessionQrUrl.value = null
         qrPollingJob?.cancel()
+        resetSessionStartCartCheck()
     }
 
     fun terminateSessionImmediately() {
@@ -753,6 +866,7 @@ class AppViewModel constructor(
         _cartItemsState.value = emptyList()
         _isPaymentCompleted.value = false
         _hasUnscannedProduct.value = false
+        _activeAnomaly.value = null
         _paymentQrContent.value = null
         _qrSessionData.value = null
         _isQrExpired.value = false
@@ -764,6 +878,8 @@ class AppViewModel constructor(
         _isCartLocked.value = false
         _lockedCartSnapshot.value = null
         _invalidScannedProduct.value = null
+        _hasLeftoverCartItemsOnStart.value = false
+        resetSessionStartCartCheck()
         notificationJob?.cancel()
         qrPollingJob?.cancel()
         paymentPollingJob?.cancel()

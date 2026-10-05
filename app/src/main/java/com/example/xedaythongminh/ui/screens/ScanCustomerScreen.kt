@@ -26,6 +26,8 @@ import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.R
 import androidx.compose.ui.res.stringResource
@@ -231,19 +233,19 @@ fun ScanCustomerInstructionBox(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Button(
+            GlassButton(
                 onClick = {
                     appViewModel.stopQrLoginSession()
                     navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } }
                 },
-                modifier = Modifier.weight(1f).height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                shape = RoundedCornerShape(8.dp)
+                modifier = Modifier.weight(1f).height(50.dp),
+                variant = GlassButtonVariant.Secondary,
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text("Quay lại", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("Quay lại", color = PrimaryBlue, fontWeight = FontWeight.Bold)
             }
             
-            OutlinedButton(
+            GlassButton(
                 onClick = {
                     // Dừng phiên polling đăng nhập QR trước khi chuyển màn hình
                     appViewModel.stopQrLoginSession()
@@ -251,12 +253,11 @@ fun ScanCustomerInstructionBox(
                         popUpTo("scan_customer") { inclusive = true }
                     }
                 },
-                modifier = Modifier.weight(1f).height(48.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
-                border = BorderStroke(1.dp, PrimaryBlue),
-                shape = RoundedCornerShape(8.dp)
+                modifier = Modifier.weight(1f).height(50.dp),
+                variant = GlassButtonVariant.Primary,
+                shape = RoundedCornerShape(14.dp)
             ) {
-                Text(stringResource(R.string.btn_skip_login), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.btn_skip_login), color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

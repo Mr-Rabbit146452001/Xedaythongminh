@@ -24,7 +24,10 @@ interface ApiService {
     suspend fun getCartStatus(): Response<CartStatusResponse>
 
     @POST("api/iot/set-weight-anomaly")
-    suspend fun setWeightAnomaly(@Body request: Map<String, Boolean>): Response<Map<String, Any>>
+    suspend fun setWeightAnomaly(@Body request: Map<String, @JvmSuppressWildcards Any>): Response<Map<String, Any>>
+
+    @POST("api/iot/command")
+    suspend fun sendIotCommand(@Body request: Map<String, String>): Response<Map<String, Any>>
 
     @GET("api/health")
     suspend fun healthCheck(): Response<Map<String, String>>
