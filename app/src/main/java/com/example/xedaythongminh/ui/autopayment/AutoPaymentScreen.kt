@@ -54,7 +54,7 @@ fun AutoPaymentScreen(
 ) {
     val uiState by autoPaymentViewModel.uiState.collectAsState()
     val userState by appViewModel.userState.collectAsState()
-    val summary = CartSummary(uiState.cartItems)
+    val summary = CartSummary(uiState.cartItems, userState)
 
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
@@ -157,20 +157,15 @@ fun AutoPaymentScreen(
                                 Text(formatVnd(summary.subtotal), fontSize = 13.sp, color = TextDark)
                             }
                             Spacer(modifier = Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Giảm giá hội viên (10%):", fontSize = 13.sp, color = Color(0xFF2ECC71))
-                                Text("-${formatVnd(summary.memberDiscount)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2ECC71))
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text("Thuế VAT (8%):", fontSize = 13.sp, color = TextGray)
-                                Text(formatVnd(summary.taxAmount), fontSize = 13.sp, color = TextDark)
+                            if (userState != null && summary.memberDiscount > 0L) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(summary.appliedVoucherName ?: "Voucher giảm giá (${(summary.memberDiscountPercentage * 100).toInt()}%):", fontSize = 13.sp, color = Color(0xFF2ECC71))
+                                    Text("-${formatVnd(summary.memberDiscount)}", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2ECC71))
+                                }
+                                Spacer(modifier = Modifier.height(6.dp))
                             }
                             Spacer(modifier = Modifier.height(12.dp))
 

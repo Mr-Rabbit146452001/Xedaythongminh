@@ -10,8 +10,15 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -321,3 +328,94 @@ private data class Quadruple<A, B, C, D>(
     val third: C,
     val fourth: D
 )
+
+@Preview(showBackground = true, widthDp = 500, heightDp = 460, name = "GlassButton - All Variants")
+@Composable
+fun GlassButtonVariantsPreview() {
+    MaterialTheme {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            GlassButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                variant = GlassButtonVariant.Primary
+            ) {
+                Icon(Icons.Default.ShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Primary - Bắt đầu mua sắm", color = Color.White)
+            }
+
+            GlassButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                variant = GlassButtonVariant.Secondary
+            ) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(20.dp), tint = PrimaryBlue)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Secondary - Quay lại trang trước", color = PrimaryBlue)
+            }
+
+            GlassButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                variant = GlassButtonVariant.Danger
+            ) {
+                Icon(Icons.Default.DeleteOutline, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Danger - Bớt sản phẩm / Xóa món", color = Color.White)
+            }
+
+            GlassButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                variant = GlassButtonVariant.Success
+            ) {
+                Icon(Icons.Default.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.White)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Success - Xác nhận thanh toán", color = Color.White)
+            }
+
+            GlassButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                variant = GlassButtonVariant.Ghost
+            ) {
+                Icon(Icons.Default.AddShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp), tint = PrimaryBlue)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Ghost - Tiếp tục mua sắm", color = PrimaryBlue)
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 350, heightDp = 100, name = "GlassIconButton - Round")
+@Composable
+fun GlassIconButtonPreview() {
+    MaterialTheme {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            GlassIconButton(onClick = {}, variant = GlassButtonVariant.Primary) {
+                Icon(Icons.Default.Add, contentDescription = "Add", tint = Color.White)
+            }
+            GlassIconButton(onClick = {}, variant = GlassButtonVariant.Secondary) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue)
+            }
+            GlassIconButton(onClick = {}, variant = GlassButtonVariant.Danger) {
+                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.White)
+            }
+            GlassIconButton(onClick = {}, variant = GlassButtonVariant.Success) {
+                Icon(Icons.Default.Check, contentDescription = "Check", tint = Color.White)
+            }
+        }
+    }
+}

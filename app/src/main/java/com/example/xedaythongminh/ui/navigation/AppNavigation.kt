@@ -18,7 +18,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,6 +57,9 @@ import com.example.xedaythongminh.ui.viewmodel.AppViewModelProvider
 import com.example.xedaythongminh.ui.theme.TextGray
 import com.example.xedaythongminh.ui.theme.PrimaryBlue
 import com.example.xedaythongminh.ui.components.InvalidProductLockOverlay
+import com.example.xedaythongminh.ui.components.SensorAnomalyDialog
+import com.example.xedaythongminh.domain.model.SensorAnomaly
+import com.example.xedaythongminh.domain.model.AnomalyType
 
 @Composable
 fun AppNavigation(
@@ -134,6 +139,27 @@ fun AppNavigation(
             )
         }
 
+        // 3. Popup bảo mật toàn màn hình: Yêu cầu quét mã vạch cho sản phẩm mà hệ thống cảm biến Raspberry Pi chưa nhận diện được
+        val hasUnscannedProduct by appViewModel.hasUnscannedProduct.collectAsState()
+        val activeAnomaly by appViewModel.activeAnomaly.collectAsState()
+        if (hasUnscannedProduct) {
+            val anomaly = activeAnomaly ?: SensorAnomaly(
+                type = AnomalyType.PI_UNRECOGNIZED_ITEM
+            )
+            SensorAnomalyDialog(
+                anomaly = anomaly,
+                onScanBarcode = { barcode, onResult ->
+                    appViewModel.scanAndResolveUnscannedProduct(barcode, onResult)
+                },
+                onResolve = {
+                    appViewModel.resolveWeightAnomaly()
+                },
+                onTimeout = {
+                    // Tín hiệu timeout đã kích hoạt từ dialog
+                }
+            )
+        }
+
         // Overlay toàn màn hình khóa tương tác khi mất mạng
         if (!isConnected) {
             Box(
@@ -203,5 +229,13 @@ fun AppNavigation(
                 onDismiss = { showSettingsDialog = false }
             )
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - App Navigation Root")
+@Composable
+fun AppNavigationPreview() {
+    MaterialTheme {
+        AppNavigation(windowSize = WindowWidthSizeClass.Expanded)
     }
 }

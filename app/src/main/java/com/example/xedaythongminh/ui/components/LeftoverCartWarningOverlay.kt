@@ -28,6 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -256,30 +257,41 @@ fun LeftoverCartWarningOverlay(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Nút hỗ trợ xác nhận đã lấy hết hàng ra
-                Button(
-                    onClick = onClearAll,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Xác nhận",
-                        tint = Color.White,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "XÁC NHẬN ĐÃ LẤY HẾT HÀNG (MỞ KHÓA XE)",
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
+
             }
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 1000, heightDp = 700, name = "Overlay - Leftover Cart Warning")
+@Composable
+fun LeftoverCartWarningOverlayPreview() {
+    MaterialTheme {
+        val sampleItems = listOf(
+            CartItem(
+                product = com.example.xedaythongminh.data.models.Product(
+                    id = "8934567890123",
+                    name = "Bơ sáp 034 Đắk Lắk loại 1",
+                    sku = "SKU-893456789",
+                    unitPrice = 35000L,
+                    imageUrl = ""
+                ),
+                quantity = 2
+            ),
+            CartItem(
+                product = com.example.xedaythongminh.data.models.Product(
+                    id = "8934567890124",
+                    name = "Sữa chua không đường Vinamilk 100g",
+                    sku = "SKU-893456790",
+                    unitPrice = 7500L,
+                    imageUrl = ""
+                ),
+                quantity = 4
+            )
+        )
+        LeftoverCartWarningOverlay(
+            items = sampleItems,
+            onClearAll = {}
+        )
     }
 }

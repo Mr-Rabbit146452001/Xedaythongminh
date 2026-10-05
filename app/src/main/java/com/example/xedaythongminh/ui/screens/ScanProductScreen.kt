@@ -77,11 +77,9 @@ fun ScanProductScreen(
     var selectedItemKey by remember { mutableStateOf<String?>(null) }
     // Cờ đánh dấu: true = Ưu tiên sản phẩm vừa quét xong, false = Người dùng bấm vào danh sách để xem
     var isJustScanned by remember { mutableStateOf(false) }
-
-    val hasUnscannedProduct by appViewModel.hasUnscannedProduct.collectAsState()
     val scope = rememberCoroutineScope()
 
-    // 0. BẢO MẬT PHIÊN: Kiểm tra nếu giỏ hàng còn hàng từ phiên trước thì kích hoạt khóa giỏ yêu cầu dọn sạch
+    // 0. BẢO MẬT PHIÊN: Kiểm tra hàng tồn từ phiên trước khi bắt đầu phiên mua sắm mới
     LaunchedEffect(Unit) {
         appViewModel.checkCartEmptyOnStart()
     }
@@ -155,25 +153,6 @@ fun ScanProductScreen(
             )
         }
 
-        // Popup cảnh báo thông minh các lỗi bất đồng bộ cảm biến & cân nặng
-        val activeAnomaly by appViewModel.activeAnomaly.collectAsState()
-        if (hasUnscannedProduct) {
-            val anomaly = activeAnomaly ?: com.example.xedaythongminh.domain.model.SensorAnomaly(
-                type = com.example.xedaythongminh.domain.model.AnomalyType.GENERIC_UNSCANNED
-            )
-            com.example.xedaythongminh.ui.components.SensorAnomalyDialog(
-                anomaly = anomaly,
-                onResolve = {
-                    appViewModel.resolveWeightAnomaly()
-                },
-                onSecondaryAction = if (anomaly.type == com.example.xedaythongminh.domain.model.AnomalyType.CART_CAMERA_DISAGREEMENT ||
-                    anomaly.type == com.example.xedaythongminh.domain.model.AnomalyType.SIMULTANEOUS_ACTIONS) {
-                    {
-                        navController.navigate("cart_detail")
-                    }
-                } else null
-            )
-        }
 
         // Thông báo nổi bật khi thêm/bớt/xóa sản phẩm (nằm ngay dưới thanh TopBar)
         CartNotificationPill(
@@ -371,7 +350,7 @@ fun ProductDetailBox(
                                 .padding(horizontal = 10.dp, vertical = 6.dp)
                         ) {
                             Text(
-                                text = "Mã SKU: ${product.sku}",
+                                text = "Mã Bancode: ${product.sku}",
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = TextGray
@@ -507,47 +486,6 @@ fun ProductDetailBox(
                             }
                         }
                     }
-
-                    Spacer(modifier = Modifier.weight(1f, fill = false))
-
-                    // Hộp thông tin bảo mật & kiểm soát IoT
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFF0FDF4)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFBBF7D0))
-                    ) {
-                        Column(
-                            modifier = Modifier.padding(14.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Security,
-                                    contentDescription = "IoT Security",
-                                    tint = Color(0xFF16A34A),
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Hệ thống kiểm soát an toàn Smart Stroller",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color(0xFF166534)
-                                )
-                            }
-                            Text(
-                                text = "• Cảm biến tải trọng (Loadcell): Đã khớp trọng lượng chuẩn xác theo cơ sở dữ liệu.",
-                                fontSize = 12.sp,
-                                color = Color(0xFF15803D)
-                            )
-                            Text(
-                                text = "• Để bỏ sản phẩm: Vui lòng nhấc sản phẩm ra khỏi giỏ hàng, hệ thống sẽ tự động trừ món này.",
-                                fontSize = 12.sp,
-                                color = Color(0xFF15803D)
-                            )
-                        }
-                    }
                 }
             } else {
                 // Trạng thái trống (Empty State) kéo dài toàn bộ chiều cao
@@ -624,9 +562,11 @@ fun CartSidebar(
     onItemSelect: (CartItem) -> Unit
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
-    val summary = CartSummary(cartItems)
+    val userState by appViewModel.userState.collectAsState()
+    val summary = CartSummary(cartItems, userState)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val totalQuantity = cartItems.sumOf { it.quantity }
     
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
@@ -659,7 +599,7 @@ fun CartSidebar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Giỏ hàng hiện tại (${cartItems.size})",
+                text = "Giỏ hàng hiện tại ($totalQuantity)",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = TextDark

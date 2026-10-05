@@ -660,6 +660,37 @@ def process_cart_decision(decision: CartDecisionRequest):
         decision_text = "accepted" if accepted else "rejected"
         quantity_delta = (1 if decision.action == "add" else -1) if accepted else 0
 
+        # Tự động cập nhật trạng thái cảm biến và đồng bộ sang Shop Server cổng 3000
+        if accepted:
+            weight_anomaly_state["detected"] = False
+            weight_anomaly_state["code"] = None
+            weight_anomaly_state["reason"] = None
+            weight_anomaly_state["message"] = None
+            try:
+                import urllib.request
+                sync_payload = json.dumps({"detected": False}).encode("utf-8")
+                sync_req = urllib.request.Request("http://127.0.0.1:3000/api/iot/set-weight-anomaly", data=sync_payload, headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(sync_req, timeout=1)
+            except Exception:
+                pass
+        else:
+            weight_anomaly_state["detected"] = True
+            weight_anomaly_state["code"] = reasons[0] if reasons else "pi_unrecognized_item"
+            weight_anomaly_state["reason"] = ", ".join(reasons)
+            weight_anomaly_state["message"] = f"Phát hiện bất thường: {', '.join(reasons)}"
+            try:
+                import urllib.request
+                sync_payload = json.dumps({
+                    "detected": True,
+                    "code": weight_anomaly_state["code"],
+                    "reason": weight_anomaly_state["reason"],
+                    "message": weight_anomaly_state["message"]
+                }).encode("utf-8")
+                sync_req = urllib.request.Request("http://127.0.0.1:3000/api/iot/set-weight-anomaly", data=sync_payload, headers={"Content-Type": "application/json"})
+                urllib.request.urlopen(sync_req, timeout=1)
+            except Exception:
+                pass
+
         # 5. Cập nhật giỏ hàng nếu quyết định được chấp nhận
         if accepted and product:
             new_quantity = current_quantity + quantity_delta
@@ -818,6 +849,49 @@ def thingsboard_sync():
     return {
         **res,
         "outbox": tb_worker.outbox_status()
+    }
+
+# ==========================================
+# 8. CẢNH BÁO CẢM BIẾN & BẢO MẬT GIỎ HÀNG
+# ==========================================
+weight_anomaly_state = {
+    "detected": False,
+    "code": None,
+    "reason": None,
+    "message": None
+}
+
+class WeightAnomalyIn(BaseModel):
+    detected: bool
+    code: Optional[str] = None
+    reason: Optional[str] = None
+    message: Optional[str] = None
+
+@app.post("/api/iot/set-weight-anomaly")
+def set_weight_anomaly(payload: WeightAnomalyIn):
+    weight_anomaly_state["detected"] = bool(payload.detected)
+    weight_anomaly_state["code"] = payload.code if payload.detected else None
+    weight_anomaly_state["reason"] = payload.reason if payload.detected else None
+    weight_anomaly_state["message"] = payload.message if payload.detected else None
+    print(f"⚠️ [FastAPI IoT Anomaly] Trạng thái bất thường: {weight_anomaly_state['detected']}, Code: {weight_anomaly_state['code']}")
+    return {
+        "status": "Thành công",
+        "weightAnomalyDetected": weight_anomaly_state["detected"],
+        "weightAnomalyCode": weight_anomaly_state["code"],
+        "weightAnomalyReason": weight_anomaly_state["reason"],
+        "weightAnomalyMessage": weight_anomaly_state["message"]
+    }
+
+@app.get("/api/cart/status")
+def get_cart_status():
+    return {
+        "status": "success",
+        "data": {
+            "hasUnscannedProduct": weight_anomaly_state["detected"],
+            "anomalyCode": weight_anomaly_state["code"],
+            "anomalyReason": weight_anomaly_state["reason"],
+            "anomalyMessage": weight_anomaly_state["message"]
+        }
     }
 
 if __name__ == "__main__":

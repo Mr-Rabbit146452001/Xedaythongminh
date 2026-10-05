@@ -70,24 +70,33 @@ enum class AnomalyType(
         primaryColor = 0xFFEA580C, // Burnt Orange
         badgeText = "LỆCH SỐ LƯỢNG"
     ),
+    PI_UNRECOGNIZED_ITEM(
+        code = "pi_unrecognized_item",
+        title = "YÊU CẦU QUÉT MÃ VẠCH SẢN PHẨM",
+        defaultDescription = "Hệ thống cảm biến Raspberry Pi phát hiện có sản phẩm được đưa vào giỏ hàng nhưng Camera AI chưa nhận diện được mã vạch.",
+        actionGuide = "Vui lòng đưa mã vạch của sản phẩm vào trước mắt đọc máy quét GM65 trên xe đẩy để hệ thống nhận diện và mở khóa xe.",
+        primaryColor = 0xFFDC2626, // Crimson Red
+        badgeText = "CẢM BIẾN CHƯA NHẬN DIỆN"
+    ),
     GENERIC_UNSCANNED(
         code = "generic_unscanned",
-        title = "SẢN PHẨM CHƯA ĐƯỢC QUÉT MÃ!",
-        defaultDescription = "Phát hiện có sản phẩm được đặt vào xe đẩy nhưng chưa được quét mã vạch trên hệ thống.",
-        actionGuide = "Vui lòng quét mã sản phẩm hoặc bỏ sản phẩm ra khỏi khay chứa đồ của xe đẩy để tiếp tục mua sắm.",
+        title = "YÊU CẦU QUÉT MÃ VẠCH SẢN PHẨM",
+        defaultDescription = "Hệ thống cảm biến Raspberry Pi phát hiện có sản phẩm được đưa vào giỏ hàng nhưng chưa nhận diện được mã vạch.",
+        actionGuide = "Vui lòng đưa mã vạch của sản phẩm vào trước mắt đọc máy quét GM65 trên xe đẩy để hệ thống nhận diện và mở khóa xe.",
         primaryColor = 0xFFEF4444, // Red
         badgeText = "CHƯA QUÉT MÃ"
     );
 
     companion object {
         fun fromCode(code: String?): AnomalyType {
-            if (code.isNullOrBlank()) return GENERIC_UNSCANNED
+            if (code.isNullOrBlank()) return PI_UNRECOGNIZED_ITEM
             val normalized = code.trim().lowercase()
             return entries.firstOrNull { 
                 it.code.lowercase() == normalized ||
                 normalized.contains(it.name.lowercase()) ||
                 it.name.lowercase().contains(normalized)
             } ?: when {
+                normalized.contains("unrecognized") || normalized.contains("pi_") -> PI_UNRECOGNIZED_ITEM
                 normalized.contains("tolerance") -> WEIGHT_OUT_OF_TOLERANCE
                 normalized.contains("conflict") || normalized.contains("direction") -> WEIGHT_DIRECTION_CONFLICT
                 normalized.contains("moving") || normalized.contains("noisy") -> SCALE_MOVING
@@ -95,7 +104,7 @@ enum class AnomalyType(
                 normalized.contains("identity") || normalized.contains("add_unconfirmed") -> WEIGHT_ADD_UNCONFIRMED
                 normalized.contains("simultaneous") -> SIMULTANEOUS_ACTIONS
                 normalized.contains("disagreement") || normalized.contains("mismatch") -> CART_CAMERA_DISAGREEMENT
-                else -> GENERIC_UNSCANNED
+                else -> PI_UNRECOGNIZED_ITEM
             }
         }
     }

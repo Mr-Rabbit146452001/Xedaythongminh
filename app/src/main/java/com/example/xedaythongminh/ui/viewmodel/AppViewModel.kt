@@ -83,9 +83,13 @@ class AppViewModel constructor(
     fun checkCartEmptyOnStart() {
         if (!isSessionStartCheckDone) {
             isSessionStartCheckDone = true
-            if (_cartItemsState.value.isNotEmpty()) {
+            val hasItems = _cartItemsState.value.isNotEmpty()
+            android.util.Log.d("SmartCart_Session", "checkCartEmptyOnStart: Khởi động phiên mới, hasItems=$hasItems")
+            if (hasItems) {
                 _hasLeftoverCartItemsOnStart.value = true
             }
+        } else {
+            android.util.Log.d("SmartCart_Session", "checkCartEmptyOnStart: Đã bỏ qua vì phiên mua sắm đang diễn ra")
         }
     }
 
@@ -109,6 +113,7 @@ class AppViewModel constructor(
     }
 
     fun resetSessionStartCartCheck() {
+        android.util.Log.d("SmartCart_Session", "resetSessionStartCartCheck: Đặt lại cờ kiểm tra giỏ cho khách mới")
         isSessionStartCheckDone = false
         _hasLeftoverCartItemsOnStart.value = false
     }
@@ -145,6 +150,73 @@ class AppViewModel constructor(
             try {
                 com.example.xedaythongminh.data.remote.RetrofitClient.apiService.setWeightAnomaly(mapOf("detected" to false))
             } catch (ignored: Exception) {}
+        }
+    }
+
+    /**
+     * Quét mã vạch giải tỏa cho sản phẩm mà hệ thống cảm biến Raspberry Pi không nhận diện được.
+     * Kiểm tra mã vạch hợp lệ từ CSDL:
+     * - Hợp lệ: Thêm sản phẩm vào giỏ hàng, gửi quyết định lên server, gọi resolveWeightAnomaly(), phát âm thanh thành công.
+     * - Không hợp lệ: Báo lỗi và giữ nguyên trạng thái chặn.
+     */
+    fun scanAndResolveUnscannedProduct(barcode: String, onResult: (Boolean, String?) -> Unit) {
+        val cleanBarcode = barcode.trim()
+        if (cleanBarcode.isBlank()) {
+            onResult(false, "Vui lòng nhập hoặc quét mã vạch hợp lệ")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                val result = productRepository.getProductByBarcode(cleanBarcode)
+                if (result.isSuccess && result.getOrNull() != null) {
+                    val product = result.getOrNull()!!
+
+                    // 1. Thêm vào giỏ hàng
+                    val existingItem = _cartItemsState.value.find { 
+                        it.product.sku.equals(cleanBarcode, ignoreCase = true) || 
+                        it.product.id.equals(cleanBarcode, ignoreCase = true) 
+                    }
+                    if (existingItem != null) {
+                        val updated = existingItem.copy(quantity = existingItem.quantity + 1)
+                        _lastScannedItem.value = updated
+                        _scanEventTimestamp.value = System.currentTimeMillis()
+                        increaseQuantity(existingItem)
+                    } else {
+                        val newItem = CartItem(product = product, quantity = 1)
+                        _lastScannedItem.value = newItem
+                        _scanEventTimestamp.value = System.currentTimeMillis()
+                        cartRepository.addCartItem(newItem)
+                        triggerCartNotification(product.name, NotificationType.ADD)
+                    }
+
+                    // 2. Tự động giải tỏa trạng thái lỗi cảm biến
+                    resolveWeightAnomaly()
+
+                    // 3. Đồng bộ quyết định lên server
+                    val sId = _activeSessionId.value
+                    if (!sId.isNullOrBlank()) {
+                        try {
+                            val req = com.example.xedaythongminh.data.remote.dto.CartDecisionRequestDto(
+                                sessionId = sId,
+                                action = "add",
+                                barcode = product.sku,
+                                aiClass = product.sku,
+                                aiConfidence = 1.0f,
+                                deltaWeightG = 500.0f,
+                                weightSource = "barcode_recovery"
+                            )
+                            com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendCartDecisionV1(req)
+                        } catch (ignored: Exception) {}
+                    }
+
+                    com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+                    onResult(true, product.name)
+                } else {
+                    onResult(false, "Mã vạch '$cleanBarcode' không tồn tại trong hệ thống siêu thị!")
+                }
+            } catch (e: Exception) {
+                onResult(false, "Lỗi kiểm tra mã vạch: ${e.message}")
+            }
         }
     }
 
@@ -193,7 +265,7 @@ class AppViewModel constructor(
             }
         }
         fetchAllProducts()
-        createShoppingSession()
+        syncOrAttachSession(forceNew = false)
         startNetworkAndCartMonitoring()
     }
 
@@ -450,24 +522,55 @@ class AppViewModel constructor(
         }
     }
 
-    fun createShoppingSession(onSuccess: (String) -> Unit = {}) {
-        resetSessionStartCartCheck()
+    private var isSessionOperationInProgress = false
+
+    fun syncOrAttachSession(forceNew: Boolean = false, onSuccess: (String) -> Unit = {}) {
+        if (isSessionOperationInProgress) return
+        isSessionOperationInProgress = true
+        if (forceNew) {
+            resetSessionStartCartCheck()
+        }
         viewModelScope.launch {
             try {
+                if (!forceNew) {
+                    // 1. Kiểm tra xem trên Server/Pi đã có phiên nào đang active chưa
+                    val activeRes = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getActiveSessionV1()
+                    if (activeRes.isSuccessful && activeRes.body() != null) {
+                        val activeSession = activeRes.body()!!
+                        android.util.Log.d("SmartCart_Session", "Đồng bộ gắn vào phiên active hiện có: ${activeSession.id}")
+                        _activeSessionId.value = activeSession.id
+                        onSuccess(activeSession.id)
+                        return@launch
+                    }
+                }
+
+                // 2. Nếu forceNew = true hoặc server chưa có phiên active nào, mới tạo phiên mới
                 val res = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.createSessionV1()
                 if (res.isSuccessful && res.body() != null) {
                     val sId = res.body()!!.id
+                    android.util.Log.d("SmartCart_Session", "Khởi tạo phiên mới thành công: $sId")
                     _activeSessionId.value = sId
                     onSuccess(sId)
                     return@launch
                 }
             } catch (e: Exception) {
-                // Fallback
+                android.util.Log.w("SmartCart_Session", "Không thể đồng bộ session từ server: ${e.message}")
+            } finally {
+                isSessionOperationInProgress = false
             }
-            val localSessionId = "SESSION_${System.currentTimeMillis()}"
-            _activeSessionId.value = localSessionId
-            onSuccess(localSessionId)
+
+            if (_activeSessionId.value.isNullOrBlank()) {
+                val localSessionId = "SESSION_${System.currentTimeMillis()}"
+                _activeSessionId.value = localSessionId
+                onSuccess(localSessionId)
+            } else {
+                onSuccess(_activeSessionId.value!!)
+            }
         }
+    }
+
+    fun createShoppingSession(onSuccess: (String) -> Unit = {}) {
+        syncOrAttachSession(forceNew = false, onSuccess = onSuccess)
     }
 
     fun completeShoppingSession(onSuccess: () -> Unit = {}) {
@@ -566,10 +669,16 @@ class AppViewModel constructor(
                                                 _lastScannedItem.value = newItem
                                                 _scanEventTimestamp.value = System.currentTimeMillis()
                                                 triggerCartNotification(newItem.product.name, NotificationType.ADD)
+                                                if (_hasUnscannedProduct.value) {
+                                                    resolveWeightAnomaly()
+                                                }
                                             } else if (newItem.quantity > oldItem.quantity) {
                                                 _lastScannedItem.value = newItem
                                                 _scanEventTimestamp.value = System.currentTimeMillis()
                                                 triggerCartNotification(newItem.product.name, NotificationType.ADD)
+                                                if (_hasUnscannedProduct.value) {
+                                                    resolveWeightAnomaly()
+                                                }
                                             }
                                         }
 
@@ -597,8 +706,18 @@ class AppViewModel constructor(
                                     }
                                 }
                             } else if (v1Response.code() == 404) {
-                                // Nếu session chưa có trên server (ví dụ SESSION_DEFAULT) hoặc đã đóng, tự tạo session mới
-                                createShoppingSession()
+                                // Session hiện tại không tồn tại trên server (có thể đã kết thúc hoặc sai ID)
+                                // Thăm dò session active đang chạy trên server thay vì tự tạo mới vô tội vạ gây reset Pi!
+                                try {
+                                    val activeRes = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getActiveSessionV1()
+                                    if (activeRes.isSuccessful && activeRes.body() != null) {
+                                        val serverActiveId = activeRes.body()!!.id
+                                        if (serverActiveId.isNotBlank() && serverActiveId != _activeSessionId.value) {
+                                            android.util.Log.d("SmartCart_Session", "Cập nhật session ID từ server: $serverActiveId")
+                                            _activeSessionId.value = serverActiveId
+                                        }
+                                    }
+                                } catch (_: Exception) {}
                             }
                         } catch (e: Exception) {
                             // ignore transient error
@@ -789,12 +908,12 @@ class AppViewModel constructor(
         viewModelScope.launch {
             try {
                 val currentItems = _cartItemsState.value
-                val summary = com.example.xedaythongminh.data.models.CartSummary(currentItems)
-                val finalPayAmount = (summary.subtotal - summary.memberDiscount).coerceAtLeast(0L)
+                val summary = com.example.xedaythongminh.data.models.CartSummary(currentItems, _userState.value)
+                val finalPayAmount = summary.finalTotal
 
                 val req = mapOf(
                     "sessionId" to (_activeSessionId.value ?: "SESSION_DEFAULT"),
-                    "customerId" to (_userState.value?.id ?: "CUSTOMER_888"),
+                    "customerId" to (_userState.value?.id ?: "GUEST"),
                     "totalAmount" to summary.subtotal.toString(),
                     "finalAmount" to (if (finalPayAmount > 0L) finalPayAmount.toString() else summary.subtotal.toString())
                 )
@@ -885,6 +1004,7 @@ class AppViewModel constructor(
         paymentPollingJob?.cancel()
 
         val sId = _activeSessionId.value
+        _activeSessionId.value = null
         viewModelScope.launch {
             try {
                 cartRepository.clearCart()
@@ -894,8 +1014,6 @@ class AppViewModel constructor(
                 }
             } catch (e: Exception) {
                 // ignore
-            } finally {
-                createShoppingSession()
             }
         }
     }

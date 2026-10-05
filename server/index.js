@@ -590,11 +590,16 @@ app.post('/api/payment/auto-checkout', async (req, res) => {
       });
     }
 
-    // Áp dụng chiết khấu hội viên (10%) & thuế VAT (8%)
-    const discountAmount = Math.round(totalAmount * 0.1);
-    const taxAmount = Math.round((totalAmount - discountAmount) * 0.08);
-    const finalAmount = totalAmount - discountAmount + taxAmount;
-    const pointsEarned = Math.floor(finalAmount / 1000);
+    // Áp dụng voucher / chiết khấu hội viên (KHÔNG TÍNH VAT THEO YÊU CẦU)
+    // Nếu khách hàng chưa đăng nhập (GUEST hoặc không có tài khoản), không áp dụng voucher (discount = 0)
+    let discountAmount = 0;
+    const isCustomerLoggedIn = targetCustomer && targetCustomer !== 'GUEST' && targetCustomer !== 'ANONYMOUS';
+    if (isCustomerLoggedIn) {
+      discountAmount = Math.round(totalAmount * 0.1);
+    }
+    const taxAmount = 0;
+    const finalAmount = Math.max(0, totalAmount - discountAmount);
+    const pointsEarned = isCustomerLoggedIn ? Math.floor(finalAmount / 1000) : 0;
 
     // Xác định tên phương thức thanh toán
     let methodName = 'Ví điện tử SmartPay';

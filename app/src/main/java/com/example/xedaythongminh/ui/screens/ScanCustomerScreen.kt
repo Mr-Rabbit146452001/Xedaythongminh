@@ -102,19 +102,19 @@ fun ScanCustomerScreen(
                 }
             } else {
                 Row(
-                    modifier = Modifier.fillMaxWidth(0.9f),
+                    modifier = Modifier.fillMaxWidth(0.92f),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
                     QrLoginBox(
                         qrUrl = sessionQrUrl,
-                        modifier = Modifier.weight(1.2f).aspectRatio(1f)
+                        modifier = Modifier.weight(1.1f).aspectRatio(1f)
                     )
-                    Spacer(modifier = Modifier.width(64.dp))
+                    Spacer(modifier = Modifier.width(48.dp))
                     ScanCustomerInstructionBox(
                         navController = navController,
                         appViewModel = appViewModel,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1.2f)
                     )
                 }
             }
@@ -238,11 +238,18 @@ fun ScanCustomerInstructionBox(
                     appViewModel.stopQrLoginSession()
                     navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } }
                 },
-                modifier = Modifier.weight(1f).height(50.dp),
+                modifier = Modifier.weight(0.85f).height(52.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                 variant = GlassButtonVariant.Secondary,
                 shape = RoundedCornerShape(14.dp)
             ) {
-                Text("Quay lại", color = PrimaryBlue, fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Quay lại",
+                    color = PrimaryBlue,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    maxLines = 1
+                )
             }
             
             GlassButton(
@@ -253,11 +260,19 @@ fun ScanCustomerInstructionBox(
                         popUpTo("scan_customer") { inclusive = true }
                     }
                 },
-                modifier = Modifier.weight(1f).height(50.dp),
+                modifier = Modifier.weight(1.35f).height(52.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
                 variant = GlassButtonVariant.Primary,
                 shape = RoundedCornerShape(14.dp)
             ) {
-                Text(stringResource(R.string.btn_skip_login), color = Color.White, fontWeight = FontWeight.Bold)
+                Text(
+                    text = stringResource(R.string.btn_skip_login),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    maxLines = 1,
+                    softWrap = false
+                )
             }
         }
     }

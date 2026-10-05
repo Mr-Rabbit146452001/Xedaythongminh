@@ -51,10 +51,11 @@ fun PaymentQRScreen(
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
+    val userState by appViewModel.userState.collectAsState()
     val qrContent by appViewModel.paymentQrContent.collectAsState()
     val qrSessionData by appViewModel.qrSessionData.collectAsState()
     val isQrExpiredServer by appViewModel.isQrExpired.collectAsState()
-    val summary = CartSummary(cartItems)
+    val summary = CartSummary(cartItems, userState)
     val context = LocalContext.current
 
     var lockRemainingSeconds by remember { mutableIntStateOf(60) }
@@ -208,13 +209,15 @@ fun PaymentQRScreen(
                             Text(text = "Tạm tính:", color = TextGray)
                             Text(text = formatVnd(summary.subtotal), fontWeight = FontWeight.Bold, color = TextDark)
                         }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(text = "Khuyến mãi:", color = TextGray)
-                            Text(text = "- " + formatVnd(summary.memberDiscount), fontWeight = FontWeight.Bold, color = Color(0xFF2ECC71))
+                        if (userState != null && summary.memberDiscount > 0L) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = summary.appliedVoucherName ?: "Khuyến mãi:", color = TextGray)
+                                Text(text = "- " + formatVnd(summary.memberDiscount), fontWeight = FontWeight.Bold, color = Color(0xFF2ECC71))
+                            }
                         }
                         
                         Spacer(modifier = Modifier.height(16.dp))
@@ -235,7 +238,7 @@ fun PaymentQRScreen(
                                 color = TextDark
                             )
                             Text(
-                                text = formatVnd(summary.subtotal - summary.memberDiscount),
+                                text = formatVnd(summary.finalTotal),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
                                 color = PrimaryBlue

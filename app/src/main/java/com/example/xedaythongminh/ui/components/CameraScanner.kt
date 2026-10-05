@@ -10,6 +10,7 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Text
@@ -123,6 +124,24 @@ fun CameraScanner(
     } else {
         Box(modifier = modifier, contentAlignment = Alignment.Center) {
             Text("Yêu cầu quyền truy cập Camera", color = Color.White)
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true, widthDp = 400, heightDp = 300, name = "Camera Scanner Preview")
+@Composable
+fun CameraScannerPreview() {
+    androidx.compose.material3.MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF1E293B)),
+            contentAlignment = Alignment.Center
+        ) {
+            CameraScanner(
+                modifier = Modifier.fillMaxSize(),
+                onBarcodeScanned = {}
+            )
         }
     }
 }

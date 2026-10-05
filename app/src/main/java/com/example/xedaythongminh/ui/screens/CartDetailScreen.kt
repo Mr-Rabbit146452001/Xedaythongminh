@@ -56,7 +56,8 @@ fun CartDetailScreen(
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
     val cartNotification by appViewModel.cartNotificationState.collectAsState()
-    val summary = CartSummary(cartItems)
+    val userState by appViewModel.userState.collectAsState()
+    val summary = CartSummary(cartItems, userState)
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     
@@ -87,7 +88,9 @@ fun CartDetailScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
                 onContinueShopping = {
-                    navController.navigate("scan_product")
+                    if (!navController.popBackStack()) {
+                        navController.navigate("scan_product")
+                    }
                 },
                 onEndSession = {
                     appViewModel.clearSession()
@@ -112,7 +115,11 @@ fun CartDetailScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            IconButton(onClick = { navController.navigate("scan_product") }) {
+                            IconButton(onClick = { 
+                                if (!navController.popBackStack()) {
+                                    navController.navigate("scan_product")
+                                }
+                            }) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = "Quay lại",
@@ -289,10 +296,14 @@ fun CartDetailScreen(
                         
                         // Billing Rows
                         BillingRow(label = "Tạm tính", value = formatVnd(summary.subtotal), valueColor = TextDark)
-                        Spacer(modifier = Modifier.height(12.dp))
-                        BillingRow(label = "Giảm giá thành viên (${(summary.memberDiscountPercentage * 100).toInt()}%)", value = "-${formatVnd(summary.memberDiscount)}", valueColor = Color(0xFF2ECC71))
-                        Spacer(modifier = Modifier.height(12.dp))
-                        BillingRow(label = "Thuế VAT (${(summary.taxPercentage * 100).toInt()}%)", value = formatVnd(summary.taxAmount), valueColor = TextDark)
+                        if (userState != null && summary.memberDiscount > 0L) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            BillingRow(
+                                label = summary.appliedVoucherName ?: "Voucher giảm giá (${(summary.memberDiscountPercentage * 100).toInt()}%)",
+                                value = "-${formatVnd(summary.memberDiscount)}",
+                                valueColor = Color(0xFF2ECC71)
+                            )
+                        }
                         
                         Spacer(modifier = Modifier.height(16.dp))
                         
@@ -387,7 +398,11 @@ fun CartDetailScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         GlassButton(
-                            onClick = { navController.navigate("scan_product") },
+                            onClick = { 
+                                if (!navController.popBackStack()) {
+                                    navController.navigate("scan_product")
+                                }
+                            },
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .height(48.dp),

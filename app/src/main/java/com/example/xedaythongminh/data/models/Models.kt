@@ -28,18 +28,48 @@ data class CartItem(
 
 data class CartSummary(
     val items: List<CartItem>,
-    val memberDiscountPercentage: Double = 0.1, // 10%
-    val taxPercentage: Double = 0.08 // 8%
+    val user: User? = null,
+    val selectedVoucher: String? = null
 ) {
     val subtotal: Long
         get() = items.sumOf { it.totalPrice }
 
+    // Tỷ lệ giảm giá: CHỈ CÓ KHI ĐÃ ĐĂNG NHẬP VÀO TÀI KHOẢN (user != null)
+    // Nếu khách không đăng nhập -> 0.0 (Tuyệt đối không có voucher)
+    val memberDiscountPercentage: Double
+        get() {
+            if (user == null) return 0.0
+            return when {
+                user.membershipLevel.contains("VIP", ignoreCase = true) || user.membershipLevel.contains("Kim Cương", ignoreCase = true) -> 0.20
+                user.membershipLevel.contains("Vàng", ignoreCase = true) || user.membershipLevel.contains("Gold", ignoreCase = true) -> 0.15
+                user.membershipLevel.contains("Bạc", ignoreCase = true) || user.membershipLevel.contains("Silver", ignoreCase = true) -> 0.10
+                user.vouchers.any { it.contains("20%") } -> 0.20
+                user.vouchers.any { it.contains("15%") } -> 0.15
+                user.vouchers.any { it.contains("10%") } -> 0.10
+                user.vouchers.isNotEmpty() -> 0.10
+                else -> 0.05
+            }
+        }
+
+    // Tên voucher giảm giá đồng bộ từ tài khoản khách
+    val appliedVoucherName: String?
+        get() {
+            if (user == null) return null
+            if (!selectedVoucher.isNullOrBlank()) return selectedVoucher
+            return user.vouchers.firstOrNull() ?: "Ưu đãi ${user.membershipLevel} (${(memberDiscountPercentage * 100).toInt()}%)"
+        }
+
     val memberDiscount: Long
-        get() = (subtotal * memberDiscountPercentage).toLong()
+        get() {
+            if (user == null || memberDiscountPercentage <= 0.0) return 0L
+            return (subtotal * memberDiscountPercentage).toLong()
+        }
 
-    val taxAmount: Long
-        get() = ((subtotal - memberDiscount) * taxPercentage).toLong()
+    // ĐÃ LOẠI BỎ TOÀN BỘ PHÍ VAT THEO YÊU CẦU
+    val taxPercentage: Double = 0.0
+    val taxAmount: Long = 0L
 
+    // Tổng thanh toán: subtotal - discount (KHÔNG CỘNG VAT)
     val finalTotal: Long
-        get() = subtotal - memberDiscount + taxAmount
+        get() = (subtotal - memberDiscount).coerceAtLeast(0L)
 }

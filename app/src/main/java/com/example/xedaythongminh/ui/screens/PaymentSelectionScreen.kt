@@ -46,7 +46,8 @@ fun PaymentSelectionScreen(
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
-    val summary = CartSummary(cartItems)
+    val userState by appViewModel.userState.collectAsState()
+    val summary = CartSummary(cartItems, userState)
     
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
@@ -144,14 +145,15 @@ fun PaymentSelectionScreen(
                         Text(text = formatVnd(summary.subtotal), fontWeight = FontWeight.Bold, color = TextDark)
                     }
                     
-                    Spacer(modifier = Modifier.height(12.dp))
-                    
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(text = "Giảm giá thành viên:", color = Color(0xFFE74C3C))
-                        Text(text = "-${formatVnd(summary.memberDiscount)}", fontWeight = FontWeight.Bold, color = Color(0xFFE74C3C))
+                    if (userState != null && summary.memberDiscount > 0L) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = summary.appliedVoucherName ?: "Voucher giảm giá:", color = Color(0xFFE74C3C))
+                            Text(text = "-${formatVnd(summary.memberDiscount)}", fontWeight = FontWeight.Bold, color = Color(0xFFE74C3C))
+                        }
                     }
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -174,7 +176,7 @@ fun PaymentSelectionScreen(
                                 color = PrimaryBlue
                             )
                             Text(
-                                text = formatVnd(summary.subtotal - summary.memberDiscount),
+                                text = formatVnd(summary.finalTotal),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 28.sp,
                                 color = PrimaryBlue

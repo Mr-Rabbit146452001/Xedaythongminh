@@ -201,13 +201,7 @@ fun TopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = statusText,
-                fontSize = 14.sp,
-                color = TextDark,
-                fontWeight = FontWeight.Medium
-            )
-            // Nút cài đặt yêu cầu xác thực PIN quản trị viên trước khi mở
+
             IconButton(onClick = { showPinDialog = true }) {
                 Icon(
                     imageVector = Icons.Default.Settings,

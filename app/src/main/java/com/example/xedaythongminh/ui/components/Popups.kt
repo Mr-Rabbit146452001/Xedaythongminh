@@ -347,3 +347,18 @@ fun TimeoutWarningDialogPreview() {
         )
     }
 }
+
+@Preview(showBackground = true, widthDp = 850, heightDp = 500, name = "Dialog - Unscanned Item Warning")
+@Composable
+fun UnscannedItemWarningDialogPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            UnscannedItemWarningDialog(
+                onDismiss = {},
+                onScanNow = {},
+                onItemRemoved = {},
+                onSupport = {}
+            )
+        }
+    }
+}

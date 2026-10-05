@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -258,5 +259,28 @@ fun InvalidProductLockOverlay(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true, widthDp = 1000, heightDp = 700, name = "Overlay - Invalid Product Lock")
+@Composable
+fun InvalidProductLockOverlayPreview() {
+    MaterialTheme {
+        val sampleProduct = com.example.xedaythongminh.data.models.Product(
+            id = "8934567890123",
+            name = "Bơ sáp 034 Đắk Lắk loại 1",
+            sku = "SKU-893456789",
+            unitPrice = 35000L,
+            imageUrl = ""
+        )
+        val violation = InvalidProductViolation(
+            product = sampleProduct,
+            scannedQuantity = 1,
+            source = ViolationSource.LOCAL_BARCODE_SCAN
+        )
+        InvalidProductLockOverlay(
+            violation = violation,
+            onResolveViolation = {}
+        )
     }
 }

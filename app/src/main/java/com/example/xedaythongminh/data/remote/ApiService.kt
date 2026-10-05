@@ -80,6 +80,9 @@ interface ApiService {
     @GET("api/v1/products")
     suspend fun getProductsV1(): Response<List<HandoverProductDto>>
 
+    @GET("api/v1/sessions/active")
+    suspend fun getActiveSessionV1(): Response<SessionResponseDto>
+
     @POST("api/v1/sessions")
     suspend fun createSessionV1(@Body body: Map<String, String> = emptyMap()): Response<SessionResponseDto>
 
