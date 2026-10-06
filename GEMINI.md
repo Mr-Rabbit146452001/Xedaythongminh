@@ -62,4 +62,18 @@ Bất kỳ khi nào người dùng gõ `@team` (hoặc nhắc tới lệnh `@tea
 4. 🧪 **Firmware QA & Simulator (`firmware-qa-tester`)**: Giả lập gói tin cảm biến, đo độ trễ latency (<100ms), kiểm thử mất kết nối và tự động khôi phục dữ liệu UI.
 
 
+---
+
+## 📌 Nguyên Tắc Cốt Lõi Về Môi Trường & Phân Quyền Dự Án (BẮT BUỘC TUÂN THỦ)
+
+### 1. 🌐 Máy chủ Backend (Hosted trên máy từ xa):
+- Toàn bộ hệ thống Backend chính thức (Node.js Shop Server, FastAPI, CSDL PostgreSQL, ThingsBoard) **được chạy và host trên máy của người khác (bạn trong nhóm), KHÔNG chạy cục bộ trên máy này**.
+- Quy trình làm việc: AI hỗ trợ người dùng chỉnh sửa, tối ưu và hoàn thiện mã nguồn tại máy này; sau đó **đẩy toàn bộ thay đổi lên máy chủ đó thông qua GitHub (`@push`)**.
+- Ứng dụng Android kết nối tới máy chủ chính thông qua đường hầm mạng từ xa (mặc định Ngrok `https://reflex-swipe-placidly.ngrok-free.dev/` hoặc URL máy chủ được cấu hình).
+
+### 2. 🍓 Mã nguồn Phần cứng Raspberry Pi (Kho tham chiếu chuẩn):
+- Thư mục mã nguồn `Smart-Cart-Retail-Raspberry-Pi` do **bên bạn của người dùng cung cấp** — là người trực tiếp quản lý, đấu nối phần cứng (Camera AI, ToF VL53L0X, Cân HX711, Đầu đọc GM65) và vận hành trực tiếp con Pi đó.
+- **TUYỆT ĐỐI KHÔNG TỰ Ý CHỈNH SỬA, THÊM BỚT BẤT KỲ FILE NÀO TRONG THƯ MỤC RASPBERRY PI NÀY**.
+- Thư mục này đóng vai trò là **Tài liệu tham chiếu chuẩn (Source of Truth / Contract)**. Mọi tính năng, API, xử lý dữ liệu và trải nghiệm trên **App Android** và **Server Backend** phải được xây dựng để **thích ứng và ăn khớp 100%** với nguyên bản mã nguồn của con Pi đó.
+
 
