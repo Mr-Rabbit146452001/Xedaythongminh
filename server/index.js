@@ -373,6 +373,28 @@ app.post('/api/iot/set-weight-anomaly', (req, res) => {
   weightAnomalyReason = weightAnomalyDetected ? (reason || null) : null;
   weightAnomalyMessage = weightAnomalyDetected ? (message || null) : null;
   console.log(`⚠️ [Raspberry Pi Cảm biến Trọng lượng] Trạng thái bất thường: ${weightAnomalyDetected}, Code: ${weightAnomalyCode}`);
+
+  // Đồng bộ sang FastAPI nếu đang chạy cổng 8000
+  try {
+    const http = require('http');
+    const syncReq = http.request({
+      hostname: '127.0.0.1',
+      port: 8000,
+      path: '/api/iot/set-weight-anomaly',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 200
+    });
+    syncReq.on('error', () => {});
+    syncReq.write(JSON.stringify({
+      detected: weightAnomalyDetected,
+      code: weightAnomalyCode,
+      reason: weightAnomalyReason,
+      message: weightAnomalyMessage
+    }));
+    syncReq.end();
+  } catch (_) {}
+
   res.json({
     status: 'Thành công',
     weightAnomalyDetected: weightAnomalyDetected,

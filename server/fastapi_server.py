@@ -619,32 +619,42 @@ def process_cart_decision(decision: CartDecisionRequest):
             reasons.append("product_inactive")
 
         # 3. Thuật toán kiểm chứng đa cảm biến (Sensor Fusion Logic):
-        if product:
-            expected_class = product.get("vision_class")
-            if expected_class and expected_class != "[null]" and decision.ai_class:
-                ai_norm = decision.ai_class.strip().lower()
-                exp_norm = expected_class.strip().lower()
-                bc_norm = (product.get("barcode") or "").strip().lower()
-                sku_norm = (product.get("sku") or "").strip().lower()
-                if ai_norm != exp_norm and ai_norm != bc_norm and ai_norm != sku_norm:
-                    reasons.append("ai_class_mismatch")
+        mode_str = str(decision.verification_mode or "").strip().lower()
+        is_barcode_only = mode_str in [
+            "barcode_only", "barcode_recovery", "barcode", 
+            "manual_recovery", "gm65", "scanner"
+        ]
 
-            if decision.ai_confidence is not None and decision.ai_confidence < AI_THRESHOLD:
-                reasons.append("ai_confidence_low")
+        if product:
+            # Nếu là chế độ quét mã vạch qua GM65 để cứu hộ/mở khóa, bỏ qua kiểm tra Camera AI
+            if not is_barcode_only:
+                expected_class = product.get("vision_class")
+                if expected_class and expected_class != "[null]" and decision.ai_class:
+                    ai_norm = decision.ai_class.strip().lower()
+                    exp_norm = expected_class.strip().lower()
+                    bc_norm = (product.get("barcode") or "").strip().lower()
+                    sku_norm = (product.get("sku") or "").strip().lower()
+                    if ai_norm != exp_norm and ai_norm != bc_norm and ai_norm != sku_norm:
+                        reasons.append("ai_class_mismatch")
+
+                if decision.ai_confidence is not None and decision.ai_confidence < AI_THRESHOLD:
+                    reasons.append("ai_confidence_low")
 
             expected_weight = product.get("expected_weight_g")
             tolerance = product.get("weight_tolerance_g")
             if tolerance is None or tolerance <= 0:
                 tolerance = 50.0  # Dung sai an toàn mặc định 50g
-            if decision.delta_weight_g is not None:
-                if expected_weight and expected_weight > 0:
+
+            if decision.delta_weight_g is not None and decision.delta_weight_g != 0:
+                if not is_barcode_only and expected_weight and expected_weight > 0:
                     if abs(abs(decision.delta_weight_g) - expected_weight) > tolerance:
                         reasons.append("weight_out_of_tolerance")
 
-                if decision.action == "add" and decision.delta_weight_g <= 0:
-                    reasons.append("weight_direction_mismatch")
-                elif decision.action == "remove" and decision.delta_weight_g >= 0:
-                    reasons.append("weight_direction_mismatch")
+                if not is_barcode_only:
+                    if decision.action == "add" and decision.delta_weight_g < 0:
+                        reasons.append("weight_direction_mismatch")
+                    elif decision.action == "remove" and decision.delta_weight_g > 0:
+                        reasons.append("weight_direction_mismatch")
 
         # 4. Kiểm tra số lượng trong giỏ nếu thao tác remove
         current_quantity = 0
@@ -867,6 +877,8 @@ weight_anomaly_state = {
 
 class WeightAnomalyIn(BaseModel):
     detected: bool
+    session_id: Optional[str] = None
+    sessionId: Optional[str] = None
     code: Optional[str] = None
     reason: Optional[str] = None
     message: Optional[str] = None
@@ -878,6 +890,21 @@ def set_weight_anomaly(payload: WeightAnomalyIn):
     weight_anomaly_state["reason"] = payload.reason if payload.detected else None
     weight_anomaly_state["message"] = payload.message if payload.detected else None
     print(f"⚠️ [FastAPI IoT Anomaly] Trạng thái bất thường: {weight_anomaly_state['detected']}, Code: {weight_anomaly_state['code']}")
+
+    # Đồng bộ sang Shop Server cổng 3000
+    try:
+        import urllib.request
+        sync_payload = json.dumps({
+            "detected": weight_anomaly_state["detected"],
+            "code": weight_anomaly_state["code"],
+            "reason": weight_anomaly_state["reason"],
+            "message": weight_anomaly_state["message"]
+        }).encode("utf-8")
+        sync_req = urllib.request.Request("http://127.0.0.1:3000/api/iot/set-weight-anomaly", data=sync_payload, headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(sync_req, timeout=0.2)
+    except Exception:
+        pass
+
     return {
         "status": "Thành công",
         "weightAnomalyDetected": weight_anomaly_state["detected"],

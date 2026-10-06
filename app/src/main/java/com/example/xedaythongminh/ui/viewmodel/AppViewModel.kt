@@ -211,9 +211,11 @@ class AppViewModel constructor(
                                 sessionId = sId,
                                 action = "add",
                                 barcode = product.sku,
+                                verificationMode = "barcode_only",
+                                clientEventId = "gm65_${System.currentTimeMillis()}",
                                 aiClass = product.sku,
                                 aiConfidence = 1.0f,
-                                deltaWeightG = 500.0f,
+                                deltaWeightG = 0.0f,
                                 weightSource = "barcode_recovery"
                             )
                             com.example.xedaythongminh.data.remote.RetrofitClient.apiService.sendCartDecisionV1(req)
@@ -792,6 +794,7 @@ class AppViewModel constructor(
                             if (statusResponse.isSuccessful) {
                                 val data = statusResponse.body()?.data
                                 val hasUnscanned = data?.hasUnscannedProduct ?: false
+                                val wasUnscanned = _hasUnscannedProduct.value
                                 _hasUnscannedProduct.value = hasUnscanned
 
                                 if (hasUnscanned) {
@@ -816,6 +819,10 @@ class AppViewModel constructor(
                                         )
                                     }
                                 } else {
+                                    if (wasUnscanned) {
+                                        // Tín hiệu giải phóng/mở khóa vừa được nhận từ Raspberry Pi hoặc GM65!
+                                        com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+                                    }
                                     _activeAnomaly.value = null
                                     if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
                                         _invalidScannedProduct.value = null

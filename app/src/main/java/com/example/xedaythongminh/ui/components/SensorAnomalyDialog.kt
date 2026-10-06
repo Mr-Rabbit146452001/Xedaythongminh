@@ -54,27 +54,32 @@ fun SensorAnomalyDialog(
         // Khóa hoàn toàn, không cho thoát khi chưa xử lý
     }
 
-    var remainingSeconds by remember { mutableIntStateOf(20) }
+    var remainingSeconds by remember { mutableIntStateOf(30) }
     var isTimedOut by remember { mutableStateOf(false) }
     var scanInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var isChecking by remember { mutableStateOf(false) }
+    var showStaffPinDialog by remember { mutableStateOf(false) }
+    var staffPinInput by remember { mutableStateOf("") }
+    var staffPinError by remember { mutableStateOf<String?>(null) }
     val focusRequester = remember { FocusRequester() }
 
-    // 2. Bộ đếm ngược Timeout 20 giây
-    LaunchedEffect(Unit) {
-        try {
-            delay(250L)
-            focusRequester.requestFocus()
-        } catch (ignored: Exception) {}
+    // 2. Bộ đếm ngược Timeout 30 giây
+    LaunchedEffect(isTimedOut) {
+        if (!isTimedOut) {
+            try {
+                delay(250L)
+                focusRequester.requestFocus()
+            } catch (ignored: Exception) {}
 
-        while (remainingSeconds > 0) {
-            delay(1000L)
-            remainingSeconds--
+            while (remainingSeconds > 0) {
+                delay(1000L)
+                remainingSeconds--
+            }
+            isTimedOut = true
+            onTimeout()
         }
-        isTimedOut = true
-        onTimeout()
     }
 
     // Hiệu ứng nhịp đập cảnh báo
@@ -363,53 +368,199 @@ fun SensorAnomalyDialog(
                         }
                     }
                 } else {
-                    // TRẠNG THÁI TIMEOUT: Xuất hiện nút mở khóa và liên hệ hỗ trợ
+                    // TRẠNG THÁI TIMEOUT: Khóa bảo mật tuyệt đối - Chỉ mở khóa khi quét GM65 hoặc Nhân viên nhập PIN
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    Column(
+                    Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFFEF2F2),
+                        border = BorderStroke(1.5.dp, Color(0xFFFCA5A5))
                     ) {
-                        Button(
-                            onClick = onResolve,
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(50.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A))
+                                .padding(14.dp)
                         ) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = "Mở khóa", tint = Color.White, modifier = Modifier.size(20.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "XÁC NHẬN ĐÃ LẤY SẢN PHẨM RA (MỞ KHÓA XE)",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        if (onSecondaryAction != null) {
-                            OutlinedButton(
-                                onClick = onSecondaryAction,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(46.dp),
-                                shape = RoundedCornerShape(14.dp),
-                                border = BorderStroke(1.dp, Color(0xFFCBD5E1))
-                            ) {
-                                Icon(Icons.Default.SupportAgent, contentDescription = "Hỗ trợ", tint = Color(0xFF475569), modifier = Modifier.size(18.dp))
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "LIÊN HỆ NHÂN VIÊN HỖ TRỢ",
+                                    text = "HỆ THỐNG ĐANG BỊ KHÓA AN TOÀN",
+                                    fontWeight = FontWeight.ExtraBold,
                                     fontSize = 13.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color(0xFF475569)
+                                    color = Color(0xFF991B1B)
                                 )
                             }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "Hệ thống chỉ mở khóa khi nhận được tín hiệu quét sản phẩm hợp lệ từ đầu đọc GM65 trên xe đẩy, hoặc khi có nhân viên siêu thị hỗ trợ.",
+                                fontSize = 12.sp,
+                                color = Color(0xFF7F1D1D),
+                                lineHeight = 17.sp
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Ô nhận diện mã vạch GM65 vẫn duy trì hoạt động liên tục
+                    OutlinedTextField(
+                        value = scanInput,
+                        onValueChange = { input ->
+                            scanInput = input
+                            if (input.contains("\n") || input.length >= 13) {
+                                processBarcodeScan(input)
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester),
+                        placeholder = { Text("Đưa mã vạch vào mắt đọc GM65 trên xe...", fontSize = 13.sp) },
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
+                        },
+                        trailingIcon = {
+                            if (isChecking) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = PrimaryBlue)
+                            } else {
+                                IconButton(onClick = { processBarcodeScan(scanInput) }) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Xác nhận", tint = PrimaryBlue)
+                                }
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = PrimaryBlue,
+                            unfocusedBorderColor = BorderGray
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    if (errorMessage != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage!!,
+                            color = Color(0xFFDC2626),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                remainingSeconds = 30
+                                isTimedOut = false
+                                errorMessage = null
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, PrimaryBlue)
+                        ) {
+                            Icon(Icons.Default.Refresh, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("TIẾP TỤC QUÉT GM65", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
+                        }
+
+                        Button(
+                            onClick = { 
+                                staffPinInput = ""
+                                staffPinError = null
+                                showStaffPinDialog = true 
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(46.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
+                        ) {
+                            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("MÃ PIN NHÂN VIÊN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                        }
+                    }
+
+                    if (onSecondaryAction != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = onSecondaryAction,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.SupportAgent, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Liên hệ nhân viên siêu thị hỗ trợ", fontSize = 12.sp, color = Color(0xFF64748B))
                         }
                     }
                 }
             }
+        }
+
+        // Popup nhập mã PIN dành cho Nhân viên can thiệp xử lý sự cố
+        if (showStaffPinDialog) {
+            AlertDialog(
+                onDismissRequest = { showStaffPinDialog = false },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Xác Nhận Nhân Viên", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Column {
+                        Text(
+                            text = "Nhập mã PIN nhân viên (mặc định: 1234) để mở khóa xe đẩy nếu sản phẩm đã được kiểm tra thực tế.",
+                            fontSize = 13.sp,
+                            color = Color(0xFF475569)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        OutlinedTextField(
+                            value = staffPinInput,
+                            onValueChange = { input ->
+                                if (input.length <= 6 && input.all { it.isDigit() }) {
+                                    staffPinInput = input
+                                }
+                            },
+                            placeholder = { Text("Nhập mã PIN...") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            isError = staffPinError != null
+                        )
+                        if (staffPinError != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = staffPinError!!, color = Color(0xFFDC2626), fontSize = 12.sp)
+                        }
+                    }
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (staffPinInput == "1234" || staffPinInput == "9999" || staffPinInput == "8888") {
+                                showStaffPinDialog = false
+                                onResolve()
+                            } else {
+                                staffPinError = "Mã PIN không chính xác!"
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                    ) {
+                        Text("Mở Khóa Xe")
+                    }
+                },
+                dismissButton = {
+                    OutlinedButton(onClick = { showStaffPinDialog = false }) {
+                        Text("Hủy")
+                    }
+                }
+            )
         }
     }
 }

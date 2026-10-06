@@ -46,6 +46,8 @@ data class CartDecisionRequestDto(
     @SerializedName("session_id") val sessionId: String,
     @SerializedName("action") val action: String, // "add" hoặc "remove"
     @SerializedName("barcode") val barcode: String,
+    @SerializedName("verification_mode") val verificationMode: String = "barcode_only",
+    @SerializedName("client_event_id") val clientEventId: String? = null,
     @SerializedName("ai_class") val aiClass: String = "unknown",
     @SerializedName("ai_confidence") val aiConfidence: Float = 1.0f,
     @SerializedName("delta_weight_g") val deltaWeightG: Float = 0.0f,
