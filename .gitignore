@@ -32,13 +32,18 @@ node_modules/
 out/
 **/out/
 
-# Python temporary & bytecode
+# Python virtual environments & bytecode
 *.pyc
 __pycache__/
 **/__pycache__/
+.venv/
+**/.venv/
+venv/
+**/venv/
 !server/*.py
 
 # Environment & Logs
 *.log
 .env
 **/.env
+

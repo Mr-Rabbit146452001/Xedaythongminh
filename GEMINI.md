@@ -50,5 +50,16 @@ Bất kỳ khi nào người dùng gõ `@team` (hoặc nhắc tới lệnh `@tea
    - Kích hoạt phân đội chuyên biệt Android gồm 4 vai trò nòng cốt: **Architect ➔ Developer ➔ Reviewer ➔ QA Tester** theo đúng SOP (`.agent/workflows/android-team-workflow.md`), bảo đảm build thành công 100%.
 3. **Khi người dùng giao nhiệm vụ cho Web Admin, Server Backend, Database hay DevOps:**
    - Điều phối trực tiếp các tác nhân tương ứng (Backend Dev, Frontend Dev, UI/UX Designer, DevOps) cùng kiểm thử và nghiệm thu.
+4. **Khi người dùng giao nhiệm vụ Giao tiếp Firmware & Frontend (Raspberry Pi/ESP32 sensor <-> Gateway <-> Android/Web):**
+   - Kích hoạt Phân đội Chuyên biệt Firmware-Frontend (4 subagents: `firmware-architect`, `firmware-developer`, `firmware-bridge-developer`, `firmware-qa-tester`) theo đúng SOP (`.agent/workflows/firmware-frontend-workflow.md`), đảm bảo dữ liệu cảm biến cân nặng, RFID, Barcode GM65 đồng bộ thời gian thực sang UI.
+
+---
+
+### 🔌 Phân Đội Chuyên Chế Giao Tiếp Firmware <-> Frontend:
+1. 📐 **Firmware Architect (`firmware-architect`)**: Thiết kế giao thức truyền nhận (WebSocket, MQTT, Serial packets), JSON payload schema, state machine giữa Raspberry Pi/ESP32 và Frontend.
+2. ⚡ **Embedded Firmware Developer (`firmware-developer`)**: Viết driver cảm biến cân nặng HX711/SQL, GM65 Barcode, RFID RC522, lọc nhiễu tín hiệu cân, phát sóng event thời gian thực.
+3. 🌉 **Firmware Bridge Integrator (`firmware-bridge-developer`)**: Xây dựng server gateway bridge (Node.js/FastAPI WebSockets), kết nối StateFlow Android ViewModel và Web Admin Next.js live stream.
+4. 🧪 **Firmware QA & Simulator (`firmware-qa-tester`)**: Giả lập gói tin cảm biến, đo độ trễ latency (<100ms), kiểm thử mất kết nối và tự động khôi phục dữ liệu UI.
+
 
 

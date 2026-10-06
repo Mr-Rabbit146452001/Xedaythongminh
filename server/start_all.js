@@ -1,189 +1,447 @@
 /**
- * Runner Script: Khởi chạy toàn bộ hệ sinh thái Smart Cart:
- * 1. Shop Server (Port 3000)
- * 2. Mock Bank Server (Port 4000)
- * 3. Smart Cart Web Admin (Port 3001)
- * 4. Ngrok Public HTTPS Tunnel
+ * Khởi chạy toàn bộ hệ sinh thái Smart Cart:
+ * 1. Shop Server                 - Port 3000
+ * 2. Mock Bank Server            - Port 4000
+ * 3. FastAPI Backend             - Port 8000
+ * 4. Smart Cart Web Admin        - Port 3001
+ * 5. Ngrok HTTPS Tunnel          - Chuyển tiếp Port 3000
  */
 
 const { spawn } = require('child_process');
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 
 console.log('\n======================================================');
-console.log('🚀 ĐANG KHỞI ĐỘNG TOÀN BỘ HỆ SINH THÁI SMART CART & WEB ADMIN...');
+console.log('🚀 ĐANG KHỞI ĐỘNG TOÀN BỘ HỆ SINH THÁI SMART CART...');
 console.log('======================================================\n');
 
-// 1. Khởi động Shop Server (Port 3000)
-require('./index');
-
-// 2. Khởi động Mock Bank Server (Port 4000)
-require('./mock-bank/index');
-
-const SHOP_PORT = process.env.PORT || 3000;
-const BANK_PORT = process.env.BANK_PORT || 4000;
+const SERVER_DIR = __dirname;
+const SHOP_PORT = Number(process.env.PORT || 3000);
+const BANK_PORT = Number(process.env.BANK_PORT || 4000);
 const FASTAPI_PORT = 8000;
 const ADMIN_PORT = 3001;
 
-// 3. Khởi động FastAPI Backend Gateway (Port 8000 theo tài liệu bàn giao)
-console.log('⚡ [FastAPI] Đang khởi động FastAPI Server trên cổng ' + FASTAPI_PORT + ' (PostgreSQL + ThingsBoard)...');
 let fastapiProcess = null;
-try {
-  fastapiProcess = spawn('python', ['-m', 'uvicorn', 'fastapi_server:app', '--host', '0.0.0.0', '--port', FASTAPI_PORT.toString()], {
-    cwd: __dirname,
-    shell: true,
-    stdio: ['ignore', 'inherit', 'inherit']
-  });
-  fastapiProcess.on('error', (err) => {
-    console.warn('⚠️ [FastAPI] Không thể khởi chạy tiến trình Python:', err.message);
-  });
-} catch (e) {
-  console.warn('⚠️ [FastAPI] Lỗi khởi động:', e.message);
-}
-
-// 4. Khởi động Smart Cart Web Admin (Port 3001)
-console.log('🖥️ [Web Admin] Đang khởi động giao diện quản trị Next.js trên cổng ' + ADMIN_PORT + '...');
-const webAdminDir = path.join(__dirname, '..', 'web-admin');
 let webAdminProcess = null;
-try {
-  webAdminProcess = spawn('npm', ['run', 'dev'], {
-    cwd: webAdminDir,
-    shell: true,
-    stdio: 'ignore'
-  });
-  webAdminProcess.on('error', (err) => {
-    console.warn('⚠️ [Web Admin] Không thể khởi chạy npm run dev:', err.message);
-  });
-} catch (e) {
-  console.warn('⚠️ [Web Admin] Lỗi khởi động:', e.message);
-}
+let ngrokProcess = null;
+let shuttingDown = false;
 
-// Tìm địa chỉ IP LAN cục bộ
-const os = require('os');
+/**
+ * Địa chỉ IP LAN của máy chủ.
+ */
 function getLocalIp() {
   const interfaces = os.networkInterfaces();
+
   for (const name of Object.keys(interfaces)) {
-    for (const iface of interfaces[name]) {
+    for (const iface of interfaces[name] || []) {
       if (iface.family === 'IPv4' && !iface.internal) {
         return iface.address;
       }
     }
   }
+
   return 'localhost';
 }
+
 const localIp = getLocalIp();
 
-console.log('⏳ [Ngrok] Đang khởi tạo đường hầm HTTPS ngrok cho cổng ' + SHOP_PORT + '...');
+/**
+ * Kiểm tra một HTTP endpoint.
+ */
+function checkHttp(url, timeoutMs = 2000) {
+  return new Promise((resolve) => {
+    const request = http.get(url, (response) => {
+      response.resume();
 
-// 5. Khởi động Ngrok cho cổng 3000 (Shop Server sẽ tự forward /api/bank sang 4000)
-let ngrokProcess = null;
-let ngrokAvailable = true;
-const fs = require('fs');
-const localNgrokExe = path.join(__dirname, 'ngrok.exe');
-const ngrokBinary = fs.existsSync(localNgrokExe) ? localNgrokExe : 'ngrok';
+      resolve(
+        response.statusCode !== undefined &&
+        response.statusCode >= 200 &&
+        response.statusCode < 500
+      );
+    });
 
-try {
-  ngrokProcess = spawn(ngrokBinary, ['http', SHOP_PORT.toString(), '--log=stdout'], {
-    stdio: ['ignore', 'pipe', 'pipe']
+    request.setTimeout(timeoutMs, () => {
+      request.destroy();
+      resolve(false);
+    });
+
+    request.on('error', () => {
+      resolve(false);
+    });
   });
-  ngrokProcess.on('error', (err) => {
-    ngrokAvailable = false;
-    console.warn('⚠️ [Ngrok] Chưa tìm thấy ngrok trên máy (hoặc chưa thêm vào PATH). Hệ thống sẽ chạy ở chế độ mạng LAN nội bộ.');
-  });
-} catch (e) {
-  ngrokAvailable = false;
 }
 
-let tunnelFound = false;
-let checkCount = 0;
-const checkInterval = setInterval(() => {
-  checkCount++;
-  if (checkCount > 15) {
-    clearInterval(checkInterval);
-    if (!tunnelFound) {
-      console.log('\n' + '='.repeat(72));
-      console.log('  🎉  HỆ THỐNG SMART CART ĐÃ SẴN SÀNG HOẠT ĐỘNG (MẠNG LAN)!');
-      console.log('='.repeat(72));
-      console.log('  🛒 Shop Server (Tablet):     http://localhost:' + SHOP_PORT + '  hoặc  http://' + localIp + ':' + SHOP_PORT);
-      console.log('  🏦 Mock Bank Server:         http://localhost:' + BANK_PORT);
-      console.log('  ⚡ FastAPI Server (IoT):      http://localhost:' + FASTAPI_PORT);
-      console.log('  🖥️  Smart Cart Web Admin:     http://localhost:' + ADMIN_PORT);
-      console.log('  📟 DÀNH CHO APP TABLET:      http://' + localIp + ':' + SHOP_PORT);
-      console.log('  💡 Để bật đường hầm online Ngrok, cài đặt bằng lệnh: winget install ngrok/ngrok');
-      console.log('='.repeat(72) + '\n');
+/**
+ * Đợi FastAPI khởi động.
+ */
+async function waitForFastApi(maxAttempts = 30) {
+  const healthUrl = `http://127.0.0.1:${FASTAPI_PORT}/health`;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (await checkHttp(healthUrl)) {
+      console.log(`✅ [FastAPI] Health check thành công: ${healthUrl}`);
+      return true;
     }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  return false;
+}
+
+/**
+ * Đọc tunnel hiện tại từ dashboard nội bộ của ngrok.
+ */
+function readNgrokTunnel() {
+  return new Promise((resolve) => {
+    const request = http.get(
+      'http://127.0.0.1:4040/api/tunnels',
+      (response) => {
+        let data = '';
+
+        response.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        response.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            const tunnels = Array.isArray(parsed.tunnels)
+              ? parsed.tunnels
+              : [];
+
+            const tunnel =
+              tunnels.find((item) => item.proto === 'https') ||
+              tunnels[0] ||
+              null;
+
+            resolve(tunnel ? tunnel.public_url : null);
+          } catch {
+            resolve(null);
+          }
+        });
+      }
+    );
+
+    request.setTimeout(2000, () => {
+      request.destroy();
+      resolve(null);
+    });
+
+    request.on('error', () => {
+      resolve(null);
+    });
+  });
+}
+
+/**
+ * Đợi ngrok tạo tunnel.
+ */
+async function waitForNgrok(maxAttempts = 30) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    const publicUrl = await readNgrokTunnel();
+
+    if (publicUrl) {
+      return publicUrl;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  return null;
+}
+
+/**
+ * Dừng các tiến trình con.
+ */
+function stopChild(child, name) {
+  if (!child || child.killed) {
     return;
   }
 
-  const req = http.get('http://127.0.0.1:4040/api/tunnels', (res) => {
-    let data = '';
-    res.on('data', chunk => { data += chunk; });
-    res.on('end', () => {
-      try {
-        const json = JSON.parse(data);
-        if (json.tunnels && json.tunnels.length > 0) {
-          const httpsTunnel = json.tunnels.find(t => t.proto === 'https') || json.tunnels[0];
-          if (httpsTunnel && !tunnelFound) {
-            tunnelFound = true;
-            clearInterval(checkInterval);
-
-            const publicUrl = httpsTunnel.public_url;
-
-            console.log('\n' + '='.repeat(72));
-            console.log('  🎉  TOÀN BỘ HỆ SINH THÁI SMART CART ĐÃ SẴN SÀNG HOẠT ĐỘNG!');
-            console.log('='.repeat(72));
-            console.log('  🛒 Shop Server (Tablet):     http://localhost:' + SHOP_PORT);
-            console.log('  🏦 Mock Bank Server:         http://localhost:' + BANK_PORT);
-            console.log('  ⚡ FastAPI Server (IoT):      http://localhost:' + FASTAPI_PORT);
-            console.log('  🖥️  Smart Cart Web Admin:     http://localhost:' + ADMIN_PORT);
-            console.log('  🌐 Ngrok Public HTTPS:       ' + publicUrl);
-            console.log('  📥 Tải MockBankApp APK:      ' + publicUrl + '/download/MockBankApp.apk');
-            console.log('  📊 Ngrok Web Dashboard:      http://127.0.0.1:4040');
-            console.log('='.repeat(72));
-            console.log('  ⚡ DÀNH CHO IOT / FASTAPI GATEWAY (CỔNG 8000 QUA NGROK):');
-            console.log('     👉  ' + publicUrl + '/docs             (Tài liệu Swagger UI API)');
-            console.log('     👉  ' + publicUrl + '/api/v1/products  (API Danh mục sản phẩm)');
-            console.log('='.repeat(72));
-            console.log('  📱 DÀNH CHO APP ĐIỆN THOẠI (MockBankApp):');
-            console.log('     Tải APK trực tiếp về máy: ' + publicUrl + '/download/MockBankApp.apk');
-            console.log('     API Base URL:            ' + publicUrl + '/');
-            console.log('='.repeat(72));
-            console.log('  📟 DÀNH CHO APP TABLET XE ĐẨY (StrollerApp):');
-            console.log('     👉  ' + publicUrl + '/');
-            console.log('='.repeat(72));
-            console.log('  💻 DÀNH CHO QUẢN TRỊ VIÊN SIÊU THỊ (Web Admin):');
-            console.log('     🏠 Xem trên máy tính cục bộ:       http://localhost:' + ADMIN_PORT);
-            console.log('     🌍 GỬI CHO BẠN BÈ TRUY CẬP TỪ XA:');
-            console.log('     👉  ' + publicUrl + '/smart-cart     (Bản đồ & Xe Đẩy IoT)');
-            console.log('     👉  ' + publicUrl + '/               (Dashboard Tổng Quan)');
-            console.log('     👉  ' + publicUrl + '/products       (Kho & Sản Phẩm)');
-            console.log('='.repeat(72) + '\n');
-          }
-        }
-      } catch (e) {}
-    });
-  });
-
-  req.on('error', () => {});
-}, 500);
-
-// Dọn dẹp tiến trình khi tắt
-function cleanup() {
-  console.log('\n🛑 Đang dừng toàn bộ hệ thống và đóng các tiến trình...');
   try {
-    if (fastapiProcess) fastapiProcess.kill();
-  } catch (e) {}
-  try {
-    if (ngrokProcess) ngrokProcess.kill();
-  } catch (e) {}
-  try {
-    if (webAdminProcess) webAdminProcess.kill();
-  } catch (e) {}
-  process.exit(0);
+    child.kill();
+    console.log(`🛑 Đã yêu cầu dừng ${name}.`);
+  } catch (error) {
+    console.warn(`⚠️ Không thể dừng ${name}: ${error.message}`);
+  }
 }
 
-process.on('SIGINT', cleanup);
-process.on('SIGTERM', cleanup);
-process.on('uncaughtException', (err) => {
-  console.error('❌ [Lỗi ngoài ý muốn]:', err.message);
+/**
+ * Dọn dẹp khi tắt.
+ */
+function cleanup(exitCode = 0) {
+  if (shuttingDown) {
+    return;
+  }
+
+  shuttingDown = true;
+
+  console.log('\n🛑 Đang dừng toàn bộ hệ thống...');
+
+  stopChild(fastapiProcess, 'FastAPI');
+  stopChild(webAdminProcess, 'Web Admin');
+  stopChild(ngrokProcess, 'ngrok');
+
+  setTimeout(() => {
+    process.exit(exitCode);
+  }, 300);
+}
+
+process.on('SIGINT', () => cleanup(0));
+process.on('SIGTERM', () => cleanup(0));
+
+process.on('uncaughtException', (error) => {
+  console.error('❌ [Lỗi ngoài ý muốn]:', error);
+  cleanup(1);
+});
+
+process.on('unhandledRejection', (error) => {
+  console.error('❌ [Promise bị từ chối]:', error);
+  cleanup(1);
+});
+
+/**
+ * Khởi động hệ thống.
+ */
+async function main() {
+  // 1. Shop Server - Port 3000
+  console.log(`🛒 [Shop Server] Khởi động trên cổng ${SHOP_PORT}...`);
+  require('./index');
+
+  // 2. Mock Bank Server - Port 4000
+  console.log(`🏦 [Mock Bank] Khởi động trên cổng ${BANK_PORT}...`);
+  require('./mock-bank/index');
+
+  // 3. FastAPI - dùng đúng .venv nằm trong thư mục server
+  const pythonExe = path.join(
+    SERVER_DIR,
+    '.venv',
+    'Scripts',
+    'python.exe'
+  );
+
+  if (!fs.existsSync(pythonExe)) {
+    throw new Error(
+      [
+        `Không tìm thấy Python backend: ${pythonExe}`,
+        '',
+        'Hãy tạo môi trường bằng:',
+        `cd "${SERVER_DIR}"`,
+        'F:\\severNCKH\\ai-server\\python.exe -m venv .venv',
+        '.\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt'
+      ].join('\n')
+    );
+  }
+
+  console.log(`🐍 [FastAPI] Python: ${pythonExe}`);
+  console.log(`📁 [FastAPI] Thư mục: ${SERVER_DIR}`);
+  console.log(`⚡ [FastAPI] Khởi động trên cổng ${FASTAPI_PORT}...`);
+
+  fastapiProcess = spawn(
+    pythonExe,
+    [
+      '-m',
+      'uvicorn',
+      'main:app',
+      '--host',
+      '0.0.0.0',
+      '--port',
+      FASTAPI_PORT.toString(),
+      '--log-level',
+      'debug'
+    ],
+    {
+      cwd: SERVER_DIR,
+      shell: false,
+      stdio: ['ignore', 'inherit', 'inherit']
+    }
+  );
+
+  fastapiProcess.on('error', (error) => {
+    console.error(
+      '❌ [FastAPI] Không thể khởi chạy:',
+      error.message
+    );
+  });
+
+  fastapiProcess.on('exit', (code, signal) => {
+    if (!shuttingDown) {
+      console.error(
+        `❌ [FastAPI] Đã dừng ngoài ý muốn ` +
+        `(code=${code}, signal=${signal}).`
+      );
+    }
+  });
+
+  // 4. Web Admin - thư mục ngang cấp với server
+  const webAdminDir = path.join(SERVER_DIR, '..', 'web-admin');
+
+  if (fs.existsSync(webAdminDir)) {
+    console.log(
+      `🖥️ [Web Admin] Khởi động trên cổng ${ADMIN_PORT}...`
+    );
+
+    webAdminProcess = spawn(
+      'npm',
+      ['run', 'dev'],
+      {
+        cwd: webAdminDir,
+        shell: true,
+        stdio: ['ignore', 'inherit', 'inherit'],
+        env: {
+          ...process.env,
+          PORT: ADMIN_PORT.toString()
+        }
+      }
+    );
+
+    webAdminProcess.on('error', (error) => {
+      console.warn(
+        '⚠️ [Web Admin] Không thể khởi chạy:',
+        error.message
+      );
+    });
+
+    webAdminProcess.on('exit', (code, signal) => {
+      if (!shuttingDown) {
+        console.warn(
+          `⚠️ [Web Admin] Đã dừng ` +
+          `(code=${code}, signal=${signal}).`
+        );
+      }
+    });
+  } else {
+    console.warn(
+      `⚠️ [Web Admin] Không tìm thấy thư mục: ${webAdminDir}`
+    );
+  }
+
+  // 5. Ngrok - ưu tiên ngrok.exe nằm cạnh start_all.js
+  const localNgrokExe = path.join(SERVER_DIR, 'ngrok.exe');
+  const ngrokBinary = fs.existsSync(localNgrokExe)
+    ? localNgrokExe
+    : 'ngrok';
+
+  console.log(
+    `🌐 [Ngrok] Khởi tạo tunnel HTTPS cho cổng ${SHOP_PORT}...`
+  );
+
+  ngrokProcess = spawn(
+    ngrokBinary,
+    [
+      'http',
+      SHOP_PORT.toString(),
+      '--log=stdout'
+    ],
+    {
+      cwd: SERVER_DIR,
+      shell: false,
+      stdio: ['ignore', 'pipe', 'pipe']
+    }
+  );
+
+  ngrokProcess.stdout.on('data', (data) => {
+    const text = data.toString().trim();
+
+    if (text) {
+      console.log(`[Ngrok] ${text}`);
+    }
+  });
+
+  ngrokProcess.stderr.on('data', (data) => {
+    const text = data.toString().trim();
+
+    if (text) {
+      console.warn(`[Ngrok] ${text}`);
+    }
+  });
+
+  ngrokProcess.on('error', (error) => {
+    console.warn(
+      '⚠️ [Ngrok] Không thể khởi chạy. ' +
+      'Kiểm tra ngrok.exe hoặc PATH:',
+      error.message
+    );
+  });
+
+  ngrokProcess.on('exit', (code, signal) => {
+    if (!shuttingDown) {
+      console.warn(
+        `⚠️ [Ngrok] Đã dừng ` +
+        `(code=${code}, signal=${signal}).`
+      );
+    }
+  });
+
+  const fastApiReady = await waitForFastApi();
+
+  if (!fastApiReady) {
+    throw new Error(
+      `FastAPI không phản hồi tại ` +
+      `http://127.0.0.1:${FASTAPI_PORT}/health`
+    );
+  }
+
+  const publicUrl = await waitForNgrok();
+
+  console.log('\n' + '='.repeat(72));
+
+  if (publicUrl) {
+    console.log(
+      '🎉 TOÀN BỘ HỆ SINH THÁI SMART CART ĐÃ SẴN SÀNG!'
+    );
+  } else {
+    console.log(
+      '⚠️ HỆ THỐNG ĐÃ CHẠY TRONG MẠNG LAN, NHƯNG NGROK CHƯA SẴN SÀNG.'
+    );
+  }
+
+  console.log('='.repeat(72));
+  console.log(
+    `🛒 Shop Server:       http://localhost:${SHOP_PORT}`
+  );
+  console.log(
+    `🏦 Mock Bank:         http://localhost:${BANK_PORT}`
+  );
+  console.log(
+    `⚡ FastAPI:           http://localhost:${FASTAPI_PORT}`
+  );
+  console.log(
+    `📖 FastAPI Docs:      http://localhost:${FASTAPI_PORT}/docs`
+  );
+  console.log(
+    `🖥️ Web Admin:         http://localhost:${ADMIN_PORT}`
+  );
+  console.log(
+    `📟 Tablet LAN:        http://${localIp}:${SHOP_PORT}`
+  );
+
+  if (publicUrl) {
+    console.log(`🌐 Ngrok HTTPS:       ${publicUrl}`);
+    console.log(`📖 API Docs:          ${publicUrl}/docs`);
+    console.log(
+      `📦 Products API:      ${publicUrl}/api/v1/products`
+    );
+    console.log(
+      `📥 MockBank APK:      ${publicUrl}/download/MockBankApp.apk`
+    );
+    console.log(
+      '📊 Ngrok Dashboard:   http://127.0.0.1:4040'
+    );
+  } else {
+    console.log(
+      '💡 Cài ngrok hoặc đặt ngrok.exe cạnh start_all.js.'
+    );
+  }
+
+  console.log('='.repeat(72) + '\n');
+}
+
+main().catch((error) => {
+  console.error('\n❌ KHỞI ĐỘNG HỆ THỐNG THẤT BẠI');
+  console.error(error);
+  cleanup(1);
 });
