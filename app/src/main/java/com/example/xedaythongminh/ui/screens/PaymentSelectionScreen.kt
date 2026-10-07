@@ -37,6 +37,9 @@ import com.example.xedaythongminh.data.models.CartSummary
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 
 @Composable
@@ -61,11 +64,12 @@ fun PaymentSelectionScreen(
         PaymentMethodItem("Tại quầy", Icons.Default.Storefront)
     )
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = Color.White,
-        topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+        ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
@@ -273,7 +277,7 @@ fun PaymentSelectionScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Button(
+                        GlassButton(
                             onClick = {
                                 if (selectedPaymentMethod.contains("Tự động")) {
                                     navController.navigate("auto_payment")
@@ -283,36 +287,58 @@ fun PaymentSelectionScreen(
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(46.dp),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                .height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Primary
                         ) {
-                            Icon(Icons.Default.CheckCircleOutline, contentDescription = "Confirm", tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(
+                                imageVector = Icons.Default.CheckCircleOutline,
+                                contentDescription = "Confirm",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.btn_confirm_payment), fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text(
+                                text = stringResource(R.string.btn_confirm_payment),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
                         }
                         
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
                         
-                        TextButton(
+                        GlassButton(
                             onClick = { 
                                 appViewModel.unlockCart()
                                 navController.popBackStack() 
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(42.dp)
-                                .background(Color(0xFFEEEEEE), RoundedCornerShape(10.dp))
+                                .height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Secondary
                         ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(stringResource(R.string.btn_back_to_cart), fontSize = 14.sp, fontWeight = FontWeight.Medium, color = TextDark)
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = stringResource(R.string.btn_back_to_cart),
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = PrimaryBlue
+                            )
                         }
                     }
                 }
             }
         )
     }
+}
 }
 
 data class PaymentMethodItem(val name: String, val icon: ImageVector)

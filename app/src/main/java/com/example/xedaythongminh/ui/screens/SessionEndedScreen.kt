@@ -22,6 +22,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.xedaythongminh.ui.components.GlassButton
 import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,11 +59,12 @@ fun SessionEndedScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+        ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
@@ -264,6 +266,7 @@ fun SessionEndedScreen(
             }
         )
     }
+}
 }
 
 @Composable

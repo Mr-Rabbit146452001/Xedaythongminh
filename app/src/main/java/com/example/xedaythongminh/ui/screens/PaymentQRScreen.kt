@@ -41,6 +41,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import kotlinx.coroutines.delay
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 import com.example.xedaythongminh.ui.components.QrCodeImage
 
@@ -109,11 +112,12 @@ fun PaymentQRScreen(
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + " VNĐ"
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+        ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
@@ -334,6 +338,7 @@ fun PaymentQRScreen(
         )
     }
 }
+}
 
 @Composable
 fun PaymentQRScannerBox(
@@ -389,14 +394,17 @@ fun PaymentQRScannerBox(
                         lineHeight = 16.sp
                     )
                     Spacer(modifier = Modifier.height(14.dp))
-                    Button(
+                    GlassButton(
                         onClick = onRefresh,
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                        shape = RoundedCornerShape(10.dp)
+                        modifier = Modifier
+                            .wrapContentWidth()
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        variant = GlassButtonVariant.Primary
                     ) {
-                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Tạo mã QR mới", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("Tạo mã QR mới", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
@@ -480,19 +488,19 @@ fun PaymentQRInstructionsBox(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            OutlinedButton(
+            GlassButton(
                 onClick = { 
                     if (lockRemainingSeconds <= 0) {
                         navController.popBackStack() 
                     }
                 },
                 enabled = lockRemainingSeconds <= 0,
-                modifier = if (isExpired) Modifier.weight(1f).height(48.dp) else Modifier.fillMaxWidth().height(48.dp),
-                shape = RoundedCornerShape(10.dp),
-                border = BorderStroke(1.dp, if (lockRemainingSeconds > 0) Color.LightGray else PrimaryBlue)
+                modifier = if (isExpired) Modifier.weight(1f).height(50.dp) else Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(14.dp),
+                variant = GlassButtonVariant.Secondary
             ) {
                 if (lockRemainingSeconds > 0) {
-                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Lock, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = "Tạm khóa (${lockRemainingSeconds}s)",
@@ -503,22 +511,22 @@ fun PaymentQRInstructionsBox(
                 } else {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text(stringResource(R.string.btn_back), color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.btn_back), color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
             
             if (isExpired) {
-                Button(
+                GlassButton(
                     onClick = onRefresh,
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(10.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                        .height(50.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    variant = GlassButtonVariant.Primary
                 ) {
                     Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Làm mới QR", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text("Làm mới QR", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }

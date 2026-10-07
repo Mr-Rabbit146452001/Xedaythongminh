@@ -38,6 +38,9 @@ import com.example.xedaythongminh.data.models.CartSummary
 import com.example.xedaythongminh.domain.model.AutoPaymentStatus
 import com.example.xedaythongminh.domain.model.PaymentMethod
 import com.example.xedaythongminh.domain.model.PaymentMethodType
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 import com.example.xedaythongminh.ui.screens.TopBar
 import com.example.xedaythongminh.ui.theme.*
@@ -62,11 +65,12 @@ fun AutoPaymentScreen(
 
     val customerId = userState?.id ?: "CUSTOMER_888"
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = "Thanh toán tự động") }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = "Thanh toán tự động") }
+        ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
@@ -503,7 +507,7 @@ fun AutoPaymentScreen(
                         ) {
                             when (uiState.status) {
                                 AutoPaymentStatus.IDLE -> {
-                                    Button(
+                                    GlassButton(
                                         onClick = {
                                             autoPaymentViewModel.onEvent(
                                                 AutoPaymentUiEvent.StartAutoPayment(
@@ -512,12 +516,12 @@ fun AutoPaymentScreen(
                                                 )
                                             )
                                         },
-                                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
+                                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        variant = GlassButtonVariant.Primary,
                                         enabled = uiState.cartItems.isNotEmpty() && uiState.selectedMethod != null
                                     ) {
-                                        Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White)
+                                        Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text(
                                             text = "Xác nhận & Thanh toán tự động",
@@ -527,58 +531,60 @@ fun AutoPaymentScreen(
                                         )
                                     }
 
-                                    OutlinedButton(
+                                    GlassButton(
                                         onClick = {
                                             appViewModel.unlockCart()
                                             navController.popBackStack()
                                         },
-                                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        border = BorderStroke(1.dp, BorderGray)
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        variant = GlassButtonVariant.Secondary
                                     ) {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = TextDark, modifier = Modifier.size(16.dp))
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                                         Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Quay lại", color = TextDark, fontSize = 14.sp)
+                                        Text("Quay lại", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
 
                                 AutoPaymentStatus.SUCCESS -> {
-                                    Button(
+                                    GlassButton(
                                         onClick = {
                                             // Điều hướng tới màn hình thành công chuẩn của App
                                             navController.navigate("payment_success") {
                                                 popUpTo("cart_detail") { inclusive = true }
                                             }
                                         },
-                                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        variant = GlassButtonVariant.Success
                                     ) {
-                                        Icon(Icons.Default.Receipt, contentDescription = null, tint = Color.White)
+                                        Icon(Icons.Default.Receipt, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Xem hóa đơn điện tử", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
                                 }
 
                                 AutoPaymentStatus.FAILED -> {
-                                    Button(
+                                    GlassButton(
                                         onClick = { autoPaymentViewModel.onEvent(AutoPaymentUiEvent.Retry) },
-                                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                                        modifier = Modifier.fillMaxWidth().height(52.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        variant = GlassButtonVariant.Primary
                                     ) {
-                                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White)
+                                        Icon(Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
                                         Text("Thử lại", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     }
 
-                                    OutlinedButton(
+                                    GlassButton(
                                         onClick = { navController.navigate("payment_selection") },
-                                        modifier = Modifier.fillMaxWidth().height(44.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        border = BorderStroke(1.dp, PrimaryBlue)
+                                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                                        shape = RoundedCornerShape(14.dp),
+                                        variant = GlassButtonVariant.Secondary
                                     ) {
-                                        Text("Chọn phương thức khác", color = PrimaryBlue, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                                        Icon(Icons.Default.Payment, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Chọn phương thức khác", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
 
@@ -601,6 +607,7 @@ fun AutoPaymentScreen(
             }
         )
     }
+}
 }
 
 @Composable

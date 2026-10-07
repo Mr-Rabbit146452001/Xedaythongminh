@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 
 val ColorDarkRed = Color(0xFFB71C1C)
@@ -36,11 +37,12 @@ fun ConnectionErrorScreen(
     navController: NavController,
     windowSize: WindowWidthSizeClass = WindowWidthSizeClass.Expanded
 ) {
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray, // #F8F9FA
-        topBar = { TopBar(statusText = "Support Mode", appViewModel = appViewModel) }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = "Support Mode", appViewModel = appViewModel) }
+        ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
@@ -234,6 +236,7 @@ fun ConnectionErrorScreen(
             }
         )
     }
+}
 }
 
 @Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - Connection Error")

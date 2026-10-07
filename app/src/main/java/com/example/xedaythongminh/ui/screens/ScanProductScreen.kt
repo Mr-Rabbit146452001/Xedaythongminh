@@ -24,6 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import com.example.xedaythongminh.ui.components.GlassButton
 import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -121,10 +122,10 @@ fun ScanProductScreen(
     val userState by appViewModel.userState.collectAsState()
     val statusText = if (userState != null) "KH: ${userState?.name} | Wi-Fi | 85%" else "Khách Vãng Lai | Wi-Fi | 85%"
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
-            containerColor = BackgroundGray,
+            containerColor = Color.Transparent,
             topBar = { TopBar(statusText = statusText, appViewModel = appViewModel) }
         ) { innerPadding ->
             ResponsiveLayout(

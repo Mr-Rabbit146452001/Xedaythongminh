@@ -25,6 +25,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.xedaythongminh.ui.components.GlassButton
 import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -54,35 +55,37 @@ fun WelcomeScreen(
         appViewModel.completeActiveSession()
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(appViewModel = appViewModel) }
-    ) { innerPadding ->
-        if (isCompact) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(24.dp)
-            ) {
-                WelcomeImageSection(modifier = Modifier.fillMaxWidth().aspectRatio(1654f / 951f))
-                WelcomeTextAndActionSection(navController = navController, modifier = Modifier.fillMaxWidth())
-            }
-        } else {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(horizontal = 24.dp, vertical = 12.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                WelcomeTextAndActionSection(navController = navController, modifier = Modifier.weight(1.2f).padding(end = 16.dp))
-                WelcomeImageSection(modifier = Modifier.weight(0.8f))
+    OrganicGlassBackground {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(appViewModel = appViewModel) }
+        ) { innerPadding ->
+            if (isCompact) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(16.dp)
+                        .verticalScroll(rememberScrollState()),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    WelcomeImageSection(modifier = Modifier.fillMaxWidth().aspectRatio(1654f / 951f))
+                    WelcomeTextAndActionSection(navController = navController, modifier = Modifier.fillMaxWidth())
+                }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                        .padding(horizontal = 24.dp, vertical = 12.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    WelcomeTextAndActionSection(navController = navController, modifier = Modifier.weight(1.2f).padding(end = 16.dp))
+                    WelcomeImageSection(modifier = Modifier.weight(0.8f))
+                }
             }
         }
     }
@@ -200,7 +203,16 @@ fun TopBar(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
+        )
+        {
+            Image(
+                painter = painterResource(id = R.drawable.im_logovt),
+                contentDescription = "Logo",
+                modifier = Modifier
+                    .height(38.dp)
+                    .aspectRatio(1654f / 951f),
+                contentScale = ContentScale.Fit
+            )
 
             IconButton(onClick = { showPinDialog = true }) {
                 Icon(
@@ -209,6 +221,7 @@ fun TopBar(
                     tint = PrimaryBlue,
                     modifier = Modifier.size(20.dp)
                 )
+
             }
         }
     }

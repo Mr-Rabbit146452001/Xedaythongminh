@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.xedaythongminh.R
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
 import kotlinx.coroutines.delay
@@ -57,11 +60,12 @@ fun PaymentSuccessScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+        ) { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -135,17 +139,15 @@ fun PaymentSuccessScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        OutlinedButton(
+                        GlassButton(
                             onClick = {
                                 Toast.makeText(context, "Đã xuất hóa đơn thành công!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.5.dp, PrimaryBlue),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Secondary
                         ) {
                             Icon(Icons.Default.Download, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -158,17 +160,15 @@ fun PaymentSuccessScreen(
                             )
                         }
 
-                        OutlinedButton(
+                        GlassButton(
                             onClick = {
                                 Toast.makeText(context, "Đã gửi hóa đơn qua Gmail của bạn!", Toast.LENGTH_SHORT).show()
                             },
                             modifier = Modifier
                                 .weight(1f)
                                 .height(50.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.5.dp, PrimaryBlue),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue)
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Secondary
                         ) {
                             Icon(Icons.Default.Email, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
@@ -185,7 +185,7 @@ fun PaymentSuccessScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     // Primary Button: Kết thúc phiên mua sắm
-                    Button(
+                    GlassButton(
                         onClick = {
                             appViewModel.completeActiveSession()
                             navController.navigate("session_ended") {
@@ -194,9 +194,9 @@ fun PaymentSuccessScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+                            .height(54.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        variant = GlassButtonVariant.Primary
                     ) {
                         Icon(Icons.Default.ShoppingBag, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
@@ -220,6 +220,7 @@ fun PaymentSuccessScreen(
             }
         }
     }
+}
 }
 
 @Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - Payment Success")

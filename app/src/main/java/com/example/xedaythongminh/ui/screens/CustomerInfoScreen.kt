@@ -30,6 +30,9 @@ import com.example.xedaythongminh.R
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
+import com.example.xedaythongminh.ui.components.GlassButton
+import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.components.ResponsiveLayout
 import java.text.NumberFormat
 import java.util.Locale
@@ -48,11 +51,12 @@ fun CustomerInfoScreen(
         points = 2450
     )
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
-    ) { innerPadding ->
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+        ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
             modifier = Modifier.padding(innerPadding),
@@ -184,65 +188,6 @@ fun CustomerInfoScreen(
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    // 1. Voucher đang có
-                    Text("Voucher của bạn", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextDark)
-                    user.vouchers.forEach { voucher ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFFB74D))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.ConfirmationNumber,
-                                    contentDescription = "Voucher",
-                                    tint = Color(0xFFE65100),
-                                    modifier = Modifier.size(28.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = voucher,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFFE65100)
-                                )
-                            }
-                        }
-                    }
-
-                    // 2. Khuyến mãi dành riêng
-                    Text("Ưu đãi dành riêng", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextDark)
-                    user.promotions.forEach { promo ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CardGiftcard,
-                                    contentDescription = "Promo",
-                                    tint = Color(0xFF1B5E20),
-                                    modifier = Modifier.size(28.dp)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = promo,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF1B5E20)
-                                )
-                            }
-                        }
-                    }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -251,39 +196,39 @@ fun CustomerInfoScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Button(
+                        GlassButton(
                             onClick = { 
                                 appViewModel.createShoppingSession(forceNew = true)
                                 navController.navigate("scan_product") 
                             },
-                            modifier = Modifier.fillMaxWidth().height(46.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Primary
                         ) {
-                            Text("Mua sắm ngay", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("Mua sắm ngay", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
                             Spacer(modifier = Modifier.width(8.dp))
-                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Shop Now", tint = Color.White, modifier = Modifier.size(18.dp))
+                            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Shop Now", tint = Color.White, modifier = Modifier.size(20.dp))
                         }
 
-                        OutlinedButton(
+                        GlassButton(
                             onClick = {
                                 appViewModel.completeActiveSession()
                                 navController.popBackStack()
                             },
-                            modifier = Modifier.fillMaxWidth().height(46.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = PrimaryBlue),
-                            border = androidx.compose.foundation.BorderStroke(1.5.dp, PrimaryBlue),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier = Modifier.fillMaxWidth().height(48.dp),
+                            shape = RoundedCornerShape(14.dp),
+                            variant = GlassButtonVariant.Secondary
                         ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Quay lại trang trước", fontSize = 15.sp, fontWeight = FontWeight.Bold)
+                            Text("Quay lại trang trước", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
                         }
                     }
                 }
             }
         )
     }
+}
 }
 
 @Preview(showBackground = true, widthDp = 1280, heightDp = 800, name = "Tablet Landscape - Customer Info")

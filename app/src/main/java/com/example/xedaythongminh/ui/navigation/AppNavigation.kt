@@ -38,6 +38,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import com.example.xedaythongminh.ui.screens.CartDetailScreen
 import com.example.xedaythongminh.ui.screens.ScanCustomerScreen
@@ -90,7 +91,7 @@ fun AppNavigation(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
         NavHost(navController = navController, startDestination = "splash") {
             composable("splash") {
                 SplashScreen(navController = navController)
@@ -173,9 +174,6 @@ fun AppNavigation(
                 },
                 onResolve = {
                     appViewModel.resolveWeightAnomaly()
-                },
-                onTimeout = {
-                    // Tín hiệu timeout đã kích hoạt từ dialog
                 }
             )
         }

@@ -28,6 +28,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.xedaythongminh.ui.viewmodel.AppViewModel
 import com.example.xedaythongminh.ui.components.GlassButton
 import com.example.xedaythongminh.ui.components.GlassButtonVariant
+import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import com.example.xedaythongminh.ui.theme.*
 import com.example.xedaythongminh.R
 import androidx.compose.ui.res.stringResource
@@ -68,54 +69,56 @@ fun ScanCustomerScreen(
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        containerColor = BackgroundGray,
-        topBar = { TopBar(statusText = "Chế độ Đăng nhập Khách hàng", appViewModel = appViewModel) }
-    ) { innerPadding ->
-        val isCompact = windowSize == WindowWidthSizeClass.Compact
-        
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isCompact) {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    QrLoginBox(
-                        qrUrl = sessionQrUrl,
-                        modifier = Modifier.fillMaxWidth(0.9f).aspectRatio(1f)
-                    )
-                    Spacer(modifier = Modifier.height(32.dp))
-                    ScanCustomerInstructionBox(
-                        navController = navController,
-                        appViewModel = appViewModel,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(0.92f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    QrLoginBox(
-                        qrUrl = sessionQrUrl,
-                        modifier = Modifier.weight(1.1f).aspectRatio(1f)
-                    )
-                    Spacer(modifier = Modifier.width(48.dp))
-                    ScanCustomerInstructionBox(
-                        navController = navController,
-                        appViewModel = appViewModel,
-                        modifier = Modifier.weight(1.2f)
-                    )
+    OrganicGlassBackground {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = Color.Transparent,
+            topBar = { TopBar(statusText = "Chế độ Đăng nhập Khách hàng", appViewModel = appViewModel) }
+        ) { innerPadding ->
+            val isCompact = windowSize == WindowWidthSizeClass.Compact
+            
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCompact) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        QrLoginBox(
+                            qrUrl = sessionQrUrl,
+                            modifier = Modifier.fillMaxWidth(0.9f).aspectRatio(1f)
+                        )
+                        Spacer(modifier = Modifier.height(32.dp))
+                        ScanCustomerInstructionBox(
+                            navController = navController,
+                            appViewModel = appViewModel,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(0.92f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        QrLoginBox(
+                            qrUrl = sessionQrUrl,
+                            modifier = Modifier.weight(1.1f).aspectRatio(1f)
+                        )
+                        Spacer(modifier = Modifier.width(48.dp))
+                        ScanCustomerInstructionBox(
+                            navController = navController,
+                            appViewModel = appViewModel,
+                            modifier = Modifier.weight(1.2f)
+                        )
+                    }
                 }
             }
         }

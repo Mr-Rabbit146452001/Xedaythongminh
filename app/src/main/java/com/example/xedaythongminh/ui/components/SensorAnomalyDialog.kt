@@ -39,7 +39,8 @@ import kotlinx.coroutines.delay
  * Chặn toàn bộ tính năng của ứng dụng (BackHandler, dismissOnClickOutside = false)
  * và CHỈ mở khóa khi:
  * 1. Đã quét mã vạch hợp lệ từ hệ thống (GM65 / Camera / đầu quét).
- * 2. HOẶC có tín hiệu Time Out (sau khi hết thời gian chờ đếm ngược).
+ * 2. HOẶC nhận diện mở khóa tự động từ Raspberry Pi qua Server polling.
+ * 3. HOẶC nhân viên siêu thị can thiệp bằng Mã PIN quản trị (Staff Override PIN).
  */
 @Composable
 fun SensorAnomalyDialog(
@@ -51,11 +52,9 @@ fun SensorAnomalyDialog(
 ) {
     // 1. Chặn tuyệt đối phím Back hệ thống
     BackHandler(enabled = true) {
-        // Khóa hoàn toàn, không cho thoát khi chưa xử lý
+        // Khóa hoàn toàn, không cho thoát khi chưa xử lý quét mã vạch
     }
 
-    var remainingSeconds by remember { mutableIntStateOf(30) }
-    var isTimedOut by remember { mutableStateOf(false) }
     var scanInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
@@ -65,24 +64,15 @@ fun SensorAnomalyDialog(
     var staffPinError by remember { mutableStateOf<String?>(null) }
     val focusRequester = remember { FocusRequester() }
 
-    // 2. Bộ đếm ngược Timeout 30 giây
-    LaunchedEffect(isTimedOut) {
-        if (!isTimedOut) {
-            try {
-                delay(250L)
-                focusRequester.requestFocus()
-            } catch (ignored: Exception) {}
-
-            while (remainingSeconds > 0) {
-                delay(1000L)
-                remainingSeconds--
-            }
-            isTimedOut = true
-            onTimeout()
-        }
+    // Tự động focus để sẵn sàng đón nhận mã vạch từ đầu đọc GM65 / HID wedge
+    LaunchedEffect(Unit) {
+        try {
+            delay(250L)
+            focusRequester.requestFocus()
+        } catch (ignored: Exception) {}
     }
 
-    // Hiệu ứng nhịp đập cảnh báo
+    // Hiệu ứng nhịp đập cảnh báo & radar beacon
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseScale by infiniteTransition.animateFloat(
         initialValue = 0.95f,
@@ -102,13 +92,6 @@ fun SensorAnomalyDialog(
         ),
         label = "alpha"
     )
-
-    val animatedProgress by animateFloatAsState(
-        targetValue = remainingSeconds / 20f,
-        label = "countdown_progress"
-    )
-
-    val alertColor = if (isTimedOut) Color(0xFFB91C1C) else anomaly.primaryColor
 
     fun processBarcodeScan(rawInput: String) {
         val cleanCode = rawInput.replace("\n", "").trim()
@@ -136,462 +119,607 @@ fun SensorAnomalyDialog(
             usePlatformDefaultWidth = false
         )
     ) {
-        Card(
+        SensorAnomalyDialogContent(
+            anomaly = anomaly,
+            scanInput = scanInput,
+            onScanInputChange = { input ->
+                scanInput = input
+                if (input.contains("\n") || input.length >= 13) {
+                    processBarcodeScan(input)
+                }
+            },
+            onConfirmScan = { processBarcodeScan(scanInput) },
+            errorMessage = errorMessage,
+            successMessage = successMessage,
+            isChecking = isChecking,
+            focusRequester = focusRequester,
+            pulseScale = pulseScale,
+            pulseAlpha = pulseAlpha,
+            onRequestStaffPin = {
+                staffPinInput = ""
+                staffPinError = null
+                showStaffPinDialog = true
+            },
+            onSecondaryAction = onSecondaryAction
+        )
+    }
+
+    // Popup nhập mã PIN dành cho Nhân viên can thiệp xử lý sự cố
+    if (showStaffPinDialog) {
+        StaffPinDialog(
+            pinInput = staffPinInput,
+            onPinInputChange = { input ->
+                if (input.length <= 6 && input.all { it.isDigit() }) {
+                    staffPinInput = input
+                }
+            },
+            errorMessage = staffPinError,
+            onConfirm = {
+                if (staffPinInput == "1234" || staffPinInput == "9999" || staffPinInput == "8888") {
+                    showStaffPinDialog = false
+                    onResolve()
+                } else {
+                    staffPinError = "Mã PIN không chính xác!"
+                }
+            },
+            onDismiss = { showStaffPinDialog = false }
+        )
+    }
+}
+
+/**
+ * SensorAnomalyDialogContent: Component nội dung chính của Popup cảnh báo
+ * Thời gian quét GM65 là không giới hạn, hiển thị "Đang chờ quét mã vạch", không nhảy sang màn hình khóa bảo mật.
+ */
+@Composable
+fun SensorAnomalyDialogContent(
+    anomaly: SensorAnomaly,
+    scanInput: String = "",
+    onScanInputChange: (String) -> Unit = {},
+    onConfirmScan: () -> Unit = {},
+    errorMessage: String? = null,
+    successMessage: String? = null,
+    isChecking: Boolean = false,
+    focusRequester: FocusRequester? = null,
+    pulseScale: Float = 1.0f,
+    pulseAlpha: Float = 0.85f,
+    onRequestStaffPin: () -> Unit = {},
+    onSecondaryAction: (() -> Unit)? = null
+) {
+    val alertColor = anomaly.primaryColor
+
+    Card(
+        modifier = Modifier
+            .padding(20.dp)
+            .widthIn(min = 480.dp, max = 580.dp)
+            .fillMaxWidth(0.92f),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        border = BorderStroke(2.dp, alertColor.copy(alpha = pulseAlpha)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+    ) {
+        Column(
             modifier = Modifier
-                .padding(20.dp)
-                .widthIn(min = 480.dp, max = 580.dp)
-                .fillMaxWidth(0.92f),
-            shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = BorderStroke(2.dp, alertColor.copy(alpha = pulseAlpha)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 16.dp)
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column(
+            // 1. Header: Icon nhịp đập & Huy hiệu phân loại
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .size(68.dp)
+                    .scale(pulseScale)
+                    .background(alertColor.copy(alpha = 0.12f), CircleShape)
+                    .border(2.dp, alertColor.copy(alpha = 0.6f), CircleShape),
+                contentAlignment = Alignment.Center
             ) {
-                // 1. Header: Icon nhịp đập & Huy hiệu phân loại
-                Box(
-                    modifier = Modifier
-                        .size(68.dp)
-                        .scale(if (!isTimedOut) pulseScale else 1.0f)
-                        .background(alertColor.copy(alpha = 0.12f), CircleShape)
-                        .border(2.dp, alertColor.copy(alpha = 0.6f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isTimedOut) Icons.Default.TimerOff else Icons.Default.QrCodeScanner,
-                        contentDescription = "Alert Icon",
-                        tint = alertColor,
-                        modifier = Modifier.size(36.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Huy hiệu trạng thái
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = alertColor.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, alertColor.copy(alpha = 0.35f))
-                ) {
-                    Text(
-                        text = if (isTimedOut) "HẾT THỜI GIAN (TIMEOUT)" else anomaly.type.badgeText,
-                        color = alertColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        letterSpacing = 0.6.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // 2. Tiêu đề cảnh báo
-                Text(
-                    text = if (isTimedOut) "ĐÃ HẾT THỜI GIAN CHỜ QUÉT MÃ" else "YÊU CẦU QUÉT MÃ VẠCH SẢN PHẨM",
-                    color = alertColor,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 26.sp
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = "Alert Icon",
+                    tint = alertColor,
+                    modifier = Modifier.size(36.dp)
                 )
+            }
 
-                Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-                // 3. Nội dung mô tả chi tiết
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFFF8FAFC),
-                    border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            // Huy hiệu trạng thái
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = alertColor.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, alertColor.copy(alpha = 0.35f))
+            ) {
+                Text(
+                    text = anomaly.type.badgeText,
+                    color = alertColor,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    letterSpacing = 0.6.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 2. Tiêu đề cảnh báo
+            Text(
+                text = anomaly.displayTitle,
+                color = alertColor,
+                fontSize = 20.sp,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center,
+                lineHeight = 26.sp
+            )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // 3. Nội dung mô tả chi tiết
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = Color(0xFFF8FAFC),
+                border = BorderStroke(1.dp, Color(0xFFE2E8F0))
+            ) {
+                Text(
+                    text = anomaly.displayDescription,
+                    fontSize = 14.sp,
+                    color = Color(0xFF334155),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 21.sp,
+                    modifier = Modifier.padding(14.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 4. Khung trạng thái không giới hạn thời gian: "Đang chờ quét mã vạch"
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = LightBlueBg.copy(alpha = 0.6f),
+                border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.35f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text(
-                        text = if (isTimedOut) {
-                            "Hệ thống không nhận được mã vạch hợp lệ trong thời gian quy định.\nĐể tiếp tục mua sắm, vui lòng lấy sản phẩm vừa bỏ vào ra khỏi giỏ xe hoặc liên hệ nhân viên hỗ trợ."
-                        } else {
-                            "Hệ thống cảm biến xe đẩy (Raspberry Pi & Cân tải trọng) ghi nhận có sản phẩm vừa được bỏ vào giỏ nhưng Camera AI chưa nhận diện được mã vạch."
-                        },
-                        fontSize = 14.sp,
-                        color = Color(0xFF334155),
-                        textAlign = TextAlign.Center,
-                        lineHeight = 21.sp,
-                        modifier = Modifier.padding(14.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                if (!isTimedOut) {
-                    // TRẠNG THÁI ĐANG ĐẾM NGƯỢC CHỜ QUÉT MÃ VẠCH
-
-                    // Thanh tiến trình đếm ngược thời gian chờ Timeout
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF1F5F9), RoundedCornerShape(14.dp))
-                            .padding(12.dp)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f)
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
+                        // Vòng tròn nhấp nháy phát tín hiệu
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .scale(pulseScale)
+                                .background(PrimaryBlue.copy(alpha = 0.18f), CircleShape),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = Icons.Default.Timer,
-                                    contentDescription = null,
-                                    tint = if (remainingSeconds <= 5) Color(0xFFDC2626) else PrimaryBlue,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "Thời gian chờ quét:",
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = Color(0xFF475569)
-                                )
-                            }
-                            Text(
-                                text = "${remainingSeconds}s",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (remainingSeconds <= 5) Color(0xFFDC2626) else PrimaryBlue
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(PrimaryBlue, CircleShape)
                             )
                         }
-
-                        Spacer(modifier = Modifier.height(8.dp))
-
-                        LinearProgressIndicator(
-                            progress = { animatedProgress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = if (remainingSeconds <= 5) Color(0xFFDC2626) else PrimaryBlue,
-                            trackColor = Color(0xFFCBD5E1)
-                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = "Đang chờ quét mã vạch",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlue
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = "Thời gian quét: Không giới hạn",
+                                fontSize = 12.sp,
+                                color = Color(0xFF475569)
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Khung hướng dẫn hành động
                     Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(12.dp),
-                        color = alertColor.copy(alpha = 0.05f),
-                        border = BorderStroke(1.dp, alertColor.copy(alpha = 0.2f))
+                        shape = RoundedCornerShape(8.dp),
+                        color = PrimaryBlue.copy(alpha = 0.1f),
+                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f))
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Lightbulb,
-                                contentDescription = "Hướng dẫn",
-                                tint = alertColor,
-                                modifier = Modifier.size(20.dp)
+                                imageVector = Icons.Default.QrCodeScanner,
+                                contentDescription = null,
+                                tint = PrimaryBlue,
+                                modifier = Modifier.size(15.dp)
                             )
-                            Spacer(modifier = Modifier.width(8.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = "Đưa mã vạch của sản phẩm vào trước đầu đọc GM65 trên xe đẩy. Sau khi quét thành công, xe sẽ tự động mở khóa.",
-                                fontSize = 13.sp,
-                                color = Color(0xFF1E293B),
-                                lineHeight = 18.sp
+                                text = "GM65 Live",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = PrimaryBlue
                             )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Ô nhận diện mã vạch tự động (Auto-focus cho đầu đọc GM65 / Bàn phím HID)
-                    OutlinedTextField(
-                        value = scanInput,
-                        onValueChange = { input ->
-                            scanInput = input
-                            if (input.contains("\n") || input.length >= 13) {
-                                processBarcodeScan(input)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester),
-                        placeholder = { Text("Đang chờ mắt đọc mã vạch GM65...", fontSize = 13.sp) },
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
-                        },
-                        trailingIcon = {
-                            if (isChecking) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = PrimaryBlue)
-                            } else {
-                                IconButton(onClick = { processBarcodeScan(scanInput) }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Xác nhận", tint = PrimaryBlue)
-                                }
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryBlue,
-                            unfocusedBorderColor = BorderGray
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    // Thông báo trạng thái quét
-                    if (errorMessage != null) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = errorMessage!!,
-                                color = Color(0xFFDC2626),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                        }
-                    }
-
-                    if (successMessage != null) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = successMessage!!,
-                                color = Color(0xFF16A34A),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                } else {
-                    // TRẠNG THÁI TIMEOUT: Khóa bảo mật tuyệt đối - Chỉ mở khóa khi quét GM65 hoặc Nhân viên nhập PIN
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        color = Color(0xFFFEF2F2),
-                        border = BorderStroke(1.5.dp, Color(0xFFFCA5A5))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(14.dp)
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(20.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "HỆ THỐNG ĐANG BỊ KHÓA AN TOÀN",
-                                    fontWeight = FontWeight.ExtraBold,
-                                    fontSize = 13.sp,
-                                    color = Color(0xFF991B1B)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "Hệ thống chỉ mở khóa khi nhận được tín hiệu quét sản phẩm hợp lệ từ đầu đọc GM65 trên xe đẩy, hoặc khi có nhân viên siêu thị hỗ trợ.",
-                                fontSize = 12.sp,
-                                color = Color(0xFF7F1D1D),
-                                lineHeight = 17.sp
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    // Ô nhận diện mã vạch GM65 vẫn duy trì hoạt động liên tục
-                    OutlinedTextField(
-                        value = scanInput,
-                        onValueChange = { input ->
-                            scanInput = input
-                            if (input.contains("\n") || input.length >= 13) {
-                                processBarcodeScan(input)
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester),
-                        placeholder = { Text("Đưa mã vạch vào mắt đọc GM65 trên xe...", fontSize = 13.sp) },
-                        singleLine = true,
-                        leadingIcon = {
-                            Icon(Icons.Default.QrCodeScanner, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(20.dp))
-                        },
-                        trailingIcon = {
-                            if (isChecking) {
-                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = PrimaryBlue)
-                            } else {
-                                IconButton(onClick = { processBarcodeScan(scanInput) }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Xác nhận", tint = PrimaryBlue)
-                                }
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = PrimaryBlue,
-                            unfocusedBorderColor = BorderGray
-                        ),
-                        shape = RoundedCornerShape(12.dp)
-                    )
-
-                    if (errorMessage != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = errorMessage!!,
-                            color = Color(0xFFDC2626),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        OutlinedButton(
-                            onClick = {
-                                remainingSeconds = 30
-                                isTimedOut = false
-                                errorMessage = null
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, PrimaryBlue)
-                        ) {
-                            Icon(Icons.Default.Refresh, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("TIẾP TỤC QUÉT GM65", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = PrimaryBlue)
-                        }
-
-                        Button(
-                            onClick = { 
-                                staffPinInput = ""
-                                staffPinError = null
-                                showStaffPinDialog = true 
-                            },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(46.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF334155))
-                        ) {
-                            Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("MÃ PIN NHÂN VIÊN", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                        }
-                    }
-
-                    if (onSecondaryAction != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        TextButton(
-                            onClick = onSecondaryAction,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Icon(Icons.Default.SupportAgent, contentDescription = null, tint = Color(0xFF64748B), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Liên hệ nhân viên siêu thị hỗ trợ", fontSize = 12.sp, color = Color(0xFF64748B))
                         }
                     }
                 }
             }
-        }
 
-        // Popup nhập mã PIN dành cho Nhân viên can thiệp xử lý sự cố
-        if (showStaffPinDialog) {
-            AlertDialog(
-                onDismissRequest = { showStaffPinDialog = false },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Xác Nhận Nhân Viên", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    }
-                },
-                text = {
-                    Column {
-                        Text(
-                            text = "Nhập mã PIN nhân viên (mặc định: 1234) để mở khóa xe đẩy nếu sản phẩm đã được kiểm tra thực tế.",
-                            fontSize = 13.sp,
-                            color = Color(0xFF475569)
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        OutlinedTextField(
-                            value = staffPinInput,
-                            onValueChange = { input ->
-                                if (input.length <= 6 && input.all { it.isDigit() }) {
-                                    staffPinInput = input
-                                }
-                            },
-                            placeholder = { Text("Nhập mã PIN...") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = staffPinError != null
-                        )
-                        if (staffPinError != null) {
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(text = staffPinError!!, color = Color(0xFFDC2626), fontSize = 12.sp)
-                        }
-                    }
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (staffPinInput == "1234" || staffPinInput == "9999" || staffPinInput == "8888") {
-                                showStaffPinDialog = false
-                                onResolve()
-                            } else {
-                                staffPinError = "Mã PIN không chính xác!"
-                            }
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // 5. Khung hướng dẫn hành động
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                color = alertColor.copy(alpha = 0.05f),
+                border = BorderStroke(1.dp, alertColor.copy(alpha = 0.2f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lightbulb,
+                        contentDescription = "Hướng dẫn",
+                        tint = alertColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = anomaly.actionGuide,
+                        fontSize = 13.sp,
+                        color = Color(0xFF1E293B),
+                        lineHeight = 18.sp
+                    )
+                }
+            }
+
+            // 6. Ô nhận diện mã vạch tự động (Auto-focus cho đầu đọc GM65 / Bàn phím HID)
+            val tfModifier = if (focusRequester != null) {
+                Modifier.size(1.dp).focusRequester(focusRequester)
+            } else {
+                Modifier.size(1.dp)
+            }
+            androidx.compose.foundation.text.BasicTextField(
+                value = scanInput,
+                onValueChange = onScanInputChange,
+                modifier = tfModifier,
+                singleLine = true
+            )
+
+            // 7. Thông báo trạng thái quét
+            if (isChecking) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = PrimaryBlue
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Đang kiểm tra sản phẩm trong hệ thống...",
+                        color = PrimaryBlue,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+
+            if (errorMessage != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.ErrorOutline, contentDescription = null, tint = Color(0xFFDC2626), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = errorMessage,
+                        color = Color(0xFFDC2626),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            if (successMessage != null) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color(0xFF16A34A), modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = successMessage,
+                        color = Color(0xFF16A34A),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 8. Nút thao tác dưới cùng (Mã PIN nhân viên & Hỗ trợ)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onRequestStaffPin,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(44.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.5f))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = PrimaryBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "MÃ PIN NHÂN VIÊN",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryBlue
+                    )
+                }
+
+                if (onSecondaryAction != null) {
+                    TextButton(
+                        onClick = onSecondaryAction,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(44.dp),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Mở Khóa Xe")
-                    }
-                },
-                dismissButton = {
-                    OutlinedButton(onClick = { showStaffPinDialog = false }) {
-                        Text("Hủy")
+                        Icon(
+                            imageVector = Icons.Default.SupportAgent,
+                            contentDescription = null,
+                            tint = Color(0xFF64748B),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Hỗ trợ",
+                            fontSize = 12.sp,
+                            color = Color(0xFF64748B),
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
-            )
+            }
         }
     }
 }
 
-@Preview(showBackground = true, widthDp = 800, heightDp = 600, name = "Sensor Anomaly - Active Waiting")
+/**
+ * StaffPinDialog: Hộp thoại xác thực mã PIN dành cho nhân viên siêu thị can thiệp
+ */
 @Composable
-fun SensorAnomalyDialogActivePreview() {
+fun StaffPinDialog(
+    pinInput: String,
+    onPinInputChange: (String) -> Unit,
+    errorMessage: String?,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.AdminPanelSettings, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(24.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Xác Nhận Nhân Viên", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            }
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Nhập mã PIN nhân viên (mặc định: 1234) để mở khóa xe đẩy nếu sản phẩm đã được kiểm tra thực tế.",
+                    fontSize = 13.sp,
+                    color = Color(0xFF475569)
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = pinInput,
+                    onValueChange = onPinInputChange,
+                    placeholder = { Text("Nhập mã PIN...") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = errorMessage != null
+                )
+                if (errorMessage != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(text = errorMessage, color = Color(0xFFDC2626), fontSize = 12.sp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
+            ) {
+                Text("Mở Khóa Xe")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Hủy")
+            }
+        }
+    )
+}
+
+// ==========================================
+// CÁC HÀM @PREVIEW TRỰC QUAN ĐẦY ĐỦ CÁC TRẠNG THÁI TRÊN ANDROID STUDIO
+// ==========================================
+
+@Composable
+private fun SensorAnomalyPreviewContainer(
+    content: @Composable () -> Unit
+) {
     MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            SensorAnomalyDialog(
-                anomaly = SensorAnomaly(type = AnomalyType.PI_UNRECOGNIZED_ITEM),
-                onScanBarcode = { _, _ -> },
-                onResolve = {},
-                onTimeout = {}
-            )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x990F172A)), // Lớp nền tối mờ chân thực mô phỏng Dialog
+            contentAlignment = Alignment.Center
+        ) {
+            content()
         }
     }
 }
 
-@Preview(showBackground = true, widthDp = 800, heightDp = 600, name = "Sensor Anomaly - Timed Out")
+/**
+ * 1. Xem trước: Trạng thái đang chờ quét GM65 không giới hạn thời gian (Active Waiting)
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "1. Đang Chờ Quét Mã Vạch (Không Giới Hạn)"
+)
 @Composable
-fun SensorAnomalyDialogTimedOutPreview() {
-    MaterialTheme {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            SensorAnomalyDialog(
-                anomaly = SensorAnomaly(type = AnomalyType.PI_UNRECOGNIZED_ITEM),
-                onScanBarcode = { _, _ -> },
-                onResolve = {},
-                onTimeout = {},
-                onSecondaryAction = {}
-            )
-        }
+fun PreviewSensorAnomalyActiveWaiting() {
+    SensorAnomalyPreviewContainer {
+        SensorAnomalyDialogContent(
+            anomaly = SensorAnomaly(type = AnomalyType.PI_UNRECOGNIZED_ITEM),
+            scanInput = "",
+            pulseScale = 1.05f,
+            pulseAlpha = 0.8f
+        )
+    }
+}
+
+/**
+ * 2. Xem trước: Trạng thái yêu cầu quét mã khi thêm sản phẩm chưa xác nhận
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "2. Yêu Cầu Quét Mã GM65 (Unrecognized Item)"
+)
+@Composable
+fun PreviewSensorAnomalyUnrecognizedItem() {
+    SensorAnomalyPreviewContainer {
+        SensorAnomalyDialogContent(
+            anomaly = SensorAnomaly(type = AnomalyType.WEIGHT_ADD_UNCONFIRMED),
+            scanInput = "",
+            pulseScale = 1.0f,
+            pulseAlpha = 0.85f,
+            onSecondaryAction = {}
+        )
+    }
+}
+
+/**
+ * 3. Xem trước: Trạng thái quét mã vạch không hợp lệ / không có trong CSDL (Error)
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "3. Lỗi Mã Vạch Không Tồn Tại (Scan Error)"
+)
+@Composable
+fun PreviewSensorAnomalyScanError() {
+    SensorAnomalyPreviewContainer {
+        SensorAnomalyDialogContent(
+            anomaly = SensorAnomaly(type = AnomalyType.PI_UNRECOGNIZED_ITEM),
+            scanInput = "893999999999",
+            errorMessage = "Mã vạch '893999999999' không tồn tại trong hệ thống siêu thị!",
+            pulseScale = 1.02f,
+            pulseAlpha = 0.75f
+        )
+    }
+}
+
+/**
+ * 4. Xem trước: Trạng thái nhận diện thành công sau khi quét GM65 (Success)
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "4. Quét Thành Công (Scan Success)"
+)
+@Composable
+fun PreviewSensorAnomalyScanSuccess() {
+    SensorAnomalyPreviewContainer {
+        SensorAnomalyDialogContent(
+            anomaly = SensorAnomaly(type = AnomalyType.PI_UNRECOGNIZED_ITEM),
+            scanInput = "8934563123456",
+            successMessage = "✓ Đã nhận diện thành công: Sữa Tươi Tiệt Trùng Vinamilk 100%!",
+            pulseScale = 1.0f,
+            pulseAlpha = 0.6f
+        )
+    }
+}
+
+/**
+ * 5. Xem trước: Trạng thái cảnh báo sai lệch dung sai cân nặng (Weight Tolerance Anomaly)
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "5. Cảnh Báo Lệch Cân Nặng (Weight Mismatch)"
+)
+@Composable
+fun PreviewSensorAnomalyWeightTolerance() {
+    SensorAnomalyPreviewContainer {
+        SensorAnomalyDialogContent(
+            anomaly = SensorAnomaly(type = AnomalyType.WEIGHT_OUT_OF_TOLERANCE),
+            scanInput = "",
+            pulseScale = 1.04f,
+            pulseAlpha = 0.8f
+        )
+    }
+}
+
+/**
+ * 6. Xem trước: Trực quan trên màn hình Tablet xe đẩy nằm ngang (Landscape 1024x600)
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 1024,
+    heightDp = 600,
+    name = "6. Xe Đẩy Màn Hình Ngang (Landscape Tablet)"
+)
+@Composable
+fun PreviewSensorAnomalyTabletLandscape() {
+    SensorAnomalyPreviewContainer {
+        SensorAnomalyDialogContent(
+            anomaly = SensorAnomaly(type = AnomalyType.PI_UNRECOGNIZED_ITEM),
+            scanInput = "",
+            pulseScale = 1.03f,
+            pulseAlpha = 0.8f
+        )
+    }
+}
+
+/**
+ * 7. Xem trước: Hộp thoại Nhập Mã PIN Nhân Viên Mở Khóa (Staff PIN Dialog)
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "7. Hộp Thoại Mã PIN Nhân Viên (Staff PIN)"
+)
+@Composable
+fun PreviewStaffPinDialog() {
+    SensorAnomalyPreviewContainer {
+        StaffPinDialog(
+            pinInput = "1234",
+            onPinInputChange = {},
+            errorMessage = null,
+            onConfirm = {},
+            onDismiss = {}
+        )
     }
 }
