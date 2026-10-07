@@ -43,9 +43,9 @@ fun ScanCustomerScreen(
     val sessionQrUrl by appViewModel.sessionQrUrl.collectAsState()
     val userState by appViewModel.userState.collectAsState()
 
-    // 1. Khởi động phiên đăng nhập QR Zalo-style khi vào màn hình
+    // 1. Khởi động phiên đăng nhập QR Zalo-style khi vào màn hình (đồng thời đóng phiên cũ nếu có)
     LaunchedEffect(Unit) {
-        appViewModel.logoutUser()
+        appViewModel.completeActiveSession()
         appViewModel.startQrLoginSession()
     }
 
@@ -236,6 +236,7 @@ fun ScanCustomerInstructionBox(
             GlassButton(
                 onClick = {
                     appViewModel.stopQrLoginSession()
+                    appViewModel.completeActiveSession()
                     navController.navigate("welcome") { popUpTo("welcome") { inclusive = true } }
                 },
                 modifier = Modifier.weight(0.85f).height(52.dp),
@@ -254,11 +255,9 @@ fun ScanCustomerInstructionBox(
             
             GlassButton(
                 onClick = {
-                    // Dừng phiên polling đăng nhập QR trước khi chuyển màn hình
+                    // Dừng phiên polling đăng nhập QR và kích hoạt tạo phiên mới UUID trên Server
                     appViewModel.stopQrLoginSession()
-                    if (appViewModel.activeSessionId.value.isNullOrBlank()) {
-                        appViewModel.syncOrAttachSession(forceNew = false)
-                    }
+                    appViewModel.createShoppingSession(forceNew = true)
                     navController.navigate("scan_product") {
                         popUpTo("scan_customer") { inclusive = true }
                     }

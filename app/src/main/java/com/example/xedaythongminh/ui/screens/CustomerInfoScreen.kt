@@ -253,9 +253,7 @@ fun CustomerInfoScreen(
                     ) {
                         Button(
                             onClick = { 
-                                if (appViewModel.activeSessionId.value.isNullOrBlank()) {
-                                    appViewModel.syncOrAttachSession(forceNew = false)
-                                }
+                                appViewModel.createShoppingSession(forceNew = true)
                                 navController.navigate("scan_product") 
                             },
                             modifier = Modifier.fillMaxWidth().height(46.dp),
@@ -269,7 +267,7 @@ fun CustomerInfoScreen(
 
                         OutlinedButton(
                             onClick = {
-                                appViewModel.logoutUser()
+                                appViewModel.completeActiveSession()
                                 navController.popBackStack()
                             },
                             modifier = Modifier.fillMaxWidth().height(46.dp),

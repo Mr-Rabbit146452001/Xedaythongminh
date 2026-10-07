@@ -46,9 +46,9 @@ fun SessionEndedScreen(
         // Chặn phím Back
     }
 
-    // Logic to clear all local session variables when this screen is initialized
+    // Đóng phiên hoàn toàn trên Server và dọn dẹp bộ nhớ khi vào màn hình
     LaunchedEffect(Unit) {
-        appViewModel.clearSession()
+        appViewModel.completeActiveSession()
     }
 
     LaunchedEffect(Unit) {
@@ -233,7 +233,7 @@ fun SessionEndedScreen(
                             
                             GlassButton(
                                 onClick = { 
-                                    appViewModel.terminateSessionImmediately()
+                                    appViewModel.completeActiveSession()
                                     navController.navigate("welcome") {
                                         popUpTo(0) { inclusive = true }
                                     } 

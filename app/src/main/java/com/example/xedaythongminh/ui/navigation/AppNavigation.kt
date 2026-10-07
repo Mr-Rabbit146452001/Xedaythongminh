@@ -70,6 +70,26 @@ fun AppNavigation(
     val isConnected by appViewModel.isServerConnected.collectAsState()
     var showSettingsDialog by remember { mutableStateOf(false) }
 
+    // Tự động kiểm soát vòng đời phiên mua sắm theo điều hướng màn hình
+    androidx.compose.runtime.DisposableEffect(navController) {
+        val listener = androidx.navigation.NavController.OnDestinationChangedListener { _, destination, _ ->
+            when (destination.route) {
+                "welcome", "scan_customer" -> {
+                    android.util.Log.d("SmartCart_Nav", "Chuyển màn hình về ${destination.route}: Đóng phiên active trên Server")
+                    appViewModel.completeActiveSession()
+                }
+                "payment_success", "session_ended" -> {
+                    android.util.Log.d("SmartCart_Nav", "Chuyển màn hình vào ${destination.route}: Đóng phiên active trên Server")
+                    appViewModel.completeActiveSession()
+                }
+            }
+        }
+        navController.addOnDestinationChangedListener(listener)
+        onDispose {
+            navController.removeOnDestinationChangedListener(listener)
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(navController = navController, startDestination = "splash") {
             composable("splash") {

@@ -538,7 +538,7 @@ class AppViewModel constructor(
     private var isSessionOperationInProgress = false
 
     fun syncOrAttachSession(forceNew: Boolean = false, onSuccess: (String) -> Unit = {}) {
-        if (isSessionOperationInProgress) return
+        if (!forceNew && isSessionOperationInProgress) return
         isSessionOperationInProgress = true
         if (forceNew) {
             resetSessionStartCartCheck()
@@ -556,16 +556,18 @@ class AppViewModel constructor(
                         return@launch
                     }
                 } else {
-                    // Nếu ép tạo mới, hoàn thành phiên cũ nếu còn
+                    // Nếu ép tạo mới, hoàn thành phiên cũ nếu còn trên Server
                     val oldSession = _activeSessionId.value
                     if (!oldSession.isNullOrBlank()) {
                         try {
                             com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(oldSession)
                         } catch (_: Exception) {}
                     }
+                    _cartItemsState.value = emptyList()
+                    cartRepository.clearCart()
                 }
 
-                // 2. Tạo phiên mới trên server
+                // 2. Tạo phiên mới trên server (POST /api/v1/sessions)
                 val res = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.createSessionV1()
                 if (res.isSuccessful && res.body() != null) {
                     val sId = res.body()!!.id
@@ -582,9 +584,11 @@ class AppViewModel constructor(
                 isSessionOperationInProgress = false
             }
 
-            if (_activeSessionId.value.isNullOrBlank()) {
+            if (_activeSessionId.value.isNullOrBlank() || forceNew) {
                 val localSessionId = "SESSION_${System.currentTimeMillis()}"
                 _activeSessionId.value = localSessionId
+                _cartItemsState.value = emptyList()
+                cartRepository.clearCart()
                 onSuccess(localSessionId)
             } else {
                 onSuccess(_activeSessionId.value!!)
@@ -596,19 +600,61 @@ class AppViewModel constructor(
         syncOrAttachSession(forceNew = forceNew, onSuccess = onSuccess)
     }
 
-    fun completeShoppingSession(onSuccess: () -> Unit = {}) {
-        val sId = _activeSessionId.value ?: "SESSION_DEFAULT"
+    /**
+     * Đóng phiên mua sắm đang hoạt động trên Server (POST /api/v1/sessions/{id}/complete)
+     * và dọn dẹp toàn bộ dữ liệu trạng thái giỏ hàng, thông tin khách hàng.
+     */
+    fun completeActiveSession(onSuccess: () -> Unit = {}) {
+        val sId = _activeSessionId.value
+        _activeSessionId.value = null
+
+        // BẢO MẬT: Xóa trắng RAM ngay lập tức trên UI Thread để tránh rò rỉ phiên
+        _userState.value = null
+        _cartItemsState.value = emptyList()
+        _isPaymentCompleted.value = false
+        _hasUnscannedProduct.value = false
+        _activeAnomaly.value = null
+        _paymentQrContent.value = null
+        _qrSessionData.value = null
+        _isQrExpired.value = false
+        _lastCompletedCartItems.value = emptyList()
+        _sessionQrUrl.value = null
+        _lastScannedItem.value = null
+        _scanEventTimestamp.value = 0L
+        _cartNotificationState.value = null
+        _isCartLocked.value = false
+        _lockedCartSnapshot.value = null
+        _invalidScannedProduct.value = null
+        _hasLeftoverCartItemsOnStart.value = false
+        resetSessionStartCartCheck()
+        notificationJob?.cancel()
+        qrPollingJob?.cancel()
+        paymentPollingJob?.cancel()
+
         viewModelScope.launch {
             try {
-                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(sId)
-            } catch (e: Exception) {
-                // ignore
-            } finally {
-                _cartItemsState.value = emptyList()
                 cartRepository.clearCart()
+                if (!sId.isNullOrBlank()) {
+                    try {
+                        android.util.Log.d("SmartCart_Session", "Gửi API completeSessionV1 đóng phiên: $sId")
+                        com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(sId)
+                    } catch (e: Exception) {
+                        android.util.Log.e("SmartCart_Session", "Lỗi gửi completeSessionV1 ($sId): ${e.message}")
+                    }
+                    try {
+                        com.example.xedaythongminh.data.remote.RetrofitClient.apiService.logoutAuthSession(mapOf("sessionId" to sId))
+                    } catch (_: Exception) {}
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SmartCart_Session", "Lỗi dọn dẹp phiên: ${e.message}")
+            } finally {
                 onSuccess()
             }
         }
+    }
+
+    fun completeShoppingSession(onSuccess: () -> Unit = {}) {
+        completeActiveSession(onSuccess)
     }
 
     private fun startNetworkAndCartMonitoring() {
@@ -1052,56 +1098,15 @@ class AppViewModel constructor(
     }
 
     fun terminateSessionImmediately() {
-        // BẢO MẬT: Xóa trắng RAM ngay lập tức trên UI Thread để tránh rò rỉ phiên
-        _userState.value = null
-        _cartItemsState.value = emptyList()
-        _isPaymentCompleted.value = false
-        _hasUnscannedProduct.value = false
-        _activeAnomaly.value = null
-        _paymentQrContent.value = null
-        _qrSessionData.value = null
-        _isQrExpired.value = false
-        _lastCompletedCartItems.value = emptyList()
-        _sessionQrUrl.value = null
-        _lastScannedItem.value = null
-        _scanEventTimestamp.value = 0L
-        _cartNotificationState.value = null
-        _isCartLocked.value = false
-        _lockedCartSnapshot.value = null
-        _invalidScannedProduct.value = null
-        _hasLeftoverCartItemsOnStart.value = false
-        resetSessionStartCartCheck()
-        notificationJob?.cancel()
-        qrPollingJob?.cancel()
-        paymentPollingJob?.cancel()
-
-        val sId = _activeSessionId.value
-        _activeSessionId.value = null
-        viewModelScope.launch {
-            try {
-                cartRepository.clearCart()
-                if (!sId.isNullOrBlank()) {
-                    try {
-                        com.example.xedaythongminh.data.remote.RetrofitClient.apiService.completeSessionV1(sId)
-                    } catch (_: Exception) {}
-                    try {
-                        com.example.xedaythongminh.data.remote.RetrofitClient.apiService.logoutAuthSession(mapOf("sessionId" to sId))
-                    } catch (_: Exception) {}
-                }
-            } catch (e: Exception) {
-                // ignore
-            } finally {
-                createShoppingSession(forceNew = true)
-            }
-        }
+        completeActiveSession()
     }
 
     fun resetSessionAfterPayment() {
-        terminateSessionImmediately()
+        completeActiveSession()
     }
 
     fun clearSession() {
-        terminateSessionImmediately()
+        completeActiveSession()
     }
 
     fun clearError() {
