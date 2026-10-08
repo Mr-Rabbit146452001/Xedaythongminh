@@ -124,3 +124,12 @@ data class SensorAnomaly(
     val actionGuide: String get() = type.actionGuide
     val primaryColor: Color get() = Color(type.primaryColor)
 }
+
+/**
+ * Kết quả xác minh can thiệp mã PIN của nhân viên
+ */
+sealed class StaffVerificationResult {
+    object Success : StaffVerificationResult()
+    data class Mismatch(val warningMessage: String) : StaffVerificationResult()
+    data class Error(val message: String) : StaffVerificationResult()
+}

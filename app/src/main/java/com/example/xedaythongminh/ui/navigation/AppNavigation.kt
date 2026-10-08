@@ -172,8 +172,14 @@ fun AppNavigation(
                 onScanBarcode = { barcode, onResult ->
                     appViewModel.scanAndResolveUnscannedProduct(barcode, onResult)
                 },
+                onVerifyStaffPin = { pin, onResult ->
+                    appViewModel.verifyStaffPin(pin, onResult)
+                },
                 onResolve = {
                     appViewModel.resolveWeightAnomaly()
+                },
+                onAnomalyCorrected = {
+                    appViewModel.confirmAnomalyCorrectedByStaff()
                 }
             )
         }

@@ -18,6 +18,7 @@ import com.example.xedaythongminh.domain.model.InvalidProductViolation
 import com.example.xedaythongminh.domain.model.ViolationSource
 import com.example.xedaythongminh.domain.model.SensorAnomaly
 import com.example.xedaythongminh.domain.model.AnomalyType
+import com.example.xedaythongminh.domain.model.StaffVerificationResult
 
 class AppViewModel constructor(
     private val cartRepository: CartRepository,
@@ -41,6 +42,13 @@ class AppViewModel constructor(
 
     private val _hasUnscannedProduct = MutableStateFlow<Boolean>(false)
     val hasUnscannedProduct: StateFlow<Boolean> = _hasUnscannedProduct.asStateFlow()
+
+    // Ảnh chụp trạng thái danh sách giỏ hàng ngay trước khi xảy ra lỗi bất thường
+    private val _preAnomalyCartItems = MutableStateFlow<List<CartItem>>(emptyList())
+    val preAnomalyCartItems: StateFlow<List<CartItem>> = _preAnomalyCartItems.asStateFlow()
+
+    // Cờ ghi nhận nhân viên can thiệp xử lý thực tế đưa giỏ hàng về chuẩn
+    private val _isAnomalyCorrected = MutableStateFlow<Boolean>(false)
 
     private val _activeAnomaly = MutableStateFlow<SensorAnomaly?>(null)
     val activeAnomaly: StateFlow<SensorAnomaly?> = _activeAnomaly.asStateFlow()
@@ -154,6 +162,8 @@ class AppViewModel constructor(
     fun resolveWeightAnomaly() {
         _hasUnscannedProduct.value = false
         _activeAnomaly.value = null
+        _isAnomalyCorrected.value = false
+        _preAnomalyCartItems.value = emptyList()
         if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
             _invalidScannedProduct.value = null
         }
@@ -234,6 +244,10 @@ class AppViewModel constructor(
     }
 
     fun triggerSimulatedAnomaly(type: AnomalyType) {
+        if (!_hasUnscannedProduct.value) {
+            _preAnomalyCartItems.value = _cartItemsState.value.map { it.copy() }
+            _isAnomalyCorrected.value = false
+        }
         _hasUnscannedProduct.value = true
         _activeAnomaly.value = SensorAnomaly(type = type)
         viewModelScope.launch {
@@ -243,6 +257,65 @@ class AppViewModel constructor(
                 )
             } catch (ignored: Exception) {}
         }
+    }
+
+    /**
+     * Xác minh can thiệp mã PIN nhân viên (mã cố định 8888).
+     * Khi nhập mã pin đúng ("8888"):
+     * So sánh trạng thái giỏ hàng hiện tại với trạng thái giỏ hàng trước lỗi:
+     * - Nếu giống nhau: Lập tức đưa trạng thái giỏ hàng về bình thường.
+     * - Nếu khác nhau: Dựa vào sai lệch cân nặng mà đưa ra cảnh báo:
+     *   + Sai lệch tăng (thêm hàng chưa xác nhận): "Lấy hàng chưa được xác nhận ra khỏi giỏ hàng"
+     *   + Sai lệch giảm (bớt hàng đã xác nhận): "Bỏ món hàng đã được xác nhận thành công vào lại giỏ hàng"
+     */
+    fun verifyStaffPin(pin: String, onResult: (StaffVerificationResult) -> Unit) {
+        val cleanPin = pin.trim()
+        if (cleanPin != "8888") {
+            onResult(StaffVerificationResult.Error("Mã PIN không chính xác! Vui lòng nhập mã PIN nhân viên (8888)."))
+            return
+        }
+
+        val currentItems = _cartItemsState.value
+        val preItems = _preAnomalyCartItems.value
+        val currentAnomaly = _activeAnomaly.value
+        val isAnomalyActive = _hasUnscannedProduct.value
+
+        // So sánh danh sách giỏ hàng hiện tại với ảnh chụp trước lỗi
+        val isCartItemsIdentical = areCartItemsEqual(currentItems, preItems)
+
+        // Nếu trạng thái giỏ hàng giống nhau và không còn sai lệch cảm biến (hoặc nhân viên đã xác nhận xử lý thực tế):
+        if (isCartItemsIdentical && (!isAnomalyActive || _isAnomalyCorrected.value)) {
+            resolveWeightAnomaly()
+            onResult(StaffVerificationResult.Success)
+            return
+        }
+
+        // Nếu khác nhau: dựa vào loại sai lệch tải trọng để cảnh báo đúng tình huống
+        val isNegativeWeightDeviation = currentAnomaly?.type == AnomalyType.CAM2_OUTWARD_UNCONFIRMED ||
+                currentItems.sumOf { it.quantity } < preItems.sumOf { it.quantity }
+
+        val warningMessage = if (isNegativeWeightDeviation) {
+            "Bỏ món hàng đã được xác nhận thành công vào lại giỏ hàng"
+        } else {
+            "Lấy hàng chưa được xác nhận ra khỏi giỏ hàng"
+        }
+
+        onResult(StaffVerificationResult.Mismatch(warningMessage))
+    }
+
+    /**
+     * Nhân viên xác nhận đã khắc phục sai lệch thực tế trên xe đẩy (đã lấy hàng thừa ra hoặc đã bỏ hàng thiếu vào lại)
+     */
+    fun confirmAnomalyCorrectedByStaff() {
+        _isAnomalyCorrected.value = true
+        resolveWeightAnomaly()
+    }
+
+    private fun areCartItemsEqual(list1: List<CartItem>, list2: List<CartItem>): Boolean {
+        if (list1.size != list2.size) return false
+        val map1 = list1.associate { (it.product.sku.ifBlank { it.product.id }) to it.quantity }
+        val map2 = list2.associate { (it.product.sku.ifBlank { it.product.id }) to it.quantity }
+        return map1 == map2
     }
 
     fun triggerCartNotification(productName: String, type: NotificationType) {
@@ -841,6 +914,12 @@ class AppViewModel constructor(
                                 val data = statusResponse.body()?.data
                                 val hasUnscanned = data?.hasUnscannedProduct ?: false
                                 val wasUnscanned = _hasUnscannedProduct.value
+
+                                if (hasUnscanned && !wasUnscanned) {
+                                    // Chụp ảnh trạng thái giỏ hàng trước khi sự cố bất thường xảy ra
+                                    _preAnomalyCartItems.value = _cartItemsState.value.map { it.copy() }
+                                    _isAnomalyCorrected.value = false
+                                }
                                 _hasUnscannedProduct.value = hasUnscanned
 
                                 if (hasUnscanned) {

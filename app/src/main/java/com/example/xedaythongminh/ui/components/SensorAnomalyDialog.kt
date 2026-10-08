@@ -29,8 +29,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.xedaythongminh.domain.model.AnomalyType
 import com.example.xedaythongminh.domain.model.SensorAnomaly
+import com.example.xedaythongminh.domain.model.StaffVerificationResult
 import com.example.xedaythongminh.ui.theme.*
-import kotlinx.coroutines.delay
 
 /**
  * SensorAnomalyDialog: Popup bảo mật yêu cầu khách hàng quét mã vạch cho sản phẩm
@@ -40,13 +40,17 @@ import kotlinx.coroutines.delay
  * và CHỈ mở khóa khi:
  * 1. Đã quét mã vạch hợp lệ từ hệ thống (GM65 / Camera / đầu quét).
  * 2. HOẶC nhận diện mở khóa tự động từ Raspberry Pi qua Server polling.
- * 3. HOẶC nhân viên siêu thị can thiệp bằng Mã PIN quản trị (Staff Override PIN).
+ * 3. HOẶC nhân viên siêu thị can thiệp bằng Mã PIN quản trị (Staff Override PIN: 8888).
+ *
+ * Lưu ý: KHÔNG tự động hiển thị bàn phím ảo khi popup xuất hiện để tránh che khuất giao diện.
  */
 @Composable
 fun SensorAnomalyDialog(
     anomaly: SensorAnomaly,
     onScanBarcode: (String, (Boolean, String?) -> Unit) -> Unit = { _, _ -> },
+    onVerifyStaffPin: ((String, (StaffVerificationResult) -> Unit) -> Unit)? = null,
     onResolve: () -> Unit = {},
+    onAnomalyCorrected: () -> Unit = {},
     onTimeout: () -> Unit = {},
     onSecondaryAction: (() -> Unit)? = null
 ) {
@@ -58,19 +62,13 @@ fun SensorAnomalyDialog(
     var scanInput by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
+    var mismatchWarning by remember { mutableStateOf<String?>(null) }
     var isChecking by remember { mutableStateOf(false) }
+
     var showStaffPinDialog by remember { mutableStateOf(false) }
     var staffPinInput by remember { mutableStateOf("") }
     var staffPinError by remember { mutableStateOf<String?>(null) }
-    val focusRequester = remember { FocusRequester() }
-
-    // Tự động focus để sẵn sàng đón nhận mã vạch từ đầu đọc GM65 / HID wedge
-    LaunchedEffect(Unit) {
-        try {
-            delay(250L)
-            focusRequester.requestFocus()
-        } catch (ignored: Exception) {}
-    }
+    var staffPinWarning by remember { mutableStateOf<String?>(null) }
 
     // Hiệu ứng nhịp đập cảnh báo & radar beacon
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -103,6 +101,7 @@ fun SensorAnomalyDialog(
                 if (success) {
                     successMessage = "✓ Đã nhận diện thành công: ${resultInfo ?: cleanCode}!"
                     errorMessage = null
+                    mismatchWarning = null
                 } else {
                     errorMessage = resultInfo ?: "Mã vạch '$cleanCode' không tồn tại trong hệ thống siêu thị!"
                     scanInput = ""
@@ -131,20 +130,21 @@ fun SensorAnomalyDialog(
             onConfirmScan = { processBarcodeScan(scanInput) },
             errorMessage = errorMessage,
             successMessage = successMessage,
+            mismatchWarning = mismatchWarning,
             isChecking = isChecking,
-            focusRequester = focusRequester,
             pulseScale = pulseScale,
             pulseAlpha = pulseAlpha,
             onRequestStaffPin = {
                 staffPinInput = ""
                 staffPinError = null
+                staffPinWarning = null
                 showStaffPinDialog = true
             },
             onSecondaryAction = onSecondaryAction
         )
     }
 
-    // Popup nhập mã PIN dành cho Nhân viên can thiệp xử lý sự cố
+    // Popup nhập mã PIN dành cho Nhân viên can thiệp xử lý sự cố (Mã PIN: 8888)
     if (showStaffPinDialog) {
         StaffPinDialog(
             pinInput = staffPinInput,
@@ -154,13 +154,50 @@ fun SensorAnomalyDialog(
                 }
             },
             errorMessage = staffPinError,
+            warningMessage = staffPinWarning,
             onConfirm = {
-                if (staffPinInput == "1234" || staffPinInput == "9999" || staffPinInput == "8888") {
-                    showStaffPinDialog = false
-                    onResolve()
-                } else {
-                    staffPinError = "Mã PIN không chính xác!"
+                val verifyAction = onVerifyStaffPin ?: { pin, callback ->
+                    if (pin.trim() == "8888") {
+                        val isNegative = anomaly.type == AnomalyType.CAM2_OUTWARD_UNCONFIRMED
+                        val warning = if (isNegative) {
+                            "Bỏ món hàng đã được xác nhận thành công vào lại giỏ hàng"
+                        } else {
+                            "Lấy hàng chưa được xác nhận ra khỏi giỏ hàng"
+                        }
+                        callback(StaffVerificationResult.Mismatch(warning))
+                    } else {
+                        callback(StaffVerificationResult.Error("Mã PIN không chính xác! Vui lòng nhập mã PIN nhân viên (8888)."))
+                    }
                 }
+
+                verifyAction(staffPinInput) { result ->
+                    when (result) {
+                        is StaffVerificationResult.Success -> {
+                            showStaffPinDialog = false
+                            staffPinError = null
+                            staffPinWarning = null
+                            mismatchWarning = null
+                            onResolve()
+                        }
+                        is StaffVerificationResult.Mismatch -> {
+                            staffPinError = null
+                            staffPinWarning = result.warningMessage
+                            mismatchWarning = result.warningMessage
+                        }
+                        is StaffVerificationResult.Error -> {
+                            staffPinError = result.message
+                            staffPinWarning = null
+                        }
+                    }
+                }
+            },
+            onConfirmCorrected = {
+                showStaffPinDialog = false
+                staffPinError = null
+                staffPinWarning = null
+                mismatchWarning = null
+                onAnomalyCorrected()
+                onResolve()
             },
             onDismiss = { showStaffPinDialog = false }
         )
@@ -179,6 +216,7 @@ fun SensorAnomalyDialogContent(
     onConfirmScan: () -> Unit = {},
     errorMessage: String? = null,
     successMessage: String? = null,
+    mismatchWarning: String? = null,
     isChecking: Boolean = false,
     focusRequester: FocusRequester? = null,
     pulseScale: Float = 1.0f,
@@ -377,18 +415,45 @@ fun SensorAnomalyDialogContent(
                 }
             }
 
-            // 6. Ô nhận diện mã vạch tự động (Auto-focus cho đầu đọc GM65 / Bàn phím HID)
-            val tfModifier = if (focusRequester != null) {
-                Modifier.size(1.dp).focusRequester(focusRequester)
-            } else {
-                Modifier.size(1.dp)
+            // 6. Cảnh báo sai lệch giỏ hàng khi kiểm tra mã PIN nhân viên (nếu có)
+            if (mismatchWarning != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0xFFFEF2F2),
+                    border = BorderStroke(1.5.dp, Color(0xFFEF4444))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = Color(0xFFDC2626),
+                            modifier = Modifier.size(26.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = "CẢNH BÁO KIỂM SOÁT TẢI TRỌNG",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color(0xFFDC2626)
+                            )
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = mismatchWarning,
+                                color = Color(0xFFB91C1C),
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = 20.sp
+                            )
+                        }
+                    }
+                }
             }
-            androidx.compose.foundation.text.BasicTextField(
-                value = scanInput,
-                onValueChange = onScanInputChange,
-                modifier = tfModifier,
-                singleLine = true
-            )
 
             // 7. Thông báo trạng thái quét
             if (isChecking) {
@@ -497,13 +562,20 @@ fun SensorAnomalyDialogContent(
 
 /**
  * StaffPinDialog: Hộp thoại xác thực mã PIN dành cho nhân viên siêu thị can thiệp
+ * Mã PIN mặc định: 8888
+ * Khi nhập đúng 8888:
+ * - So sánh trạng thái giỏ hàng hiện tại với trước lỗi.
+ * - Khớp nhau: Mở khóa giỏ hàng về bình thường.
+ * - Khác nhau: Cảnh báo dựa trên sai lệch cân nặng ("Lấy hàng chưa được xác nhận ra khỏi giỏ hàng" hoặc "Bỏ món hàng đã được xác nhận thành công vào lại giỏ hàng").
  */
 @Composable
 fun StaffPinDialog(
     pinInput: String,
     onPinInputChange: (String) -> Unit,
-    errorMessage: String?,
+    errorMessage: String? = null,
+    warningMessage: String? = null,
     onConfirm: () -> Unit,
+    onConfirmCorrected: (() -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
@@ -518,7 +590,7 @@ fun StaffPinDialog(
         text = {
             Column {
                 Text(
-                    text = "Nhập mã PIN nhân viên (mặc định: 1234) để mở khóa xe đẩy nếu sản phẩm đã được kiểm tra thực tế.",
+                    text = "Nhập mã PIN nhân viên (mặc định: 8888) để mở khóa xe đẩy nếu sản phẩm đã được kiểm tra thực tế.",
                     fontSize = 13.sp,
                     color = Color(0xFF475569)
                 )
@@ -526,14 +598,58 @@ fun StaffPinDialog(
                 OutlinedTextField(
                     value = pinInput,
                     onValueChange = onPinInputChange,
-                    placeholder = { Text("Nhập mã PIN...") },
+                    placeholder = { Text("Nhập mã PIN (8888)...") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                     isError = errorMessage != null
                 )
                 if (errorMessage != null) {
                     Spacer(modifier = Modifier.height(4.dp))
-                    Text(text = errorMessage, color = Color(0xFFDC2626), fontSize = 12.sp)
+                    Text(text = errorMessage, color = Color(0xFFDC2626), fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+
+                if (warningMessage != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color(0xFFFEF2F2),
+                        border = BorderStroke(1.5.dp, Color(0xFFEF4444))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = Color(0xFFDC2626),
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = warningMessage,
+                                color = Color(0xFFDC2626),
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                lineHeight = 18.sp
+                            )
+                        }
+                    }
+
+                    if (onConfirmCorrected != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Button(
+                            onClick = onConfirmCorrected,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF16A34A)),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth().height(42.dp)
+                        ) {
+                            Icon(Icons.Default.CheckCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Đã xử lý xong (Mở khóa giỏ)", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        }
+                    }
                 }
             }
         },
@@ -542,7 +658,7 @@ fun StaffPinDialog(
                 onClick = onConfirm,
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryBlue)
             ) {
-                Text("Mở Khóa Xe")
+                Text("Xác Nhận PIN")
             }
         },
         dismissButton = {
@@ -703,22 +819,71 @@ fun PreviewSensorAnomalyTabletLandscape() {
 }
 
 /**
- * 7. Xem trước: Hộp thoại Nhập Mã PIN Nhân Viên Mở Khóa (Staff PIN Dialog)
+ * 7. Xem trước: Hộp thoại Nhập Mã PIN Nhân Viên Mở Khóa (Staff PIN: 8888)
  */
 @Preview(
     showBackground = true,
     widthDp = 800,
     heightDp = 600,
-    name = "7. Hộp Thoại Mã PIN Nhân Viên (Staff PIN)"
+    name = "7. Hộp Thoại Mã PIN Nhân Viên (Staff PIN: 8888)"
 )
 @Composable
 fun PreviewStaffPinDialog() {
     SensorAnomalyPreviewContainer {
         StaffPinDialog(
-            pinInput = "1234",
+            pinInput = "8888",
             onPinInputChange = {},
             errorMessage = null,
+            warningMessage = null,
             onConfirm = {},
+            onDismiss = {}
+        )
+    }
+}
+
+/**
+ * 8. Xem trước: Cảnh báo sai lệch thừa hàng chưa xác nhận ("Lấy hàng chưa được xác nhận ra khỏi giỏ hàng")
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "8. Cảnh Báo Thừa Hàng Chưa Xác Nhận"
+)
+@Composable
+fun PreviewStaffPinMismatchTakeOut() {
+    SensorAnomalyPreviewContainer {
+        StaffPinDialog(
+            pinInput = "8888",
+            onPinInputChange = {},
+            errorMessage = null,
+            warningMessage = "Lấy hàng chưa được xác nhận ra khỏi giỏ hàng",
+            onConfirm = {},
+            onConfirmCorrected = {},
+            onDismiss = {}
+        )
+    }
+}
+
+/**
+ * 9. Xem trước: Cảnh báo sai lệch thiếu hàng đã xác nhận ("Bỏ món hàng đã được xác nhận thành công vào lại giỏ hàng")
+ */
+@Preview(
+    showBackground = true,
+    widthDp = 800,
+    heightDp = 600,
+    name = "9. Cảnh Báo Thiếu Hàng Đã Xác Nhận"
+)
+@Composable
+fun PreviewStaffPinMismatchPutBack() {
+    SensorAnomalyPreviewContainer {
+        StaffPinDialog(
+            pinInput = "8888",
+            onPinInputChange = {},
+            errorMessage = null,
+            warningMessage = "Bỏ món hàng đã được xác nhận thành công vào lại giỏ hàng",
+            onConfirm = {},
+            onConfirmCorrected = {},
             onDismiss = {}
         )
     }
