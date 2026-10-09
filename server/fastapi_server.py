@@ -646,15 +646,14 @@ def process_cart_decision(decision: CartDecisionRequest):
                 tolerance = 50.0  # Dung sai an toàn mặc định 50g
 
             if decision.delta_weight_g is not None and decision.delta_weight_g != 0:
-                if not is_barcode_only and expected_weight and expected_weight > 0:
+                if expected_weight and expected_weight > 0:
                     if abs(abs(decision.delta_weight_g) - expected_weight) > tolerance:
                         reasons.append("weight_out_of_tolerance")
 
-                if not is_barcode_only:
-                    if decision.action == "add" and decision.delta_weight_g < 0:
-                        reasons.append("weight_direction_mismatch")
-                    elif decision.action == "remove" and decision.delta_weight_g > 0:
-                        reasons.append("weight_direction_mismatch")
+                if decision.action == "add" and decision.delta_weight_g < 0:
+                    reasons.append("weight_direction_mismatch")
+                elif decision.action == "remove" and decision.delta_weight_g > 0:
+                    reasons.append("weight_direction_mismatch")
 
         # 4. Kiểm tra số lượng trong giỏ nếu thao tác remove
         current_quantity = 0

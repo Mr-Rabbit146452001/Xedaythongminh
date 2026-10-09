@@ -5,7 +5,7 @@ const products = [
   { barcode: '8934563138165', sku: '8934563138165', name: 'Mì tôm Hảo Hảo chua cay', price: 4500, price_vnd: 4500, expected_weight_g: 75, weight_tolerance_g: 20, imageurl: 'hao_hao.jpg', category: 'Bánh kẹo' },
   { barcode: '8935005801135', sku: 'lavie_500ml', vision_class: 'lavie_500ml', name: 'Nước khoáng La Vie 500ml', price: 6000, price_vnd: 6000, expected_weight_g: 500, weight_tolerance_g: 50, imageurl: 'lavie_500ml.jpg', category: 'Đồ uống' },
   { barcode: '8938556329004', sku: 'pocari_sweat_500ml', vision_class: 'pocari_sweat_500ml', name: 'Pocari Sweat 500 ml', price: 15000, price_vnd: 15000, expected_weight_g: 500, weight_tolerance_g: 50, imageurl: 'pocari_sweat.jpg', category: 'Đồ uống' },
-  { barcode: '8936120311028', sku: '8936120311028', name: 'Muối tinh sấy i-ốt Sosal Group 500 g', price: 4100, price_vnd: 4100, expected_weight_g: 523.1, weight_tolerance_g: 20, imageurl: 'muoi_tinh_sosal.jpg', category: 'Gia vị' },
+  { barcode: '8936120311028', sku: '8936120311028', name: 'Muối tinh sấy i-ốt Sosal Group 500 g', price: 4100, price_vnd: 4100, expected_weight_g: 523.1, weight_tolerance_g: 50, imageurl: 'muoi_tinh_sosal.jpg', category: 'Gia vị' },
   { barcode: '8936040077271', sku: '8936040077271', name: 'Khăn ướt Puri không mùi 20 tờ', price: 8800, price_vnd: 8800, expected_weight_g: 97.7, weight_tolerance_g: 20, imageurl: 'khan_uot_puri.jpg', category: 'Hóa mỹ phẩm' },
   { barcode: '8935024120187', sku: '8935024120187', name: 'Cà phê G7 hòa tan đen 15 gói', price: 47000, price_vnd: 47000, expected_weight_g: 63, weight_tolerance_g: 15, imageurl: 'ca_phe_g7.jpg', category: 'Đồ uống' },
   { barcode: '8938558334556', sku: '8938558334556', name: 'Khăn giấy Premier 100 tờ 3 lớp', price: 9500, price_vnd: 9500, expected_weight_g: 72.6, weight_tolerance_g: 15, imageurl: 'khan_giay_premier.jpg', category: 'Hóa mỹ phẩm' },
@@ -18,6 +18,7 @@ const products = [
 ];
 
 async function syncProductsDatabase() {
+  5
   try {
     // 1. Đảm bảo các cột cần thiết tồn tại
     await pool.query('ALTER TABLE Products ADD COLUMN IF NOT EXISTS imageurl VARCHAR(500)');
