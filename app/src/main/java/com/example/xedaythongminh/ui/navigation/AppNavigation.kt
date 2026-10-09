@@ -79,7 +79,7 @@ fun AppNavigation(
                     android.util.Log.d("SmartCart_Nav", "Chuyển màn hình về ${destination.route}: Đóng phiên active trên Server")
                     appViewModel.completeActiveSession()
                 }
-                "payment_success", "session_ended" -> {
+                "session_ended" -> {
                     android.util.Log.d("SmartCart_Nav", "Chuyển màn hình vào ${destination.route}: Đóng phiên active trên Server")
                     appViewModel.completeActiveSession()
                 }

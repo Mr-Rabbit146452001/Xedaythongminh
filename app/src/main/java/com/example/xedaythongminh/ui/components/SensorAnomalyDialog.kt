@@ -359,30 +359,6 @@ fun SensorAnomalyDialogContent(
                         }
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = PrimaryBlue.copy(alpha = 0.1f),
-                        border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.25f))
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.QrCodeScanner,
-                                contentDescription = null,
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "GM65 Live",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryBlue
-                            )
-                        }
-                    }
                 }
             }
 
@@ -502,60 +478,6 @@ fun SensorAnomalyDialogContent(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 8. Nút thao tác dưới cùng (Mã PIN nhân viên & Hỗ trợ)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = onRequestStaffPin,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(44.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.5f))
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AdminPanelSettings,
-                        contentDescription = null,
-                        tint = PrimaryBlue,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "MÃ PIN NHÂN VIÊN",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryBlue
-                    )
-                }
-
-                if (onSecondaryAction != null) {
-                    TextButton(
-                        onClick = onSecondaryAction,
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(44.dp),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.SupportAgent,
-                            contentDescription = null,
-                            tint = Color(0xFF64748B),
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Hỗ trợ",
-                            fontSize = 12.sp,
-                            color = Color(0xFF64748B),
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-            }
         }
     }
 }

@@ -48,9 +48,8 @@ fun PaymentSuccessScreen(
         // Chặn phím Back
     }
 
-    // Tự động đóng phiên trên Server và chuyển luồng sang kết thúc phiên sau 8 giây
+    // Tự động chuyển luồng sang kết thúc phiên sau 8 giây
     LaunchedEffect(Unit) {
-        appViewModel.completeActiveSession()
         while (autoEndCountdown > 0) {
             delay(1000)
             autoEndCountdown--

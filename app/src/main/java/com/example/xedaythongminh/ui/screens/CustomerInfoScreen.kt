@@ -198,7 +198,7 @@ fun CustomerInfoScreen(
                     ) {
                         GlassButton(
                             onClick = { 
-                                appViewModel.createShoppingSession(forceNew = true)
+                                appViewModel.createShoppingSession(forceNew = false)
                                 navController.navigate("scan_product") 
                             },
                             modifier = Modifier.fillMaxWidth().height(52.dp),

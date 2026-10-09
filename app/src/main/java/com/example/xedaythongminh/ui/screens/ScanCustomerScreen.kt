@@ -258,9 +258,9 @@ fun ScanCustomerInstructionBox(
             
             GlassButton(
                 onClick = {
-                    // Dừng phiên polling đăng nhập QR và kích hoạt tạo phiên mới UUID trên Server
+                    // Dừng phiên polling đăng nhập QR và gắn kết nối phiên mua sắm
                     appViewModel.stopQrLoginSession()
-                    appViewModel.createShoppingSession(forceNew = true)
+                    appViewModel.createShoppingSession(forceNew = false)
                     navController.navigate("scan_product") {
                         popUpTo("scan_customer") { inclusive = true }
                     }
