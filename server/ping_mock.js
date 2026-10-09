@@ -338,7 +338,7 @@ async function clearCart(sessionId) {
   });
 }
 
-function getProductVisionClass(barcode) {
+function getProductInfo(barcode) {
   return new Promise((resolve) => {
     http.get('http://127.0.0.1:3000/api/v1/products', (res) => {
       let data = '';
@@ -348,11 +348,7 @@ function getProductVisionClass(barcode) {
           const json = JSON.parse(data);
           const list = json.products || (Array.isArray(json) ? json : []);
           const matched = list.find(p => p.barcode === barcode || p.sku === barcode);
-          if (matched && matched.vision_class && matched.vision_class !== '[null]') {
-            resolve(matched.vision_class);
-          } else {
-            resolve(null);
-          }
+          resolve(matched || null);
         } catch (e) {
           resolve(null);
         }
@@ -363,10 +359,16 @@ function getProductVisionClass(barcode) {
 
 async function sendDecision(sessionId, action, barcode, sku, weight, silent = false, visionClass = null) {
   let aiClass = visionClass || sku || barcode;
+  let finalWeight = weight;
   try {
-    const dbVisionClass = await getProductVisionClass(barcode);
-    if (dbVisionClass) {
-      aiClass = dbVisionClass;
+    const dbProduct = await getProductInfo(barcode);
+    if (dbProduct) {
+      if (dbProduct.vision_class && dbProduct.vision_class !== '[null]') {
+        aiClass = dbProduct.vision_class;
+      }
+      if (dbProduct.expected_weight_g) {
+        finalWeight = parseFloat(dbProduct.expected_weight_g);
+      }
     }
   } catch (e) {}
 
@@ -375,10 +377,11 @@ async function sendDecision(sessionId, action, barcode, sku, weight, silent = fa
       session_id: sessionId,
       action: action,
       barcode: barcode,
+      verification_mode: 'barcode_only',
       ai_class: aiClass,
       ai_confidence: 0.99,
-      delta_weight_g: action === 'add' ? weight : -weight,
-      weight_source: 'loadcell'
+      delta_weight_g: action === 'add' ? finalWeight : -finalWeight,
+      weight_source: 'simulated'
     });
 
     const req = http.request({
@@ -403,7 +406,8 @@ async function sendDecision(sessionId, action, barcode, sku, weight, silent = fa
               console.log(`👉 Giỏ hàng hiện còn: ${json.cart?.total_quantity} món | Tổng tiền: ${json.cart?.total_vnd?.toLocaleString('vi-VN')} đ`);
               console.log(`📱 Màn hình máy tính bảng sẽ tự động cập nhật trong 1-2 giây!`);
             } else {
-              console.log(`\n⚠️ BỊ TỪ CHỐI [REJECTED]: Lý do: ${JSON.stringify(json.reasons)}`);
+              const reasonsMsg = json.reasons ? JSON.stringify(json.reasons) : (json.detail ? JSON.stringify(json.detail) : JSON.stringify(json));
+              console.log(`\n⚠️ BỊ TỪ CHỐI [REJECTED]: Lý do: ${reasonsMsg}`);
               if (json.reasons?.includes('product_not_in_cart')) {
                 console.log(`👉 Ghi chú: Sản phẩm này chưa có trong giỏ hàng để bớt!`);
               }

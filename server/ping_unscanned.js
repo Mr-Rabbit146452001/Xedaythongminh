@@ -77,7 +77,7 @@ function sendDecision(sessionId, action, weight) {
       ai_class: 'unknown',
       ai_confidence: 0.0,
       delta_weight_g: action === 'add' ? weight : -weight,
-      weight_source: 'loadcell'
+      weight_source: 'simulated'
     });
 
     const req = http.request({
