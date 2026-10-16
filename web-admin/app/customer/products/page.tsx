@@ -1,8 +1,17 @@
-'use client';
+﻿'use client';
 
 import React, { useState, useEffect } from 'react';
 import { Search, ShoppingBag, Tag, Package, Sparkles, Coins } from 'lucide-react';
 import { CustomerApiService, CustomerProduct } from '@/services/customerApi';
+
+/** Chuẩn hóa imageUrl từ API server về đường dẫn hợp lệ */
+function buildImageUrl(rawUrl: string | undefined | null): string {
+  if (!rawUrl || rawUrl.trim() === '') return '/products/sua_vinamilk.jpg';
+  const url = rawUrl.trim();
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return url; // /products/xxx.jpg hoặc /images/xxx.jpg
+  return `/products/${url}`;            // tên file thuần
+}
 
 export default function CustomerProductsPage() {
   const [products, setProducts] = useState<CustomerProduct[]>([]);
@@ -91,11 +100,11 @@ export default function CustomerProductsPage() {
               <div className="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 flex items-center justify-center border border-gray-200">
                 {p.ImageUrl ? (
                   <img
-                    src={p.ImageUrl.startsWith('http') ? p.ImageUrl : `/images/${p.ImageUrl.replace(/^(\/images\/|\/products\/|\/)/, '')}`}
-                    alt={p.Name}
+                    src={buildImageUrl(p.ImageUrl)}
+                    alt={p.Name}alt={p.Name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/images/sua_vinamilk.jpg';
+                      (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
                     }}
                   />
                 ) : (

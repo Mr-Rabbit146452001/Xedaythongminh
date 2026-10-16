@@ -319,11 +319,20 @@ async function main() {
     );
   }
 
-  // 5. Ngrok - ưu tiên ngrok.exe nằm cạnh start_all.js
+  // 5. Ngrok - tìm kiếm theo thứ tự ưu tiên:
+  //    1. ngrok.exe đặt cạnh start_all.js
+  //    2. Ngrok cài qua npm global (npm install -g ngrok)
+  //    3. Ngrok có sẵn trong PATH hệ thống
   const localNgrokExe = path.join(SERVER_DIR, 'ngrok.exe');
+  const npmGlobalNgrok = path.join(
+    'C:\\Users\\Moderator\\AppData\\Roaming\\npm\\node_modules\\ngrok\\bin',
+    'ngrok.exe'
+  );
   const ngrokBinary = fs.existsSync(localNgrokExe)
     ? localNgrokExe
-    : 'ngrok';
+    : fs.existsSync(npmGlobalNgrok)
+      ? npmGlobalNgrok
+      : 'ngrok';
 
   console.log(
     `🌐 [Ngrok] Khởi tạo tunnel HTTPS cho cổng ${SHOP_PORT}...`

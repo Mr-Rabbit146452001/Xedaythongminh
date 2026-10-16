@@ -1,9 +1,23 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import Image from 'next/image';
 import { INITIAL_PRODUCTS, Product } from '@/data/mockData';
 import { ApiService } from '@/services/api';
+
+/**
+ * Chuẩn hóa imageUrl từ API:
+ *  - Nếu là full URL (http/https) → giữ nguyên
+ *  - Nếu là đường dẫn tuyệt đối bắt đầu bằng /products/ hoặc /images/ → giữ nguyên (Next.js phục vụ từ public/)
+ *  - Nếu chỉ là tên file (vd: coca_cola_330ml.jpg) → thêm /products/ prefix
+ *  - Fallback: ảnh mặc định
+ */
+function buildImageUrl(rawUrl: string | undefined | null): string {
+  if (!rawUrl || rawUrl.trim() === '') return '/products/sua_vinamilk.jpg';
+  const url = rawUrl.trim();
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return url; // đã là /products/xxx.jpg hoặc /images/xxx.jpg
+  return `/products/${url}`;           // chỉ là tên file thuần
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
@@ -235,12 +249,15 @@ export default function ProductsPage() {
                     {/* Name + Image */}
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0 relative">
-                          <Image
-                            src={product.imageUrl}
+                        <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={buildImageUrl(product.imageUrl)}
                             alt={product.name}
-                            fill
-                            className="object-cover"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
+                            }}
                           />
                         </div>
                         <div>
