@@ -1624,6 +1624,48 @@ app.get('/api/admin/inventory', async (req, res) => {
   }
 });
 
+// ====================================================================
+// 13.0. HỆ THỐNG PHÁT SÓNG REALTIME SSE (Server-Sent Events)
+// Đồng bộ 2 chiều tức thì giữa CSDL PostgreSQL và Web Admin / Web App
+// ====================================================================
+const realtimeClients = new Set();
+
+function broadcastRealtimeEvent(event, data) {
+  const payload = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  for (const client of realtimeClients) {
+    try {
+      client.write(payload);
+    } catch (err) {
+      realtimeClients.delete(client);
+    }
+  }
+}
+
+app.get('/api/realtime/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  if (res.flushHeaders) res.flushHeaders();
+
+  res.write(`event: connected\ndata: ${JSON.stringify({ status: 'connected', timestamp: Date.now() })}\n\n`);
+  realtimeClients.add(res);
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(': keep-alive\n\n');
+    } catch (e) {
+      clearInterval(heartbeat);
+      realtimeClients.delete(res);
+    }
+  }, 25000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    realtimeClients.delete(res);
+  });
+});
+
 // 13.2. API Lấy danh sách sản phẩm quản trị
 app.get('/api/admin/products', async (req, res) => {
   try {
@@ -1662,8 +1704,25 @@ app.post('/api/admin/products', async (req, res) => {
       [barcode, name, price, category || 'Đồ uống', stock || 100, imgFile]
     );
 
-    console.log(`✨ [Web Admin] Đã thêm sản phẩm mới vào PostgreSQL: ${name} (#${result.rows[0].id})`);
-    res.json({ status: 'Thành công', data: result.rows[0] });
+    const newProd = result.rows[0];
+    console.log(`✨ [Web Admin] Đã thêm sản phẩm mới vào PostgreSQL: ${name} (#${newProd.id})`);
+
+    // Phát sóng sự kiện Realtime tới Web Admin & Web App
+    broadcastRealtimeEvent('product_change', {
+      action: 'create',
+      product: {
+        id: newProd.id,
+        barcode: newProd.barcode,
+        sku: `SKU-${newProd.id.toString().padStart(3, '0')}`,
+        name: newProd.name,
+        price: parseFloat(newProd.price),
+        category: newProd.category,
+        stock: parseInt(newProd.stock),
+        imageUrl: `/products/${newProd.imageurl}`
+      }
+    });
+
+    res.json({ status: 'Thành công', data: newProd });
   } catch (err) {
     console.error('Lỗi thêm sản phẩm:', err);
     res.status(500).json({ status: 'Lỗi', message: err.message });
@@ -1694,9 +1753,27 @@ app.put('/api/admin/products/:id', async (req, res) => {
       return res.status(404).json({ status: 'Lỗi', message: 'Không tìm thấy sản phẩm' });
     }
 
+    const updatedProd = result.rows[0];
     console.log(`✏️ [Web Admin] Đã cập nhật sản phẩm #${id}: ${name}`);
-    res.json({ status: 'Thành công', data: result.rows[0] });
+
+    // Phát sóng sự kiện Realtime tới Web Admin & Web App
+    broadcastRealtimeEvent('product_change', {
+      action: 'update',
+      product: {
+        id: updatedProd.id,
+        barcode: updatedProd.barcode,
+        sku: `SKU-${updatedProd.id.toString().padStart(3, '0')}`,
+        name: updatedProd.name,
+        price: parseFloat(updatedProd.price),
+        category: updatedProd.category,
+        stock: parseInt(updatedProd.stock),
+        imageUrl: `/products/${updatedProd.imageurl}`
+      }
+    });
+
+    res.json({ status: 'Thành công', data: updatedProd });
   } catch (err) {
+    console.error('Lỗi cập nhật sản phẩm:', err);
     res.status(500).json({ status: 'Lỗi', message: err.message });
   }
 });
@@ -1707,6 +1784,13 @@ app.delete('/api/admin/products/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM Products WHERE id = $1', [id]);
     console.log(`🗑️ [Web Admin] Đã xóa sản phẩm #${id} khỏi PostgreSQL`);
+
+    // Phát sóng sự kiện Realtime tới Web Admin & Web App
+    broadcastRealtimeEvent('product_change', {
+      action: 'delete',
+      id: parseInt(id)
+    });
+
     res.json({ status: 'Thành công', message: `Đã xóa sản phẩm #${id}` });
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });

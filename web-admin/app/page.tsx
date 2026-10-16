@@ -351,7 +351,22 @@ export default function DashboardOverview() {
                   overview.topProducts.map((p: any, idx: number) => (
                     <tr key={p.id || idx} className="hover:bg-surface-container-low/40 transition-colors">
                       <td className="px-6 py-4 font-bold text-on-surface-variant">{p.rank || idx + 1}</td>
-                      <td className="px-6 py-4 font-semibold text-on-surface">{p.name}</td>
+                      <td className="px-6 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg border border-outline-variant/30 overflow-hidden bg-white shrink-0 flex items-center justify-center">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={p.imageUrl || '/products/sua_vinamilk.jpg'}
+                              alt={p.name}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
+                              }}
+                            />
+                          </div>
+                          <span className="font-semibold text-on-surface">{p.name}</span>
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-right font-semibold">{ApiService.formatNumber(p.soldCount || 45)}</td>
                       <td className="px-6 py-4 text-right font-bold text-primary">
                         {ApiService.formatVND(p.revenue || p.price * 45)}
