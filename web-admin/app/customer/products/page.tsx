@@ -7,7 +7,7 @@ import { ApiService } from '@/services/api';
 
 /** Chuẩn hóa imageUrl từ API server về đường dẫn hợp lệ */
 function buildImageUrl(rawUrl: string | undefined | null): string {
-  if (!rawUrl || rawUrl.trim() === '') return '/products/sua_vinamilk.jpg';
+  if (!rawUrl || rawUrl.trim() === '') return '/products/8934673573344.jpg';
   const url = rawUrl.trim();
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return url; // /products/xxx.jpg hoặc /images/xxx.jpg

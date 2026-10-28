@@ -12,7 +12,7 @@ import { ApiService } from '@/services/api';
  *  - Fallback: ảnh mặc định
  */
 function buildImageUrl(rawUrl: string | undefined | null): string {
-  if (!rawUrl || rawUrl.trim() === '') return '/products/sua_vinamilk.jpg';
+  if (!rawUrl || rawUrl.trim() === '') return '/products/8934673573344.jpg';
   const url = rawUrl.trim();
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
   if (url.startsWith('/')) return url; // đã là /products/xxx.jpg hoặc /images/xxx.jpg
@@ -321,16 +321,10 @@ export default function ProductsPage() {
                     {/* Name + Image */}
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
-<<<<<<< HEAD
-                        <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0">
+<div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0 relative flex items-center justify-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={buildImageUrl(product.imageUrl)}
-=======
-                        <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0 relative flex items-center justify-center">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-src={product.imageUrl || '/products/8934673573344.jpg'}
                             alt={product.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {

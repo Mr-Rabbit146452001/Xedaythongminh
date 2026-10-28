@@ -2,15 +2,25 @@
 # sync_images.ps1
 # Đồng bộ ảnh sản phẩm từ server/public/images/ 
 # sang web-admin/public/products/ và web-admin/public/images/
+# Hỗ trợ đường dẫn động linh hoạt trên mọi máy tính ($PSScriptRoot)
 # ============================================================
 
-$source    = "f:\S.Cart\Xedaythongminh\server\public\images"
-$destProd  = "f:\S.Cart\Xedaythongminh\web-admin\public\products"
-$destImg   = "f:\S.Cart\Xedaythongminh\web-admin\public\images"
+$root      = $PSScriptRoot
+$source    = Join-Path $root "server\public\images"
+$destProd  = Join-Path $root "web-admin\public\products"
+$destImg   = Join-Path $root "web-admin\public\images"
 
 Write-Host "`n======================================================"
 Write-Host "  ĐỒNG BỘ ẢNH SẢN PHẨM -> WEB ADMIN"
 Write-Host "======================================================`n"
+
+if (-not (Test-Path $source)) {
+    Write-Error "Không tìm thấy thư mục nguồn: $source"
+    exit 1
+}
+
+if (-not (Test-Path $destProd)) { New-Item -ItemType Directory -Path $destProd -Force | Out-Null }
+if (-not (Test-Path $destImg))  { New-Item -ItemType Directory -Path $destImg  -Force | Out-Null }
 
 $sourceFiles = Get-ChildItem $source -File
 $copied = 0
