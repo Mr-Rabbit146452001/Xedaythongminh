@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ShoppingBag, Tag, Package, Sparkles, Coins } from 'lucide-react';
 import { CustomerApiService, CustomerProduct } from '@/services/customerApi';
+import { ApiService } from '@/services/api';
 
 /** Chuẩn hóa imageUrl từ API server về đường dẫn hợp lệ */
 function buildImageUrl(rawUrl: string | undefined | null): string {
@@ -20,13 +21,28 @@ export default function CustomerProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      setIsLoading(true);
+    const load = async (silent = false) => {
+      if (!silent) setIsLoading(true);
       const data = await CustomerApiService.getProducts();
       setProducts(data);
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     };
     load();
+
+    // Lắng nghe sự kiện realtime từ PostgreSQL Server
+    const unsubscribe = ApiService.subscribeToRealtimeEvents((event) => {
+      if (event === 'product_change') {
+        load(true);
+      }
+    });
+
+    // Đồng bộ ngầm định kỳ 8s
+    const interval = setInterval(() => load(true), 8000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const categories = ['Tất cả', ...Array.from(new Set(products.map((p) => p.Category || 'Khác')))];

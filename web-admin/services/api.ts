@@ -80,7 +80,22 @@ export const ApiService = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
       if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-        return json.data;
+        return json.data.map((item: any, index: number) => ({
+          id: item.id || item.Id || index + 1,
+          barcode: item.barcode || item.Barcode || '',
+          sku: item.sku || `SKU-${(item.id || item.Id || index + 1).toString().padStart(3, '0')}`,
+          name: item.name || item.Name,
+          category: item.category || item.Category || 'Đồ uống',
+          price: parseFloat(item.price || item.Price || 0),
+          stock: parseInt(item.stock || item.Stock || 100),
+          status: (item.stock || item.Stock || 100) <= 0 ? 'out' : (item.stock || item.Stock || 100) < 20 ? 'low' : 'active',
+          imageUrl: (() => {
+            const rawImg = item.imageUrl || item.imageurl || item.ImageUrl;
+            if (!rawImg) return '/products/sua_vinamilk.jpg';
+            if (rawImg.startsWith('http') || rawImg.startsWith('/')) return rawImg;
+            return `/products/${rawImg}`;
+          })(),
+        }));
       }
     } catch (err) {
       console.warn('⚠️ [API Service] Không kết nối được /api/admin/products, thử /api/products:', err);
@@ -324,6 +339,42 @@ export const ApiService = {
     } catch (err: any) {
       return { success: false, message: err.message || 'Lỗi kết nối' };
     }
+  },
+
+  // Đăng ký nhận sự kiện realtime 2 chiều từ PostgreSQL Server qua SSE
+  subscribeToRealtimeEvents(onEvent: (event: string, data: any) => void): () => void {
+    if (typeof window === 'undefined') return () => {};
+    let eventSource: EventSource | null = null;
+    try {
+      const url = `${API_BASE_URL}/realtime/events`;
+      eventSource = new EventSource(url);
+
+      eventSource.addEventListener('connected', (e: any) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          onEvent('connected', parsed);
+        } catch (_) {}
+      });
+
+      eventSource.addEventListener('product_change', (e: any) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          onEvent('product_change', parsed);
+        } catch (err) {
+          console.error('Lỗi parse realtime event:', err);
+        }
+      });
+
+      eventSource.onerror = () => {
+        // Tự động kết nối lại bởi EventSource
+      };
+    } catch (err) {
+      console.warn('⚠️ [API Service] Trình duyệt không hỗ trợ EventSource hoặc lỗi kết nối:', err);
+    }
+
+    return () => {
+      eventSource?.close();
+    };
   }
 };
 

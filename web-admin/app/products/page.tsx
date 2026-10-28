@@ -26,21 +26,62 @@ export default function ProductsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Load products from backend on mount
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>('');
+
+  // Load products from backend
+  const loadProducts = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     try {
       const data = await ApiService.getProducts();
       if (data && data.length > 0) {
         setProducts(data);
+        setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
+  // 1. Initial load, Realtime SSE listener & Auto-sync
   useEffect(() => {
     loadProducts();
+
+    // Lắng nghe sự kiện phát sóng tức thì từ PostgreSQL Server qua SSE
+    const unsubscribe = ApiService.subscribeToRealtimeEvents((event, data) => {
+      if (event === 'connected') {
+        setIsRealtimeConnected(true);
+      } else if (event === 'product_change') {
+        setIsRealtimeConnected(true);
+        if (data.action === 'create') {
+          showToast(`⚡ CSDL vừa thêm sản phẩm: ${data.product?.name || ''}`);
+          loadProducts(true);
+        } else if (data.action === 'update') {
+          showToast(`✏️ CSDL vừa cập nhật: ${data.product?.name || ''}`);
+          loadProducts(true);
+        } else if (data.action === 'delete') {
+          showToast(`🗑️ Đã xóa sản phẩm #${data.id} khỏi CSDL`);
+          loadProducts(true);
+        } else {
+          loadProducts(true);
+        }
+      }
+    });
+
+    // 2. Polling ngầm 8s bảo đảm dữ liệu luôn khớp 100% với database dù thay đổi qua script hay công cụ khác
+    const interval = setInterval(() => {
+      loadProducts(true);
+    }, 8000);
+
+    // 3. Tự động đồng bộ ngay khi người dùng chuyển lại tab
+    const handleFocus = () => loadProducts(true);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [loadProducts]);
 
   // Modal states
@@ -207,6 +248,37 @@ export default function ProductsPage() {
             <option value="out">Hết hàng</option>
           </select>
 
+          {/* Realtime Live Sync Status */}
+          <div
+            className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${
+              isRealtimeConnected
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                : 'bg-surface-container-low text-on-surface-variant border-outline-variant/60'
+            }`}
+            title={isRealtimeConnected ? 'Kết nối phát sóng Realtime SSE với PostgreSQL đang hoạt động' : 'Đang đồng bộ định kỳ'}
+          >
+            <span className="relative flex h-2 w-2">
+              {isRealtimeConnected && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              )}
+              <span className={`relative inline-flex rounded-full h-2 w-2 ${isRealtimeConnected ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+            </span>
+            <span>{isRealtimeConnected ? 'Realtime CSDL' : 'Đồng bộ ngầm'}</span>
+            {lastSyncTime && <span className="text-[10px] opacity-75 font-mono">({lastSyncTime})</span>}
+          </div>
+
+          {/* Manual Sync Button */}
+          <button
+            onClick={() => loadProducts(false)}
+            disabled={loading}
+            className="p-2.5 bg-surface-container-lowest border border-outline-variant/60 rounded-xl hover:bg-surface-container-high transition-all text-on-surface-variant hover:text-primary shadow-sm active:scale-95 disabled:opacity-60"
+            title="Đồng bộ dữ liệu từ CSDL ngay lập tức"
+          >
+            <span className={`material-symbols-outlined text-lg ${loading ? 'animate-spin text-primary' : ''}`}>
+              sync
+            </span>
+          </button>
+
           {/* Add Product Button */}
           <button
             onClick={handleOpenCreate}
@@ -249,10 +321,17 @@ export default function ProductsPage() {
                     {/* Name + Image */}
                     <td className="px-6 py-3">
                       <div className="flex items-center gap-3">
+<<<<<<< HEAD
                         <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={buildImageUrl(product.imageUrl)}
+=======
+                        <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0 relative flex items-center justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={product.imageUrl || '/products/sua_vinamilk.jpg'}
+>>>>>>> 86bd54e2c7bc6ef53e408f49af34505efe2ef825
                             alt={product.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -443,15 +522,30 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-on-surface mb-1">Đường dẫn ảnh (URL)</label>
-                <input
-                  type="text"
-                  disabled={modalMode === 'view'}
-                  value={currentProduct.imageUrl}
-                  onChange={(e) => setCurrentProduct({ ...currentProduct, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full bg-surface-container-low border border-outline-variant/60 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-75 text-xs font-mono"
-                />
+                <label className="block font-semibold text-on-surface mb-1">Đường dẫn ảnh (URL hoặc tên tệp)</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    disabled={modalMode === 'view'}
+                    value={currentProduct.imageUrl}
+                    onChange={(e) => setCurrentProduct({ ...currentProduct, imageUrl: e.target.value })}
+                    placeholder="/products/aquafina_500ml.jpg hoặc tên file..."
+                    className="flex-1 bg-surface-container-low border border-outline-variant/60 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-75 text-xs font-mono"
+                  />
+                  {currentProduct.imageUrl && (
+                    <div className="w-10 h-10 rounded-xl border border-outline-variant/40 overflow-hidden bg-white shrink-0 flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={currentProduct.imageUrl.startsWith('http') || currentProduct.imageUrl.startsWith('/') ? currentProduct.imageUrl : `/products/${currentProduct.imageUrl}`}
+                        alt="Preview"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-outline-variant/30">
