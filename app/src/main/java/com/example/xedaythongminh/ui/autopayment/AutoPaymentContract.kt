@@ -22,6 +22,7 @@ data class AutoPaymentUiState(
 sealed interface AutoPaymentUiEvent {
     data class SelectMethod(val method: PaymentMethod) : AutoPaymentUiEvent
     data class StartAutoPayment(val customerId: String, val sessionId: String = "SESSION_DEFAULT") : AutoPaymentUiEvent
+    data class SyncCartItems(val items: List<CartItem>) : AutoPaymentUiEvent
     object Retry : AutoPaymentUiEvent
     object DismissError : AutoPaymentUiEvent
 }

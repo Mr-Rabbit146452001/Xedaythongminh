@@ -46,7 +46,8 @@ export default function Topbar({ onRefresh, onToggleMobileSidebar }: TopbarProps
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0D47A1] hover:bg-[#1565C0] text-white text-xs font-bold transition-all active:scale-95 shadow-md"
           title="Chuyển sang giao diện Mobile Khách Hàng (PWA)"
         >
-          <img src="/img_smart_cart_logo.png" alt="Logo" className="w-4 h-4 object-contain bg-white rounded-full p-0.5" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/img_smart_cart_logo.png" alt="Logo" className="h-4 w-auto object-contain bg-white rounded-full p-0.5" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
           <span className="hidden md:inline">Giao Diện Khách Hàng (PWA)</span>
         </Link>
 

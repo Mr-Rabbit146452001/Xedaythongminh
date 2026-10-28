@@ -22,27 +22,28 @@ export const ApiService = {
       console.warn('⚠️ [API Service] Sử dụng fallback overview cục bộ:', err);
     }
     return {
-      todayRevenue: 12500000,
-      todayOrders: 12,
-      totalProducts: 8,
+      todayRevenue: 0,
+      todayOrders: 0,
+      totalProducts: 10,
       lowStock: 0,
       outStock: 0,
-      totalStockUnits: 800,
+      totalStockUnits: 1000,
       totalInventoryValue: 24850000,
       totalStrollers: 8,
-      activeStrollers: 6,
+      activeStrollers: 0,
       topProducts: [
-        { rank: 1, id: 3, name: 'Táo Envy New Zealand', price: 125000, soldCount: 48, revenue: 6000000, trend: 'up', imageUrl: '/products/tao_envy.jpg' },
-        { rank: 2, id: 2, name: 'Bơ sáp loại 1 (KG)', price: 45000, soldCount: 32, revenue: 1440000, trend: 'up', imageUrl: '/products/bo_sap.jpg' },
-        { rank: 3, id: 1, name: 'Sữa tươi tiệt trùng ít đường 1L', price: 34000, soldCount: 55, revenue: 1870000, trend: 'up', imageUrl: '/products/sua_vinamilk.jpg' },
-        { rank: 4, id: 7, name: 'Bánh quy kẹp kem Oreo socola 137g', price: 18000, soldCount: 60, revenue: 1080000, trend: 'up', imageUrl: '/products/oreo_socola.jpg' },
+        { rank: 1, id: 9, name: 'Sữa tươi tiệt trùng Vinamilk 100% Có đường 180ml', price: 9500, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/8934673573344.jpg' },
+        { rank: 2, id: 5, name: 'Nước ngọt Coca Cola lon 330ml', price: 10900, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/coke_sleek_lon.jpg' },
+        { rank: 3, id: 8, name: 'Snack Poca bắp ngọt xóc bơ gói 32g', price: 6000, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/snack_poca_bap.jpg' },
+        { rank: 4, id: 10, name: 'Sữa tươi tiệt trùng TH true MILK Socola 180ml', price: 9500, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/8935217400454.jpg' },
+        { rank: 5, id: 7, name: 'Sữa đặc Ông Thọ đỏ tuýp 165g', price: 20000, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/ong_tho_do.jpg' },
       ],
       stockAlerts: [],
-      revenueTrend7Days: [10.5, 12.2, 9.8, 14.5, 11.0, 15.2, 12.5],
+      revenueTrend7Days: [0, 0, 0, 0, 0, 0, 0],
       orderStatusDistribution: {
-        paid: 8,
-        processing: 2,
-        completed: 2,
+        paid: 0,
+        processing: 0,
+        completed: 0,
         cancelled: 0
       }
     };
@@ -91,7 +92,7 @@ export const ApiService = {
           status: (item.stock || item.Stock || 100) <= 0 ? 'out' : (item.stock || item.Stock || 100) < 20 ? 'low' : 'active',
           imageUrl: (() => {
             const rawImg = item.imageUrl || item.imageurl || item.ImageUrl;
-            if (!rawImg) return '/products/sua_vinamilk.jpg';
+            if (!rawImg) return '/products/8934673573344.jpg';
             if (rawImg.startsWith('http') || rawImg.startsWith('/')) return rawImg;
             return `/products/${rawImg}`;
           })(),
@@ -149,7 +150,7 @@ export const ApiService = {
             price: parseFloat(json.data.price),
             stock: parseInt(json.data.stock || 100),
             status: json.data.stock <= 0 ? 'out' : json.data.stock < 20 ? 'low' : 'active',
-            imageUrl: json.data.imageurl ? `/products/${json.data.imageurl}` : '/products/sua_vinamilk.jpg',
+            imageUrl: json.data.imageurl ? `/products/${json.data.imageurl}` : '/products/8934673573344.jpg',
           };
         }
       }
@@ -166,7 +167,7 @@ export const ApiService = {
       price: Number(product.price) || 0,
       stock: Number(product.stock) || 0,
       status: Number(product.stock) <= 0 ? 'out' : Number(product.stock) < 20 ? 'low' : 'active',
-      imageUrl: product.imageUrl || '/products/sua_vinamilk.jpg',
+      imageUrl: product.imageUrl || '/products/8934673573344.jpg',
     };
   },
 

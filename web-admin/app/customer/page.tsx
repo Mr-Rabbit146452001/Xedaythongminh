@@ -230,7 +230,7 @@ export default function CustomerHomePage() {
                         alt={item.Name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/images/sua_vinamilk.jpg';
+                          (e.target as HTMLImageElement).src = '/images/8934673573344.jpg';
                         }}
                       />
                     ) : (

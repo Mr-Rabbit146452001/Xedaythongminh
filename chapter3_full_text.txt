@@ -1,0 +1,1086 @@
+
+--- PDF PAGE 23 ---
+Chương 3
+THIẾT KẾVÀ XÂY DỰNG HỆ
+THỐNG
+3.1
+Thiết kếmô hình cơ khí và phần cứng hệthống
+3.1.1
+Cấu trúc cơ khí và vịtrí lắp đặt cảm biến
+Mô hình sửdụng hai camera quan sát vùng thao tác và ba ToF kích hoạt nhận diện
+khi vật đi qua. Vịtrí gá cần bảo đảm ít nhất một camera nhìn rõ bao bì trước khi vật rơi
+vào điểm mù hoặc bịtay che. Vùng giao nhau cần bao phủthao tác ởgiữa và hai mép
+lối đưa hàng. Cân được đặt dưới khay sao cho tải của hàng truyền toàn bộqua loadcell,
+không bịtì đè bởi kết cấu cốđịnh tạo đường truyền lực song song. Dây dẫn phải có độ
+chùng phù hợp đểkhông kéo khay khi tải thay đổi.
+21
+
+--- PDF PAGE 24 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.1: Toàn cảnh xe, vịtrí CAM0/CAM2, ToF1–ToF3.
+3.1.2
+Sơ đồkhối phần cứng và giao thức kết nối
+Raspberry Pi 4 cung cấp các cổng USB và đầu nối GPIO phục vụthu nhận dữliệu từ
+các thiết bịngoại vi [?]. Hai camera truyền luồng ảnh trực tiếp qua chuẩn kết nối USB
+UVC; bộthu nhận được cấu hình trình điều khiển V4L2 với định dạng nén MJPG ởđộ
+phân giải 640 × 480. Cụm cảm biến ToF chia sẻchung bus giao tiếp I2C (SDA và SCL),
+tuy nhiên chân kích hoạt XSHUT được điều khiển độc lập từcác chân GPIO riêng biệt.
+Cảm biến Loadcell kết nối vào đầu vào vi sai của ADC HX711; Pi thu nhận tín hiệu số
+từHX711 qua giao thức 2 dây (PD_SCK và DOUT).[13]
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+22
+
+--- PDF PAGE 25 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.2: Sơ đồkhối kết nối phần cứng và giao thức truyền nhận tín hiệu
+Bảng 3.1: Ánh xạtín hiệu theo cấu hình mã nguồn và đầu nối Pi
+Tín hiệu
+BCM
+Chân vật lý
+Vai trò
+ToF SDA
+2
+3
+Dữliệu I2C dùng chung
+ToF SCL
+3
+5
+Xung I2C dùng chung
+ToF1 XSHUT
+17
+11
+Khởi tạo địa chỉ0x30
+ToF2 XSHUT
+27
+13
+Khởi tạo địa chỉ0x31
+ToF3 XSHUT
+22
+15
+Khởi tạo địa chỉ0x32
+HX711 DOUT
+23
+16
+Đầu vào dữliệu số
+HX711 PD_SCK
+24
+18
+Đầu ra xung đọc ADC
+Camera CAM0 và CAM2
+USB
+Cổng USB
+Thu nhận ảnh UVC
+GM65
+USB
+Cổng USB
+Nhận mã qua cổng nối tiếp USB
+Bảng 3.2 thểhiện cấu hình mặc định và ánh xạchân. GPIO Pi hoạt động với mức
+logic 3, 3 V; tín hiệu vào cần tuân thủmức điện áp cho phép [?]. Các thiết bịphải có mốc
+GND phù hợp.
+3.1.3
+Thu nhận song song và bảo toàn dấu thời gian
+Mỗi camera có bộthu nhận riêng, lưu khung hình kèm mã thứtựvà dấu thời gian.
+Luồng AI dùng chung một trình thông dịch (interpreter) cho cảhai nguồn ảnh; đây là
+chia sẻtài nguyên suy luận, không phải suy luận hai ảnh đồng thời trên hai bản sao mô
+hình. Bộđệm ứng dụng giữcác ảnh gần đây đểAI chọn lại ảnh phù hợp khi sẵn sàng,
+tránh hiện tượng nhận diện trễ(ảnh thuộc vềsản phẩm đã rời khỏi vùng quan sát).
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+23
+
+--- PDF PAGE 26 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3.2
+Thiết kếmô hình cơ khí và phần cứng hệthống
+3.2.1
+Cấu trúc cơ khí và vịtrí lắp đặt cảm biến
+Mô hình sửdụng hai camera quan sát vùng thao tác và ba ToF kích hoạt nhận diện
+khi vật đi qua. Vịtrí gá cần bảo đảm ít nhất một camera nhìn rõ bao bì trước khi vật rơi
+vào điểm mù hoặc bịtay che. Khoảng cách, góc gá và kích thước khay phải được đo trên
+mô hình thực tế; chỉtừmã nguồn không xác định được các kích thước này.
+Tiêu chí thiết kếvùng quan sát là đường đi của sản phẩm phải xuất hiện rõ ởít nhất
+một góc nhìn trong thời gian đủđểlưu ảnh. Vùng giao nhau cần bao phủthao tác ởgiữa
+và ởhai mép lối đưa hàng. Ánh sáng nên hạn chếphản xạgương trên bao bì; nếu ánh
+sáng làm cháy một mặt sản phẩm, camera đối diện cần còn mặt nhận diện được. Khả
+năng bổtrợphải được kiểm chứng với cảthao tác lấy ra, vì sản phẩm thường bịcầm che
+nhiều hơn khi rút khỏi giỏ.
+Cân cần đặt dưới khay sao cho tải của hàng truyền qua loadcell. Khay không được tựa
+hoặc cọvào kết cấu cốđịnh tạo đường truyền lực song song. Dây dẫn phải có độchùng
+phù hợp đểkhông kéo khay khi tải thay đổi. Các yếu tốcần đo bổsung khi hoàn thiện
+bản vẽgồm khoảng cách camera tới vùng hàng, độcao ToF, góc nghiêng camera, vịtrí
+các điểm tựa và hành trình biến dạng cho phép của loadcell. Cấu hình này đang được
+đánh giá trước hết với một sản phẩm mỗi thao tác và xe đứng yên.
+3.2.2
+Sơ đồkhối phần cứng và giao thức kết nối
+Hình 3.3: Sơ đồkhối kết nối phần cứng và giao thức truyền nhận tín hiệu
+Sơ đồchi tiết vềsựphân bổtín hiệu và ánh xạcác chân kết nối trên trạm xửlý biên
+Raspberry Pi được thểhiện trong Hình 3.3.
+Raspberry Pi 4 cung cấp các cổng USB và đầu nối GPIO phục vụthu nhận dữliệu
+từcác thiết bịngoại vi . Hai camera truyền luồng ảnh trực tiếp qua chuẩn kết nối USB
+UVC; bộthu nhận được cấu hình trình điều khiển V4L2 với định dạng nén MJPG ởđộ
+phân giải 640 × 480. Cụm cảm biến ToF chia sẻchung bus giao tiếp I2C (các đường SDA
+và SCL), tuy nhiên chân kích hoạt XSHUT của từng cảm biến được đấu nối và điều khiển
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+24
+
+--- PDF PAGE 27 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+độc lập từcác chân GPIO riêng biệt. Cảm biến Loadcell được kết nối vào đầu vào vi sai
+của bộbiến đổi analog-to-digital HX711; Raspberry Pi thu nhận tín hiệu sốtừHX711
+qua giao thức 2 dây (PD_SCK và DOUT) thay vì đo trực tiếp tín hiệu điện áp từcầu
+điện trở.
+Bảng 3.2: Ánh xạtín hiệu theo cấu hình mã nguồn và đầu nối Pi
+Tín hiệu
+BCM
+Chân vật lý
+Vai trò
+ToF SDA
+2
+3
+Dữliệu I2C dùng chung
+ToF SCL
+3
+5
+Xung I2C dùng chung
+ToF1 XSHUT
+17
+11
+Khởi tạo địa chỉ0x30
+ToF2 XSHUT
+27
+13
+Khởi tạo địa chỉ0x31
+ToF3 XSHUT
+22
+15
+Khởi tạo địa chỉ0x32
+HX711 DOUT
+23
+16
+Đầu vào dữliệu số
+HX711 PD_SCK
+24
+18
+Đầu ra xung đọc ADC
+Camera CAM0 và CAM2
+USB
+Cổng USB
+Thu nhận ảnh UVC
+GM65 trong V2
+USB
+Cổng USB
+Nhận mã qua cổng nối tiếp USB
+Bảng 3.2 mô tảchân tín hiệu của nhánh tham chiếu. DOUT BCM23 và PD_SCK BCM24
+được đối chiếu thêm với tệp hiệu chuẩn tại thiết bị; tệp này không được Git quản lý vì
+phụthuộc từng cân. Sơ đồđấu nối đi kèm thểhiện các net và đầu nối module, chưa phải
+bản vẽPCB hoặc hồsơ hoàn công. Điện áp V_TOF/V_HX711, kiểu bo chuyển mức và dây
+cầu loadcell phải được xác nhận theo đúng module đang sửdụng.
+Hình 3.4: Sơ đồđấu nối tín hiệu và miền nguồn của khối tại biên.
+GPIO của Pi hoạt động ởmức logic 3,3 V. SDA/SCL và XSHUT phải tương thích
+mức này; kiểm tra tổng điện trởpull-up khi mắc nhiều breakout. DOUT không được đưa
+mức 5 V trực tiếp vào Pi. Nếu HX711 có DVDD tách riêng thì chọn miền sốtương thích
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+25
+
+--- PDF PAGE 28 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3,3 V; với bo cấp nguồn khác phải kiểm tra hoặc bổsung chuyển mức phù hợp cảDOUT
+và PD_SCK. Không suy điện áp module từđiện áp tối đa của IC. Nối mass chung; xác
+định E+/E−và A+/A−theo tài liệu loadcell, không mặc định theo màu dây. Định mức
+nguồn, sụt áp và chống nhiễu cần được đo cùng hai camera đang hoạt động.
+3.2.3
+Thu nhận song song và bảo toàn dấu thời gian
+Mỗi camera có bộthu nhận riêng, lưu khung hình kèm mã thứtựvà dấu thời gian.
+Cân được đọc trong một tiến trình độc lập đểviệc suy luận ảnh không chặn trực tiếp vòng
+đọc GPIO. ToF cung cấp sựkiện tới bộđiều phối. Luồng AI dùng chung một interpreter
+cho cảhai nguồn ảnh; đây là chia sẻtài nguyên suy luận, không phải suy luận hai ảnh
+đồng thời trên hai bản sao mô hình.
+Vòng đệm khung hình và bộđệm của driver phục vụhai mục đích khác nhau. Bốn
+buffer yêu cầu ởdriver giúp duy trì chuỗi thu nhận; vòng đệm ứng dụng giữảnh gần đây
+đểchọn lại ảnh phù hợp khi AI sẵn sàng. Tăng sốbuffer không làm mô hình suy luận
+nhanh hơn. Nếu xửlý nối tiếp toàn bộảnh cũ, hàng đợi có thểkhiến kết quảphản ánh
+một sản phẩm đã rời vùng nhìn. V3 chọn ảnh trong cửa sổngắn và lưu đúng dấu thời
+gian của ảnh đã chọn đểkiểm soát vấn đềnày.
+Các log thửtrước đó ghi nhận CAM0 khoảng 30 FPS và CAM2 khoảng 25,7–25,9 FPS
+dù cảhai được yêu cầu 30 FPS. Đây là quan sát ởcấu hình thửcụthể, không phải kết
+quảđo chuẩn hóa cho mọi điều kiện. Đánh giá phần cứng cần ghi tốc độnhận ảnh thực,
+sốlần kết nối lại và tuổi ảnh tại thời điểm trảkết quả; trường FPS do driver báo cáo chỉ
+mô tảcấu hình đã thương lượng.
+3.3
+Xây dựng mô hình thịgiác máy tính và triển khai
+Edge AI
+3.3.1
+Nguồn dữliệu quy mô và phân bốlớp
+Bộnckh.yolov11.zip có 4.559 ảnh và sáu lớp, cùng thứtựID với best.pt. Metadata
+ghi workspace d23cqci01ns-workspace-efsyz, project nckh-p6tzz, trường version là
+chuỗi “dataset”; chưa có mã version sốđểsuy diễn. README ghi thời điểm xuất 14/10/2026
+05:01 GMT và không áp dụng preprocessing hoặc augmentation trên Roboflow.
+Bảng 3.3: Sốảnh và đối tượng theo các tập trong ZIP
+Tập
+Sốảnh
+Sốđối tượng
+Train
+3.191
+6.532
+Validation
+912
+1.873
+Test
+456
+916
+Tổng
+4.559
+9.321
+Tỷlệchia theo sốảnh xấp xỉ70/20/10. Đếm từng dòng nhãn cho kết quảkhớp toàn
+bộCSV theo lớp và theo split; vì vậy Count ởCSV là sốđối tượng được gán nhãn, không
+phải sốảnh. Một ảnh có thểchứa nhiều đối tượng cùng hoặc khác lớp.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+26
+
+--- PDF PAGE 29 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Bảng 3.4: Mapping và sốđối tượng đã đối chiếu với CSV
+ID / Nhãn
+Train
+Val
+Test
+Tổng
+0 / BIMBIMPOCA
+559
+135
+104
+798
+1 / CAFEG7
+593
+186
+75
+854
+2 / giay uot
+640
+165
+62
+867
+3 / sua Vina
+688
+224
+112
+1024
+4 / sua dac
+775
+208
+103
+1086
+5 / tay
+3277
+955
+460
+4692
+Tổng
+6532
+1873
+916
+9321
+Hình 3.5: Phân bốđối tượng theo lớp và split. Sốliệu kiểm kê nhãn gốc trong ZIP, bao
+gồm hộp và đa giác.
+Tay có 4.692 đối tượng, chiếm 50,34% tổng nhãn và gấp 5,88 lần Poca. Riêng năm
+SKU, tỷlệlớp lớn nhất/nhỏnhất chỉ1,36 lần. Có 4.254 ảnh chứa tay nhưng 4.692 nhãn
+tay, minh họa sựkhác nhau giữa sốảnh và sốinstance. Mức cân bằng này mô tảdữliệu,
+chưa chứng minh AP từng lớp hoặc khảnăng vận hành.
+3.3.2
+Minh họa ảnh thật và đặc điểm nhãn
+Sáu khung dưới được chọn có chủđích từsplit test đểminh họa năm SKU và tay.
+Màu xanh là nhãn sản phẩm, màu cam là tay; đa giác giữđường biên gốc. Đây là ground
+truth trong dữliệu, không phải ảnh chạy YOLO, không có confidence hay kết luận nhận
+diện đúng.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+27
+
+--- PDF PAGE 30 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.6: Năm sản phẩm và tay trong bộdữliệu thực. Các ô a–f tương ứng Poca, G7,
+giấy ướt, sữa Vina, sữa đặc và tay không có SKU mục tiêu.
+Ởa, gói Poca biến dạng và phần mặt bao bì không hướng trực diện; b thểhiện G7
+xoay nghiêng; c và e có tay che một phần sản phẩm; d có hộp sữa nằm ngang. Logo, màu
+và chữnhìn thấy thay đổi theo cách cầm. Hộp tay và hàng có thểchồng nhau; IoU hai
+hộp không bằng tỷlệphần sản phẩm thực sựbịche khuất.
+Ô f cho thấy nhãn tay có cảmột phần cẳng tay, cần thống nhất quy ước gán nhãn.
+Toàn ZIP có 4.129 ảnh đồng thời chứa tay và SKU, 125 ảnh chỉcó nhãn tay, 67 ảnh có
+SKU không có nhãn tay và 238 ảnh nhãn rỗng. Các ảnh rỗng cần được kiểm duyệt trước
+khi coi là negative; ảnh tay không hàng vẫn cần nhãn tay.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+28
+
+--- PDF PAGE 31 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3.3.3
+Chuẩn hóa nhãn và cấu hình huấn luyện
+ZIP có 8.730 dòng hộp bao và 591 dòng đa giác, tổng 9.321 đối tượng. Trong 173 tệp,
+hai định dạng xuất hiện cùng nhau. Đểchuẩn bịdữliệu detection, đa giác được quy về
+hộp theo min/max tọa độx và y. Đây là phép quy đổi minh họa; bước chuyển nhãn thực
+đã dùng cho lượt train best.pt.
+Hình 3.7: Nhãn gốc và minh họa chuẩn hóa cho detection. Bên phải dùng hộp bao đa giác
+và letterbox 320; không phải output NCNN.
+Có 3.981 ảnh 640 × 480 và 578 ảnh 1280 × 720. Khi letterbox vào 320 × 320, hai loại
+lần lượt thành 320 × 240 và 320 × 180, đệm trên/dưới 40 và 70 pixel. Vì vậy parser phải
+khôi phục box theo đúng scale/padding của từng ảnh, không dùng một hằng sốđệm cho
+toàn bộtập.
+Kiểm kê không thấy ảnh thiếu tệp nhãn, ID ngoài 0–5 hay hộp diện tích bằng 0. Có
+bốn hộp có cạnh suy ra vượt biên khoảng 0,5 pixel, cần rà quy tắc làm tròn/clipping;
+chưa thểkết luận trainer loại các nhãn này. Không có tệp ảnh trùng byte, nhưng 29/32
+nhóm tiền tố/ngày suy từtên file xuất hiện ởnhiều split. Đây là chỉbáo cần kiểm tra
+độc lập theo phiên; không phải bằng chứng xác nhận rò rỉdữliệu.
+Bảng 3.5: Cấu hình lượt v3_final_yolo11n_320 lưu trong checkpoint
+Nhóm
+Giá trị
+Model / thư viện
+yolo11n.pt; Ultralytics 8.4.177
+Epochs / batch / input
+100 / 16 / 320 × 320
+Optimizer / lr0 / lrf
+AdamW / 0,001 / 0,01
+Weight decay / hệsốloss
+0,0005; box=7,5; cls=0,5; dfl=1,5
+Huấn luyện trên Google Colab. Metadata còn ghi seed=42, deterministic=True,
+workers=8, amp=True, warmup_epochs=3, patience=20, cos_lr=False. Augmentation
+online đã mô tảởmục 2.3.8. Mapping và thống kê ZIP khớp CSV.
+3.3.4
+Triển khai model sáu lớp trên Raspberry Pi
+Theo xác nhận của người thực hiện, YOLO11n chạy bằng NCNN trên Raspberry Pi
+4 RAM 8 GB; mô hình được huấn luyện trên Google Colab. Checkpoint nguồn best.pt
+của lượt v3_final_yolo11n_320 gồm năm sản phẩm và tay, input train 320 × 320.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+29
+
+--- PDF PAGE 32 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Bảng 3.6: Cấu hình triển khai YOLO11n trên Raspberry Pi 4
+Thành phần
+Cấu hình đã xác nhận
+Cần bổsung
+Thiết bịbiên
+Raspberry Pi 4, RAM 8 GB
+OS; nguồn cấp; tản nhiệt: ...
+Model và runtime
+YOLO11n, 5 sản phẩm + tay; NCNN
+Phiên bản NCNN; kiểu số: ...
+Input
+Train 320 × 320
+Input inference thực tế: ...
+Camera
+Kích hoạt theo tín hiệu ToF
+Loại camera; capture/FPS: ...
+Ngưỡng và xửlý
+NCNN chạy trên Pi 4
+Confidence/IoU; threads/skip: ...
+Bộmodel export
+Dùng NCNN theo xác nhận
+File NCNN/checksum: ...
+Mã deploy/rpi4/smart_retail_cart_pi4 cung cấp đường camera và detector. Model
+NCNN phải dùng đúng mapping sáu lớp. Head cơ bản có 70 kênh trước giải mã và 10
+kênh sau giải mã; input, layout và kiểu sốcần kiểm tra trên file export thực tế. Việc đã
+chạy NCNN chưa thay thếphép đo độchính xác sau export.
+Preprocess giữtỷlệbằng letterbox và padding nền 114; chuyển BGR/RGB, float32,
+chia 255 và chuyển C × H × W. Postprocess giải mã, NMS theo lớp và đổi box vềảnh
+camera. Sai màu, chuẩn hóa hoặc padding có thểlàm kết quảsai dù trọng sốđúng.
+Camera xửlý khi nhận tín hiệu kích hoạt từToF, theo xác nhận của người thực hiện.
+Mã nguồn có đường CSI/Picamera2 và USB/OpenCV.
+Thiết bịtriển khai là Raspberry Pi 4 RAM 8 GB với NCNN.
+3.3.5
+Hình học đầu vào và yêu cầu tương thích sau export
+Model NCNN cần giữtương thích với checkpoint vềmàu ảnh, chuẩn hóa, kích thước
+đầu vào, giải mã box và mapping lớp. Export thành công chưa tựchứng minh các đầu ra
+tương đương. Các khái niệm dưới đây giải thích yêu cầu hình học; phép đối chiếu và kết
+quảkiểm thửcụthểđược tổng hợp ởcuối báo cáo.
+Ví dụtoán học: nhãn chuẩn hóa “0 0.4765625 0.4875 0.3375 0.4708333333” trên ảnh
+416 × 312 cho box xấp xỉ(128,05; 78,65; 268,45; 225,55). Đưa tới input 320 dùng scale
+10/13, ảnh thành 320 × 240 rồi đệm 40 pixel trên/dưới; box thành (98,5; 100,5; 206,5;
+213,5). Khôi phục phải trừđệm rồi chia scale. Đây không phải kết quảmodel mới.
+Khi đầu vào khác tỷlệ, parser phải đưa box trởlại hệtọa độcamera. Tên nhãn phụ
+thuộc đúng mapping; điểm dựđoán phụthuộc hợp đồng màu/chuẩn hóa; hộp trùng phụ
+thuộc giải mã và NMS. Các yêu cầu này xác định giao diện kỹthuật giữa model export
+và chương trình camera.
+3.3.6
+Kích hoạt xửlý và phối hợp cảm biến
+ToF phát tín hiệu kích hoạt đểcamera xửlý nhận diện sản phẩm. Mã cảm biến người
+thực hiện cung cấp là VL503X. Hướng thao tác được xác định bằng thay đổi cân: tăng
+khối lượng là thêm hàng, giảm khối lượng là lấy hàng khỏi xe. Vềmô hình hóa, gọi mtrước
+và msau là giá trịcân trước và sau thao tác:
+∆m = msau −mtrước
+(3.1)
+∆m > 0 ⇒thêm hàng;
+∆m < 0 ⇒lấy hàng
+(3.2)
+Dấu của ∆m xác định hướng thao tác; YOLO11n cung cấp lớp sản phẩm. Quy tắc
+dấu chưa mô tảcách chống rung, lực tì tay hoặc xác nhận cân ổn định; các chi tiết này
+cần bổsung từchương trình thực tế.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+30
+
+--- PDF PAGE 33 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.8: Phối hợp ToF, camera và cân trên Raspberry Pi 4.
+3.4
+Thuật toán đối chiếu chéo và cơ chếxửlý ngoại
+lệ
+3.4.1
+Logic phát hiện thao tác và đối chiếu dữliệu AI với khối
+lượng
+Biểu diễn một lượt thao tác
+Hệthống hợp nhất quyết định dựa trên các quy tắc thời gian và sựkiện: cảm biến
+ToF xác định thời điểm mởcửa sổquan sát; mô hình YOLO hoặc đầu đọc GM65 nhận
+diện định danh SKU; dấu của ∆W phân loại hướng thao tác (ADD/REMOVE) và độlớn
+|∆W| kiểm tra khối lượng một đơn vịsản phẩm. Một lượt thao tác (Session) lưu trữmã
+định danh, UUID sựkiện, mốc thời gian ENTER/CLEAR, mốc cân BEFORE/AFTER,
+epoch của ADC, thếhệcamera, phiên làm việc và bản chụp giỏhàng.
+Trong chếđộmặc định, lượt thao tác được kích hoạt (sựkiện ENTER) khi ít nhất 1
+trong 3 cảm biến ToF ghi nhận 2 mẫu liên tiếp thỏa 0 < d < 500 mm. Sựkiện CLEAR
+được xác nhận khi cả3 cảm biến đều báo hết vật thểtrong 5 chu kỳcập nhật liên tiếp.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+31
+
+--- PDF PAGE 34 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.9: Lưu đồtổng thểquy trình hoạt động của hệthống trong nhận diện và xửlý
+giao dịch.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+32
+
+--- PDF PAGE 35 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.10: Sơ đồkhối mô tảquy trình xửlý song song và đồng bộhóa dữliệu từmô hình
+thịgiác máy tính và cảm biến cân nặng.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+33
+
+--- PDF PAGE 36 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.11: Lưu đồthuật toán xửlý logic xác nhận thao tác thêm hoặc lấy sản phẩm dựa
+trên đối chiếu mã vạch và cân nặng.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+34
+
+--- PDF PAGE 37 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.12: Lưu đồquy trình giao tiếp mạng, đồng bộdữliệu giao dịch và xửlý phản hồi
+từmáy chủtrung tâm.
+Chọn ảnh khi sản phẩm đang đi qua
+Khi một lần suy luận kết thúc, bộchọn ảnh khảo sát các khung hình gốc thu nhỏ
+(160 × 120) trong cửa sổgần nhất đểtính toán mức độbiến đổi so với ảnh nền B. Mặt
+nạthay đổi M(x, y) được tính bằng cách bù biến thiên độsáng toàn cục theo công thức:
+M(x, y) =
+{︄
+1,
+khi |D(x, y) −median(D)| > 18
+0,
+ngược lại
+(3.3)
+trong đó D = G −B là độchênh lệch mức xám 8-bit giữa ảnh hiện tại G và ảnh nền B.
+Một ảnh đạt độtin cậy mạnh (confidence ≥0,80) đủlàm bằng chứng định danh độc
+lập. Nếu phát hiện nhiều nhãn mâu thuẫn hoặc nhãn yếu (0,65 ≤confidence < 0,80), hệ
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+35
+
+--- PDF PAGE 38 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+thống chuyển sang quy trình xửlý ngoại lệ.
+Khôi phục bằng ảnh lưu và vùng quan tâm (ROI)
+Khi bằng chứng trực tiếp chưa đủ, hệthống truy xuất các khung ảnh lưu trong lượt
+và trích xuất vùng quan tâm (ROI) dựa trên vùng biến đổi có chi tiết cao. Ảnh cắt ROI
+được đưa qua trình thông dịch đểsuy luận lại với ngưỡng chấp nhận tăng lên ≥0,85.
+Ghép bằng chứng theo đặc điểm ADD và REMOVE
+• Thao tác ADD (Thêm hàng): Sản phẩm thường xuất hiện trên camera trước
+khi chạm khay cân, do đó hệthống giữứng viên nhận diện từđầu sựkiện ENTER.
+• Thao tác REMOVE (Lấy hàng): Trọng lượng giảm ngay khi sản phẩm được
+nhấc khỏi khay trước khi đi qua vùng quan sát của camera. Cửa sổthu thập ảnh
+được mởrộng đểquan sát cảpha nhấc và pha di chuyển ra khỏi xe.
+Xác định mốc cân ổn định và chốt hành động
+Mốc cân ổn định (Raw Plateau) đòi hỏi tối thiểu 5 mẫu ADC liên tiếp kéo dài ít nhất
+0,35 s, độphân tán không vượt quá 5 g và khoảng cách giữa các mẫu không quá 0,25 s.
+Biến thiên khối lượng ∆W được tính bằng:
+∆W = Wsau −Wtrước
+(3.4)
+{︄
+Thao tác ADD (Thêm):
+∆W ≥10 g
+Thao tác REMOVE (Lấy):
+∆W ≤−10 g
+(3.5)
+Nếu −10 g < ∆W < 10 g, hệthống coi như chưa có thay đổi tải trọng hợp lệvà giữ
+nguyên trạng thái giỏhàng.
+Bảng 3.7: Các điều kiện chốt giao dịch và vai trò kiểm soát lỗi
+Điều kiện
+Vai trò
+Giới hạn còn lại
+Một nhãn mạnh trong lượt
+Định danh ứng viên
+Nhãn mạnh vẫn có thểsai
+BEFORE/AFTER ổn định
+Đo ∆W trong cùng epoch
+Tì tay ổn định tạo tải giả
+Dấu ∆W vượt ±10 g
+Phân biệt ADD/REMOVE
+Không
+định
+danh
+SKU
+bằng gram
+Mapping & cân chuẩn SQL
+Kiểm tra 1 đơn vịchuẩn
+SKU
+SKU cùng trọng lượng dễ
+lẫn
+Phiên giỏ& proof hợp lệ
+Tránh gửi bằng chứng cũ
+Server V2 còn khoảng hở
+kiểm phiên
+Ổn định thời gian đọc HX711 bằng DMA
+Tín hiệu từADC HX711 được thu nhận thông qua daemon pigpio bằng xung DMA
+trên Raspberry Pi 4. Mỗi chu kỳđọc gồm 25 xung (mức cao 20 µs, mức thấp 30 µs). Việc
+giải mã dựa trên thời điểm cạnh xung có dán mốc thời gian phần cứng giúp loại bỏhoàn
+toàn nhiễu lập lịch của hệđiều hành Linux.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+36
+
+--- PDF PAGE 39 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3.4.2
+Cơ chếkích hoạt hệthống dựphòng quét mã vạch
+Khi AI không phân loại được, nhãn xung đột hoặc ∆W không khớp với cơ sởdữliệu
+SQL, hệthống chuyển sang chếđộquét mã vạch dựphòng GM65:
+• ADD dựphòng: Người dùng nhấc sản phẩm vừa đặt ra (tải giảm ≥10 g), quét
+mã vạch EAN-13 qua GM65 và đặt lại vào giỏ.
+• REMOVE dựphòng: Người dùng quét mã vạch của sản phẩm muốn lấy ra và
+giữbên ngoài giỏ(khay cân ghi nhận giảm đúng trọng lượng SKU).
+Xác thực và ghi nhận giao dịch (ACK & Journal)
+Trước khi gửi dữliệu lên máy chủ, ứng dụng lưu trữgiao dịch vào nhật ký bền vững
+(SQLite Journal) kèm UUID duy nhất. Tiến trình BackendActor thực hiện kiểm tra chéo
+lần cuối trước khi phát yêu cầu HTTP POST. Chỉkhi nhận được phản hồi ACK với
+decision=accepted, giao diện mới công bốcập nhật giỏhàng chính thức.
+3.4.3
+Phạm vi đóng góp và giới hạn thuật toán
+Các thành phần cốt lõi đã hiện thực
+Hệthống đã triển khai hoàn chỉnh các khối chức năng chính bao gồm:
+• Điều phối một mô hình suy luận (Interpreter) cho hai camera.
+• Chọn lọc khung ảnh có ích dựa trên sựkiện kích hoạt từcảm biến.
+• Ghép nối thông tin hình ảnh và trọng lượng theo từng pha thao tác (ADD và REMOVE).
+• Bảo toàn tính liên tục dữliệu giữa bộchuyển đổi ADC và hệthống camera.
+• Xác minh thông tin sản phẩm theo danh mục (Catalog).
+• Ghi nhận và đảm bảo tính toàn vẹn giao dịch thông qua nhật ký bền vững (Journal)
+và cơ chếxác nhận (ACK).
+Hiệu quảthực tếcủa từng thành phần vềđộchính xác và độtrễcần được đánh giá định
+lượng thông qua phép thửloại bỏthành phần (Ablation Study) trên cùng bộdữliệu và
+cấu hình thửnghiệm; không suy ra tính mới hoặc mức cải thiện chỉtừsốlượng module
+đã tích hợp.
+Các giới hạn của thuật toán
+Một sốgiới hạn tồn tại cần được làm rõ trong phạm vi công bố:
+• Giới hạn thao tác: Hệthống hiện tại chỉtối ưu xửlý một sản phẩm trong mỗi
+lượt thao tác.
+• Đổi món cùng khối lượng: Chưa xửlý tổng quát trường hợp tráo đổi hai sản
+phẩm khác loại nhưng có cùng trọng lượng.
+• Phân tách đa SKU: Chưa hỗtrợtựđộng bóc tách nhiều SKU xuất hiện đồng
+thời trong một thao tác.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+37
+
+--- PDF PAGE 40 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+• Nhiễu tải trọng cơ học: Lực tì tay hoặc tác động ngoại lực có thểtạo mốc tải
+giả(∆W bịsai lệch).
+• Rủi ro nhận diện một khung hình: Nguy cơ nhầm nhãn mạnh khi quyết định
+chốt chỉdựa vào một ảnh đơn lẻ.
+• Cân bằng trọng lượng (∆W ≈0): Khi nhiều sản phẩm đưa vào và lấy ra đồng
+thời có tổng biến thiên khối lượng bằng 0, tín hiệu từcân không đủdữliệu đểxác
+định giao dịch.
+Các giới hạn này đòi hỏi việc thay đổi mô hình tác vụhoặc bổsung các ràng buộc phần
+cứng/thuật toán mới; việc hạngưỡng độtin cậy (Confidence Threshold) đơn thuần
+không thểgiải quyết triệt để.
+3.5
+Cấu trúc Cơ sởdữliệu PostgreSQL và Đặc tả
+Endpoint API (FastAPI) nhận dữliệu IoT từ
+Raspberry Pi
+3.5.1
+Tổng quan kiến trúc lớp lưu trữvà xửlý dữliệu IoT
+Trong kiến trúc tổng thểcủa hệthống xe đẩy mua sắm thông minh (Smart Retail
+Cart), lớp lưu trữdữliệu và xửlý sựkiện đóng vai trò trung tâm, là cầu nối giữa các
+thiết bịngoại vi vật lý (Raspberry Pi 4, cảm biến khối lượng Loadcell HX711, Camera AI
+và đầu đọc mã vạch GM65) với hệthống giao diện người dùng (App Tablet, Web Admin,
+PWA).
+Nhằm đáp ứng yêu cầu khắt khe vềtính nhất quán dữliệu (ACID) khi các sựkiện
+phần cứng phát sinh đồng thời, hệthống lựa chọn PostgreSQL làm hệquản trịcơ sởdữ
+liệu quan hệchính. Quá trình xửlý giao dịch được đảm bảo an toàn thông qua các ràng
+buộc toàn vẹn, tính năng UPSERT (ON CONFLICT DO UPDATE), và các câu lệnh truy vấn
+có trảvềkết quảtức thì (RETURNING).
+Đóng vai trò là một IoT Gateway Server, máy chủFastAPI (Python) lắng nghe các
+kết nối HTTP/HTTPS trên cổng 8000, tiếp nhận các gói tin dữliệu JSON gửi vềtừ
+Raspberry Pi. Tại đây, máy chủthực thi thuật toán Sensor Fusion — hợp nhất dữliệu
+từba luồng cảm biến đểđưa ra quyết định chốt đơn hàng chính xác trước khi ghi dữ
+liệu vào PostgreSQL. Kiến trúc này tuân thủnguyên lý Single Source of Truth (Nguồn
+sựthật duy nhất), đảm bảo không xảy ra hiện tượng lệch pha dữliệu giữa thiết bịbiên
+và hệthống trung tâm.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+38
+
+--- PDF PAGE 41 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3.5.2
+Thiết kếCơ sởdữliệu PostgreSQL
+Hình 3.13: Cơ sởdữliệu bao gồm 6 bảng nghiệp vụcốt lõi phục vụluồng xửlý IoT.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+39
+
+--- PDF PAGE 42 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Bảng 3.9: Danh mục các API Endpoint của hệthống
+STT
+Method
+Endpoint
+Mô tả
+Ai gọi
+1
+GET
+/health
+Kiểm tra trạng thái hệ
+thống
+Monitor/DevOps
+2
+GET
+/api/v1/products
+Danh mục sản phẩm
+Pi, Android, Web
+3
+PUT
+/api/v1/products/
+{barcode}
+Thêm/cập nhật sản phẩm
+Web Admin
+4
+POST
+/api/v1/sessions
+Tạo phiên mua hàng mới
+Raspberry Pi
+5
+GET
+/api/v1/sessions/
+active
+Lấy phiên đang active
+Pi, Android
+6
+POST
+/api/v1/sessions/
+{id}/complete
+Kết thúc phiên
+Pi, Android
+7
+POST
+/api/v1/cart/
+decisions
+Xác minh Sensor Fusion
+Raspberry Pi
+8
+GET
+/api/v1/cart/
+{session_id}
+Xem giỏhàng
+Android App
+9
+POST
+/api/v1/events
+Ghi sựkiện cảm biến thô
+Raspberry Pi
+10
+GET
+/api/v1/events
+Lấy danh sách sựkiện
+Debug/Monitoring
+11
+POST
+/api/iot/
+set-weight-anomaly
+Cập nhật trạng thái bất
+thường
+Pi / Internal
+12
+GET
+/api/cart/ status
+Kiểm tra cảnh báo an ninh
+Android App
+13
+GET
+/api/v1/thingsboard/
+status
+Trạng
+thái
+đồng
+bộ
+ThingsBoard
+Monitor
+14
+POST
+/product
+Tra cứu sản phẩm (legacy)
+Pi (fallback)
+Đặc tảGiao diện Lập trình Ứng dụng (FastAPI) và Thuật toán Sensor Fusion
+• Tính lũy đẳng (Idempotency): Trường client_event_id trong CartDecisionRequest
+kết hợp với bảng processed_cart_requests triển khai cơ chếIdempotent Request
+Processing. Nếu Raspberry Pi gửi lại cùng một yêu cầu do sựcốgián đoạn mạng,
+máy chủsẽtrảvềkết quảđã lưu trong bộnhớtạm (cache) thay vì thực thi xửlý
+lại giao dịch.
+• Tựđộng chuyển đổi cấu trúc CSDL (Schema Migration): Trong quá trình
+khởi động (hàm lifespan), FastAPI tựđộng kiểm tra và thêm các cột còn thiếu
+vào bảng products thông qua câu lệnh ALTER TABLE ... ADD COLUMN IF NOT
+EXISTS. Điều này đảm bảo tính tương thích ngược với các phiên bản cơ sởdữ
+liệu cũ (legacy stroller_db từWeb Admin).
+• Đồng bộdữliệu song song (Dual-Write Consistency): Mỗi phiên mua hàng
+được ghi đồng thời vào hai bảng:
+– shopping_sessions: Phục vụtrực tiếp cho hệthống IoT FastAPI.
+– shoppingsessions: Phục vụcho Web Admin (Node.js Shop Server lắng nghe
+trên cổng 3000).
+Cơ chếnày đảm bảo cảhai hệthống hiển thịtrạng thái phiên mua hàng nhất quán
+mà không cần giao tiếp trực tiếp qua API.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+40
+
+--- PDF PAGE 43 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3.5.3
+Kết luận
+Thiết kếcơ sởdữliệu PostgreSQL với 6 bảng nghiệp vụkết hợp với hệthống API
+FastAPI gồm 14 endpoint đã đáp ứng đầy đủcác yêu cầu kỹthuật của hệthống xe đẩy
+mua sắm thông minh:
+• Tính toàn vẹn dữliệu: Sửdụng giao dịch ACID, các ràng buộc khóa ngoại
+(Foreign Key) và ràng buộc CHECK đểđảm bảo không phát sinh trạng thái dữliệu
+không hợp lệ.
+• Khảnăng truy vết (Auditability): Bảng cart_events lưu trữtoàn bộlịch sử
+từng quyết định của thuật toán Sensor Fusion, bao gồm cảcác yêu cầu bịhệthống
+từchối.
+• Tích hợp IoT thời gian thực: Endpoint POST /api/v1/cart/decisions xửlý
+đồng thời dữliệu từba nguồn cảm biến (GM65, HX711, Camera AI) trong một yêu
+cầu duy nhất.
+• Khảnăng quan sát (Observability): Mô hình Transactional Outbox Pattern
+đảm bảo toàn bộdữliệu sựkiện được đồng bộlên nền tảng ThingsBoard Cloud
+ngay cảkhi kết nối mạng gặp gián đoạn tạm thời.
+• Khảnăng co giãn (Scalability): Khai báo chỉmục B-Tree trên các cột thường
+xuyên truy vấn (session_id, status, created_at_ms) giúp duy trì hiệu năng xử
+lý cao khi quy mô dữliệu sựkiện tăng trưởng theo thời gian.
+3.6
+Thiết kếphần mềm điều khiển và giám sát (Frontend
+& Web)
+3.6.1
+Kiến trúc tổng thểvà công nghệgiao diện Tablet
+Ứng dụng máy tính bảng (Tablet) gắn trên xe đẩy mua sắm thông minh đóng vai trò
+là giao diện tương tác trực tiếp duy nhất giữa khách hàng và toàn bộhệsinh thái phần
+cứng IoT. Đểđáp ứng yêu cầu vận hành liên tục, giao diện mượt mà và đồng bộdữliệu
+tức thời, nhóm nghiên cứu đã lựa chọn và triển khai các công nghệhiện đại:
+• Nền tảng công nghệ: Ứng dụng được phát triển 100% bằng ngôn ngữKotlin trên
+nền tảng Jetpack Compose – bộcông cụgiao diện khai báo (Declarative UI ) hiện
+đại nhất của Google kết hợp hệthống thiết kếMaterial 3.
+• Mô hình kiến trúc: Áp dụng mô hình Clean Architecture kết hợp mẫu hình
+MVVM (Model – View – ViewModel). Dữliệu trong hệthống tuân thủnghiêm
+ngặt nguyên lý luồng dữliệu một chiều (Unidirectional Data Flow - UDF), trong
+đó trạng thái giỏhàng được quản lý tập trung tại AppViewModel thông qua các
+luồng StateFlow bất biến.
+• Tối ưu hóa hiển thịphần cứng: Màn hình Tablet được cấu hình cốđịnh theo
+phương ngang (android:screenOrientation="sensorLandscape"). Bốcục giao
+diện được thiết kếtheo tỷlệphân chia trực quan: 65% bềngang dành cho danh
+sách sản phẩm cuộn cảm ứng và 35% dành cho bảng tóm tắt đơn hàng, ưu đãi thành
+viên và các nút chức năng thanh toán.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+41
+
+--- PDF PAGE 44 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+3.6.2
+Mô tảluồng hoạt động của App Tablet (Giao diện giỏ
+hàng, cập nhật Real-time)
+Giai đoạn 1: Khởi tạo phiên mua sắm và kiểm tra giỏhàng tồn
+• Kiểm tra giỏhàng rỗng (checkCartEmptyOnStart): Khi khách hàng mới nhấn
+"Bắt đầu mua sắm", ứng dụng tựđộng kiểm tra trạng thái giỏvật lý và dữliệu
+phiên trước. Nếu phát hiện giỏhàng chưa được dọn sạch từkhách trước, hệthống
+ngay lập tức kích hoạt lớp phủcảnh báo LeftoverCartWarningOverlay, yêu cầu
+khách hàng hoặc nhân viên dọn sạch giỏđểđưa tải trọng cảm biến về0 g trước khi
+cho phép bắt đầu.
+• Cấp phát phiên (syncOrAttachSession): App gửi yêu cầu GET /api/v1/sessions/active
+tới máy chủđểkiểm tra xem xe đẩy đã có phiên hoạt động nào trên phần cứng
+(Raspberry Pi) chưa. Nếu chưa có, App phát lệnh POST /api/v1/sessions đểcấp
+phát một mã phiên mới duy nhất (activeSessionId). Khách hàng có thểquét mã
+QR hội viên từWeb PWA đểáp dụng voucher ưu đãi.
+Giai đoạn 2: Thu thập dữliệu cảm biến thời gian thực và đồng bộgiỏhàng
+• Phát hiện sựkiện phần cứng: Cụm cảm biến phần cứng gồm Camera AI (nhận
+diện hình ảnh vật thể), Cân điện tửHX711 (đo biến thiên trọng lượng ∆W) và Đầu
+quét mã vạch GM65 (quét mã EAN-13 khi cần) thu thập dữliệu và gửi lên máy
+chủAPI Gateway.
+• Cơ chếPolling & Diff Engine 650 ms: Một Coroutine chạy ngầm trong viewModelScope
+trên Tablet liên tục thăm dò máy chủqua endpoint GET /api/v1/cart/{sessionId}
+với chu kỳđược tối ưu hóa ởmức 650 ms. Thuật toán Diffing so sánh oldMap và
+newMap đểnhận diện chính xác sựkiện thêm/bớt hàng, phát âm thanh báo hiệu và
+hiển thịthông báo nổi CartNotificationPill ởgóc màn hình.
+Giai đoạn 3: Tương tác giỏhàng trên Tablet và tối ưu hiển thị
+• Phân chia không gian hiển thị65/35: Giao diện Tablet được bốcục theo tỷlệ
+vàng 65% cho danh sách sản phẩm cuộn mượt mà (LazyColumn) và 35% cho bảng
+tổng kết đơn hàng, voucher hội viên và nút thanh toán.
+• Trải nghiệm giỏhàng phản hồi nhanh: Khách hàng có thểtương tác tăng/giảm
+sốlượng, xem hình ảnh và đơn giá trực tiếp. Khi có sản phẩm mới được cảm biến
+nhận diện, thẻthông báo màu xanh "Đã thêm sản phẩm +1"xuất hiện tức thời mà
+không gây giật lag giao diện.
+Giai đoạn 4: Kiểm tra bảo mật đối soát tải trọng, xửlý bất thường và thanh
+toán VietQR
+• Khóa giỏvà kiểm tra bất thường (Security & Anomaly): Khi khách hàng
+nhấn nút "Thanh toán", ứng dụng ngay lập tức chụp lại bản sao giỏhàng (_lockedCartSnapshot
+và kích hoạt cờkhóa isCartLocked = true. Nếu cảm biến Loadcell phát hiện tải
+trọng thực tếchênh lệch so với tổng trọng lượng danh mục sản phẩm, hộp thoại
+SensorAnomalyDialog lập tức xuất hiện.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+42
+
+--- PDF PAGE 45 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.14: Sơ đồkhối Giai đoạn 1 – Khởi tạo phiên mua sắm và kiểm tra giỏhàng tồn
+trên xe đẩy.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+43
+
+--- PDF PAGE 46 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.15: Sơ đồkhối Giai đoạn 2 – Thu thập dữliệu đa cảm biến và cơ chếPolling
+650 ms.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+44
+
+--- PDF PAGE 47 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.16: Sơ đồkhối Giai đoạn 3 – Trải nghiệm tương tác giỏhàng trên máy tính bảng.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+45
+
+--- PDF PAGE 48 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+• Quy trình giải tỏa bất thường: Sựcốbất thường có thểgiải tỏa theo 2 phương
+thức: Khách hàng tựquét mã vạch qua đầu đọc GM65 đểđối chiếu lại, hoặc nhân
+viên siêu thịcan thiệp nhập mã PIN quản trịviên (Staff 8888).
+• Chu trình thanh toán VietQR và đóng phiên: Sau khi giỏhàng được xác thực
+an toàn, hệthống sinh mã VietQR động chứa mã hóa đơn và sốtiền cần trả. Khách
+quét mã qua ứng dụng ngân hàng, Webhook phản hồi thành công, in hóa đơn điện
+tử, xóa sạch dữliệu phiên và hướng dẫn khách trảxe vềtrạm.
+Hình 3.17: Sơ đồkhối Giai đoạn 4 – Kiểm tra an toàn, xửlý bất thường và thanh toán
+VietQR.
+3.6.3
+Minh họa trực quan quy trình mua sắm trên App Tablet
+Dưới đây là bộảnh chụp thực tếtoàn bộ9 màn hình tương tác chính của ứng dụng
+Tablet trên xe đẩy thông minh:
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+46
+
+--- PDF PAGE 49 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.18: Màn hình Khởi động với biểu tượng nhận diện thương hiệu SmartCart PTIT.
+Hình 3.19: Màn hình Chào mừng hướng dẫn khách hàng bắt đầu phiên mua sắm.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+47
+
+--- PDF PAGE 50 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.20: Màn hình Đăng nhập hội viên bằng cách quét mã QR từđiện thoại di động.
+Hình 3.21: Màn hình Mua sắm chính ởtrạng thái sẵn sàng tựđộng nhận diện sản phẩm
+qua cảm biến IoT.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+48
+
+--- PDF PAGE 51 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.22: Giao diện khi Camera AI và GM65 nhận diện thành công sản phẩm Cà phê
+G7.
+Hình 3.23: Màn hình Chi tiết giỏhàng hiển thịdanh sách hàng hóa và bảng kê tổng tiền.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+49
+
+--- PDF PAGE 52 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.24: Màn hình Lựa chọn phương thức thanh toán (QR Banking, Ví điện tử, Tại
+quầy).
+Hình 3.25: Màn hình Hiển thịmã VietQR động kèm đồng hồđếm ngược chờxác nhận
+thanh toán.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+50
+
+--- PDF PAGE 53 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.26: Màn hình Kết thúc phiên mua sắm, xóa dữliệu bảo mật và hướng dẫn khách
+trảxe vềtrạm quy định.
+3.7
+Hệthống nền tảng Web Quản trịbán lẻ(Web
+Admin – Next.js 14)
+3.7.1
+Kiến trúc công nghệWeb Admin
+Phân hệWeb Admin được xây dựng nhằm cung cấp cho ban quản lý siêu thịcông cụ
+giám sát toàn diện mọi hoạt động kinh doanh, kho bãi và tình trạng hoạt động của đội
+xe đẩy IoT theo thời gian thực. Hệthống được phát triển trên nền tảng Next.js 14 (App
+Router), TypeScript và Tailwind CSS, giao tiếp trực tiếp với cơ sởdữliệu PostgreSQL
+(stroller_db) thông qua hệthống RESTful API Gateway (Node.js Express cổng 3000).
+3.7.2
+Phân hệ1: Bảng điều khiển tổng quan kinh doanh (Dashboard
+Overview)
+Giao diện tổng quan (URL: localhost:3001) cung cấp cái nhìn trực quan và nhanh
+chóng vềsức khỏe vận hành của siêu thị:
+• Thẻchỉsốtài chính KPI: Hiển thị5 thẻchỉsốthen chốt gồm Doanh thu hôm
+nay (VNĐ), Đơn hàng hôm nay, Sốlượng sản phẩm đang kinh doanh (10 mặt hàng),
+Sốlượng sản phẩm sắp hết và Sốxe đẩy đang hoạt động (0/8 xe).
+• Biểu đồdoanh thu 7 ngày: Biểu đồtương tác tựđộng vẽđường doanh thu thực
+tếtheo ngày từdữliệu giao dịch thành công trong PostgreSQL.
+• Trạng thái đơn hàng: Biểu đồhình tròn phân loại trực quan sốlượng đơn hàng
+đã thanh toán, đang xửlý và đã hủy.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+51
+
+--- PDF PAGE 54 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.27: Giao diện Bảng điều khiển Tổng quan kinh doanh (Dashboard Overview) trên
+Web Admin.
+3.7.3
+Phân hệ2: Quản lý và theo dõi dòng tiền đơn hàng (Orders
+Management)
+Giao diện Quản lý đơn hàng (URL: localhost:3001/orders) cho phép theo dõi toàn
+bộcác giao dịch phát sinh từxe đẩy thông minh và hệsinh thái Mock Bank:
+• Bảng dữliệu hóa đơn thời gian thực: Hiển thịchi tiết từng hóa đơn gồm Mã
+đơn (#ORD-98241,. . . ), Tên và sốđiện thoại khách hàng, Thời gian giao dịch, Số
+lượng mặt hàng, Tổng tiền thanh toán và Trạng thái (Hoàn thành, Chờxửlý, Đang
+mua sắm, Đã hủy).
+• Phương thức thanh toán đa dạng: Ghi nhận chính xác nguồn tiền gồm Ví điện
+tửSmartPay, ThẻVisa Platinum, Quét mã QR MockBank và Ví hội viên trảsau.
+• Tiện ích xuất báo cáo: Cho phép trích xuất toàn bộdữliệu giao dịch ra file CSV
+phục vụcông tác kếtoán và báo cáo doanh thu định kỳ.
+3.7.4
+Phân hệ3: Quản lý danh mục sản phẩm và giá niêm yết
+(Products Management)
+Phân hệQuản lý sản phẩm (URL: localhost:3001/products) lưu trữvà đồng bộ
+danh mục hàng hóa bán lẻ:
+• Danh mục sản phẩm chi tiết: Hiển thịđầy đủhình ảnh sản phẩm, tên mặt hàng
+(Muối tinh sấy, Khăn ướt Puri, Cà phê G7, Coca Cola lon, Sữa đặc Ông Thọ, Sữa
+Vinamilk, TH true MILK,. . . ), mã SKU/Barcode chuẩn EAN-13, ngành hàng, đơn
+giá niêm yết và sốlượng tồn kho.
+• Tìm kiếm và phân loại thông minh: Cung cấp công cụtìm kiếm tức thời theo
+từkhóa tên hoặc mã vạch, bộlọc theo danh mục ngành hàng và bộlọc trạng thái
+kinh doanh.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+52
+
+--- PDF PAGE 55 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.28: Giao diện Quản lý Đơn hàng và Lịch sửGiao dịch trên Web Admin.
+• Thao tác quản trịtrực tiếp: Cho phép quản trịviên thêm mới sản phẩm, cập
+nhật đơn giá hoặc xóa sản phẩm khỏi hệthống xe đẩy chỉvới 1 click.
+Hình 3.29: Giao diện Quản lý Danh mục Sản phẩm và Giá niêm yết trên Web Admin.
+3.7.5
+Phân hệ4: Quản lý kho hàng và luân chuyển hàng hóa
+(Inventory Management)
+Phân hệKho hàng (URL: localhost:3001/inventory) giám sát lượng hàng dựtrữ,
+giá trịluân chuyển và cảnh báo an toàn chuỗi cung ứng:
+• Thẻchỉsốkho bãi: Tổng sản phẩm lưu kho (800 đơn vị), Tổng giá trịtồn kho
+(24.850.000 VNĐ), Sốlượng sản phẩm sắp hết và hết hàng.
+• Biểu đồgiá trịtồn kho theo ngành: Biểu đồDonut phân tích cơ cấu giá trị
+hàng hóa: Thực phẩm tươi sống chiếm 68% (17 triệu VNĐ), Đồuống chiếm 23%
+(5.6 triệu VNĐ) và Bánh kẹo chiếm 9% (2.25 triệu VNĐ).
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+53
+
+--- PDF PAGE 56 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+• Nhật ký nhập / xuất kho gần đây: Lưu vết chứng từnhập kho từnhà cung
+cấp (Vinamilk, La Vie) và xuất kho lên quầy kệbán lẻtầng 1.
+Hình 3.30: Giao diện Quản lý Kho hàng và Biểu đồCơ cấu Tồn kho trên Web Admin.
+3.7.6
+Phân hệ5: Giám sát đội xe đẩy IoT trên bản đồ2D siêu
+thịthời gian thực (Smart Cart Live Floor Plan)
+Đây là phân hệcông nghệnổi bật nhất của Web Admin (URL: localhost:3001/smart-cart),
+kết hợp dữliệu telemetry từphần cứng và máy chủIoT ThingsBoard:
+• Bản đồmặt bằng siêu thị2D (Live Floor Plan): Bản đồtrực quan mô phỏng
+toàn bộmặt bằng siêu thịgồm Khu A (Đồuống), Khu B (Bánh kẹo), Khu C (Thực
+phẩm), Khu D (Gia dụng), Khu E (Hóa mỹphẩm), Khu F (Tươi sống), Dãy quầy
+thu ngân tựđộng (#01 – #10) và Trạm sạc pin kỹthuật.
+• Định vịxe đẩy theo thời gian thực (Radar Live): Các xe đẩy được đánh
+mã định danh (SC-001, SC-002, SC-003, SC-015, SC-016, SC-017, SC-008) hiển thị
+dưới dạng các điểm radar trực quan kèm tỷlệ% pin và trạng thái kết nối mạng
+(Màu xanh: Online, Màu vàng: Đang sạc, Màu đỏ: Offline).
+• Bảng giám sát chi tiết: Khi rê chuột vào từng xe, hệthống hiển thịpop-up chi
+tiết: Vịtrí hiện tại, % pin, Tên khách hàng đang sửdụng và thời điểm cập nhật tín
+hiệu gần nhất.
+3.8
+Hệthống cổng Web ứng dụng khách hàng (Customer
+Mobile Web / PWA)
+3.8.1
+Kiến trúc Progressive Web App (PWA) phục vụkhách
+hàng
+Bên cạnh màn hình Tablet gắn cứng trên xe, hệthống phát triển thêm Cổng Web
+Khách Hàng dạng Progressive Web App (PWA) chạy mượt mà trên trình duyệt điện
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+54
+
+--- PDF PAGE 57 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.31: Giao diện Giám sát Đội xe đẩy trên Bản đồ2D Siêu thịThời gian thực (Live
+Floor Plan).
+thoại cá nhân (iOS, Android). Ứng dụng PWA cho phép khách hàng theo dõi giỏhàng
+từxa, quản lý ví điện tử, tích lũy điểm thưởng và tra cứu thông tin sản phẩm mà không
+cần cài đặt thêm ứng dụng từkho ứng dụng.
+Cổng đăng nhập hội viên và liên kết phiên xe đẩy
+Giao diện đăng nhập trên điện thoại cá nhân được thiết kếhiện đại, hỗtrợkhách
+hàng đăng nhập nhanh bằng sốđiện thoại hoặc chọn nhanh các tài khoản mẫu từcơ sở
+dữliệu (Hạng Vàng, Hạng Kim Cương, Hạng VIP):
+3.8.2
+Quản lý tài khoản thành viên và điểm thưởng tích lũy
+Giao diện thông tin tài khoản hiển thịđầy đủhồsơ hội viên (Ví dụ: Khách hàng Trần
+ThịB – Hội viên Kim Cương), sốdư ví token (350,000 T), điểm thưởng tích lũy (8900
+điểm) cùng danh sách voucher ưu đãi khảdụng (Giảm 50K cho đơn từ500K, miễn phí
+gửi xe):
+3.8.3
+Đồng bộgiỏhàng thời gian thực đa thiết bị(Live Sync
+Cart)
+Khi khách hàng liên kết tài khoản với xe đẩy (Ví dụ: Xe STR_001), màn hình giỏhàng
+trên điện thoại sẽtựđộng kết nối và đồng bộhai chiều (Live Sync) với màn hình Tablet
+trên xe. Mọi thao tác thêm/bớt hàng từcảm biến xe đẩy đều phản hồi ngay lập tức trên
+điện thoại của khách hàng:
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+55
+
+--- PDF PAGE 58 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.32: Giao diện Cổng Đăng nhập Hội viên Smart Cart Member trên Điện thoại Di
+động (PWA).
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+56
+
+--- PDF PAGE 59 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.33: Màn hình Hồsơ Thành viên, Điểm tích lũy và Danh sách Voucher Ưu đãi.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+57
+
+--- PDF PAGE 60 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.34: Màn hình Giỏhàng PWA kết nối đồng bộthời gian thực theo mã xe đẩy
+STR_001.
+3.8.4
+Hệsinh thái Ví điện tửkhông chạm (SmartCart Titanium
+Contactless)
+Phân hệví điện tửtích hợp thẻthông minh ảo SmartCart Titanium, hỗtrợtính năng
+nạp token thửnghiệm (Faucet Sandbox +50,000 Token tương đương 500,000 VNĐ) phục
+vụtrải nghiệm thanh toán tựđộng không chạm khi đi qua cổng kiểm soát:
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+58
+
+--- PDF PAGE 61 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.35: Giao diện Thẻảo Ví điện tửThông minh SmartCart Titanium và Công cụ
+Faucet Sandbox.
+3.8.5
+Tiện ích tra cứu giá và tồn kho sản phẩm trực tuyến
+Khách hàng có thểsửdụng thanh tìm kiếm thông minh trên điện thoại đểtra cứu
+nhanh thông tin, giá niêm yết và tình trạng còn hàng trên kệsiêu thịtrước khi quyết
+định chọn mua sản phẩm:
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+59
+
+--- PDF PAGE 62 ---
+Chương 3 THIẾT KẾVÀ XÂY DỰNG HỆTHỐNG
+Hình 3.36: Màn hình Tra cứu Danh mục Sản phẩm và Tồn kho Siêu thịtrên Điện thoại
+Khách hàng.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+60

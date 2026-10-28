@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sơ Đồ Kiến Trúc Hệ Thống 3 Tầng Chuẩn Xác</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    #diagram {
+      background: #ffffff;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+
+<div id="diagram">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 970" width="860" height="970" style="background:#ffffff;">
+  <defs>
+    <!-- Mũi tên xám -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b"/>
+    </marker>
+    <!-- Mũi tên 2 chiều xám -->
+    <marker id="arrow-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 8 1.5 L 0 5 L 8 8.5 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- ================= TẦNG 1: THIẾT BỊ BIÊN IoT ================= -->
+  <rect x="25" y="25" width="810" height="270" rx="16" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <text x="815" y="52" text-anchor="end" font-size="15" font-weight="700" fill="#0f172a">Tầng 1: Thiết bị biên IoT</text>
+
+  <!-- Khung cụm cảm biến -->
+  <rect x="45" y="65" width="770" height="115" rx="12" fill="none" stroke="#e2e8f0" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="60" y="85" font-size="12.5" font-weight="600" fill="#475569">Cụm cảm biến thu thập vật lý</text>
+
+  <!-- Card 1: Camera AI -->
+  <rect x="65" y="98" width="168" height="64" rx="10" fill="#e6f4ea" stroke="#059669" stroke-width="1.2"/>
+  <text x="149" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="#14532d">Camera AI</text>
+  <text x="149" y="144" text-anchor="middle" font-size="12" font-weight="500" fill="#15803d">Mô hình YOLO11n</text>
+
+  <!-- Card 2: Cân HX711 -->
+  <rect x="253" y="98" width="168" height="64" rx="10" fill="#e6f4ea" stroke="#059669" stroke-width="1.2"/>
+  <text x="337" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="#14532d">Cân HX711</text>
+  <text x="337" y="144" text-anchor="middle" font-size="12" font-weight="500" fill="#15803d">1 Loadcell tâm bàn cân</text>
+
+  <!-- Card 3: Đầu quét GM65 -->
+  <rect x="441" y="98" width="168" height="64" rx="10" fill="#e6f4ea" stroke="#059669" stroke-width="1.2"/>
+  <text x="525" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="#14532d">Đầu quét GM65</text>
+  <text x="525" y="144" text-anchor="middle" font-size="12" font-weight="500" fill="#15803d">EAN-13 và QR</text>
+
+  <!-- Card 4: Cảm biến ToF -->
+  <rect x="629" y="98" width="168" height="64" rx="10" fill="#e6f4ea" stroke="#059669" stroke-width="1.2"/>
+  <text x="713" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="#14532d">Cảm biến ToF</text>
+  <text x="713" y="144" text-anchor="middle" font-size="12" font-weight="500" fill="#15803d">VL53L0X (I2C)</text>
+
+  <!-- Card: Raspberry Pi 4 -->
+  <rect x="215" y="215" width="430" height="65" rx="12" fill="#e6f4ea" stroke="#059669" stroke-width="1.5"/>
+  <text x="430" y="241" text-anchor="middle" font-size="15" font-weight="700" fill="#064e3b">Raspberry Pi 4 Model B (8GB)</text>
+  <text x="430" y="263" text-anchor="middle" font-size="12.5" font-weight="500" fill="#047857">Linux Debian, Python 3.11</text>
+
+  <!-- Mũi tên từ cảm biến xuống Pi -->
+  <line x1="149" y1="162" x2="280" y2="215" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="337" y1="162" x2="380" y2="215" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="525" y1="162" x2="480" y2="215" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <line x1="713" y1="162" x2="580" y2="215" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- ================= MŨI TÊN TẦNG 1 XUỐNG TẦNG 2 ================= -->
+  <!-- Đường nét liền: POST /api/v1/cart/decisions -->
+  <line x1="225" y1="280" x2="225" y2="445" stroke="#64748b" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <!-- Đường nét đứt: POST /product -->
+  <line x1="250" y1="280" x2="250" y2="445" stroke="#64748b" stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+
+  <!-- Chú thích đường truyền giữa Tầng 1 và 2 -->
+  <rect x="272" y="325" width="260" height="48" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <line x1="280" y1="340" x2="302" y2="340" stroke="#64748b" stroke-width="1.6"/>
+  <text x="310" y="344" font-size="11.5" font-weight="600" fill="#334155">POST /api/v1/cart/decisions</text>
+  
+  <line x1="280" y1="358" x2="302" y2="358" stroke="#64748b" stroke-width="1.6" stroke-dasharray="3 3"/>
+  <text x="310" y="362" font-size="11.5" font-weight="600" fill="#475569">POST /product (tra mã vạch)</text>
+
+
+  <!-- ================= TẦNG 2: BACKEND VÀ GATEWAY ================= -->
+  <rect x="25" y="380" width="810" height="300" rx="16" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <text x="815" y="407" text-anchor="end" font-size="15" font-weight="700" fill="#0f172a">Tầng 2: Backend và gateway</text>
+
+  <!-- FastAPI :8000 -->
+  <rect x="45" y="445" width="220" height="68" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.2"/>
+  <text x="155" y="473" text-anchor="middle" font-size="15" font-weight="700" fill="#5b21b6">FastAPI :8000</text>
+  <text x="155" y="497" text-anchor="middle" font-size="12" font-weight="500" fill="#6d28d9">Sensor fusion, đối soát</text>
+
+  <!-- PostgreSQL :5432 -->
+  <rect x="330" y="445" width="240" height="68" rx="10" fill="#f5f5f4" stroke="#78716c" stroke-width="1.2"/>
+  <text x="450" y="473" text-anchor="middle" font-size="15" font-weight="700" fill="#1c1917">PostgreSQL :5432</text>
+  <text x="450" y="497" text-anchor="middle" font-size="12" font-weight="500" fill="#57534e">stroller_db</text>
+
+  <!-- Shop Express :3000 -->
+  <rect x="45" y="585" width="220" height="68" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.2"/>
+  <text x="155" y="613" text-anchor="middle" font-size="15" font-weight="700" fill="#5b21b6">Shop Express :3000</text>
+  <text x="155" y="637" text-anchor="middle" font-size="12" font-weight="500" fill="#6d28d9">Nghiệp vụ, đồng bộ giỏ</text>
+
+  <!-- Mock Bank :4000 -->
+  <rect x="330" y="585" width="220" height="68" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.2"/>
+  <text x="440" y="613" text-anchor="middle" font-size="15" font-weight="700" fill="#5b21b6">Mock Bank :4000</text>
+  <text x="440" y="632" text-anchor="middle" font-size="11.5" font-weight="500" fill="#6d28d9">Ngân hàng số mô phỏng</text>
+  <text x="440" y="647" text-anchor="middle" font-size="11.5" font-weight="500" fill="#6d28d9">Xử lý thanh toán thẻ ảo</text>
+
+  <!-- Mũi tên nội bộ Tầng 2 -->
+  <!-- FastAPI <-> Postgres -->
+  <line x1="265" y1="479" x2="330" y2="479" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+
+  <!-- FastAPI -> Shop Express (Báo bất thường) -->
+  <line x1="155" y1="513" x2="155" y2="585" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <rect x="162" y="537" width="98" height="20" rx="4" fill="#ffffff" stroke="#e2e8f0" stroke-width="0.8"/>
+  <text x="165" y="551" font-size="11" font-weight="600" fill="#475569">Báo bất thường</text>
+
+  <!-- Shop Express <-> Postgres -->
+  <line x1="265" y1="595" x2="385" y2="513" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+
+  <!-- Shop Express <-> Mock Bank -->
+  <line x1="265" y1="619" x2="330" y2="619" stroke="#64748b" stroke-width="1.5" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+
+
+  <!-- ================= TẦNG 3: ỨNG DỤNG VÀ QUẢN TRỊ ================= -->
+  <rect x="25" y="745" width="810" height="205" rx="16" fill="none" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <text x="815" y="772" text-anchor="end" font-size="15" font-weight="700" fill="#0f172a">Tầng 3: Ứng dụng và quản trị</text>
+
+  <!-- Card 1 (Bên trái, thẳng dưới Shop Express): Tablet Android -->
+  <rect x="45" y="805" width="225" height="120" rx="10" fill="#fbeae5" stroke="#ea580c" stroke-width="1.2"/>
+  <text x="157" y="830" text-anchor="middle" font-size="15" font-weight="700" fill="#9a3412">Tablet Android</text>
+  <text x="157" y="852" text-anchor="middle" font-size="11.5" font-weight="500" fill="#c2410c">Jetpack Compose, Material 3</text>
+  <text x="157" y="874" text-anchor="middle" font-size="11.5" font-weight="500" fill="#c2410c">Quét QR hội viên / Thanh toán</text>
+  <text x="157" y="898" text-anchor="middle" font-size="11" font-weight="700" fill="#ea580c">• Polling chu kỳ 650ms •</text>
+
+  <!-- Card 2 (Ở giữa): Web quản trị -->
+  <rect x="295" y="805" width="260" height="120" rx="10" fill="#fbeae5" stroke="#ea580c" stroke-width="1.2"/>
+  <text x="425" y="830" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">Web quản trị (Next.js 14)</text>
+  <text x="425" y="852" text-anchor="middle" font-size="11" font-weight="500" fill="#c2410c">• KPI & Tình trạng kho hàng</text>
+  <text x="425" y="874" text-anchor="middle" font-size="11" font-weight="500" fill="#78350f">• Giám sát trạng thái xe (Radar 2D)</text>
+  <text x="425" y="896" text-anchor="middle" font-size="11" font-weight="500" fill="#78350f">• Nhập/xuất SP, QL khách hàng</text>
+
+  <!-- Card 3 (Bên phải): Web khách hàng -->
+  <rect x="580" y="805" width="245" height="120" rx="10" fill="#fbeae5" stroke="#ea580c" stroke-width="1.2"/>
+  <text x="702" y="830" text-anchor="middle" font-size="14.5" font-weight="700" fill="#9a3412">Web khách hàng (PWA)</text>
+  <text x="702" y="852" text-anchor="middle" font-size="11" font-weight="500" fill="#c2410c">• Thẻ thanh toán Mock Bank</text>
+  <text x="702" y="874" text-anchor="middle" font-size="11" font-weight="500" fill="#78350f">• Đồng bộ giỏ Live Sync</text>
+  <text x="702" y="896" text-anchor="middle" font-size="11" font-weight="500" fill="#78350f">• Hồ sơ hội viên & Voucher</text>
+
+  <!-- ================= MŨI TÊN TẦNG 2 XUỐNG TẦNG 3 ================= -->
+  <!-- Shop Express <-> Tablet Android (Thẳng đứng cực đẹp) -->
+  <line x1="155" y1="653" x2="155" y2="810" stroke="#64748b" stroke-width="1.6" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+  <rect x="162" y="718" width="92" height="20" rx="4" fill="#ffffff" stroke="#e2e8f0" stroke-width="0.8"/>
+  <text x="165" y="732" font-size="11" font-weight="600" fill="#475569">Polling 650ms</text>
+
+  <!-- Shop Express <-> Web quản trị (Chéo nhẹ sang giữa) -->
+  <line x1="205" y1="653" x2="385" y2="810" stroke="#64748b" stroke-width="1.6" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+  <rect x="250" y="725" width="105" height="20" rx="4" fill="#ffffff" stroke="#e2e8f0" stroke-width="0.8"/>
+  <text x="253" y="739" font-size="11" font-weight="600" fill="#475569">REST API / Radar</text>
+
+  <!-- Shop Express <-> Web khách hàng (Chéo sang phải) -->
+  <line x1="245" y1="653" x2="640" y2="810" stroke="#64748b" stroke-width="1.6" marker-start="url(#arrow-start)" marker-end="url(#arrow)"/>
+  <rect x="420" y="700" width="112" height="20" rx="4" fill="#ffffff" stroke="#e2e8f0" stroke-width="0.8"/>
+  <text x="423" y="714" font-size="11" font-weight="600" fill="#475569">REST API / PWA</text>
+
+</svg>
+</div>
+
+</body>
+</html>

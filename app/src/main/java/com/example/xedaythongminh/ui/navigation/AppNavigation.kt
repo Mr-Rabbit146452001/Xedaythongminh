@@ -22,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -88,6 +89,29 @@ fun AppNavigation(
         navController.addOnDestinationChangedListener(listener)
         onDispose {
             navController.removeOnDestinationChangedListener(listener)
+        }
+    }
+
+    // Tự động chuyển sang màn hình Thanh toán khi phát hiện xe qua Cổng an ninh RFID
+    val rfidGateEvent by appViewModel.rfidGateEvent.collectAsState()
+    LaunchedEffect(rfidGateEvent) {
+        val event = rfidGateEvent
+        if (event != null) {
+            val currentRoute = navController.currentDestination?.route
+            // Kiểm tra trạng thái mua hàng (sau khi đăng nhập vào màn hình quét sản phẩm hoặc xem giỏ)
+            if (currentRoute == "scan_product" || currentRoute == "cart_detail") {
+                android.util.Log.d("SmartCart_RFID", "Tự động chuyển sang màn hình Thanh toán do phát hiện qua cổng an ninh RFID: ${event.rfidTag} tại ${event.gateId}")
+                com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+                appViewModel.lockCart()
+                val isLoggedIn = appViewModel.userState.value != null
+                if (isLoggedIn) {
+                    android.util.Log.d("SmartCart_RFID", "Khách hàng đã đăng nhập -> Điều hướng sang Thanh toán tự động (auto_payment)")
+                    navController.navigate("auto_payment")
+                } else {
+                    android.util.Log.d("SmartCart_RFID", "Khách vãng lai (chưa đăng nhập) -> Điều hướng sang Các phương thức thanh toán khác (payment_selection)")
+                    navController.navigate("payment_selection")
+                }
+            }
         }
     }
 

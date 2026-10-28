@@ -117,10 +117,10 @@ export default function CustomerProductsPage() {
                 {p.ImageUrl ? (
                   <img
                     src={buildImageUrl(p.ImageUrl)}
-                    alt={p.Name}alt={p.Name}
+                    alt={p.Name}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
+(e.target as HTMLImageElement).src = '/images/8934673573344.jpg';
                     }}
                   />
                 ) : (

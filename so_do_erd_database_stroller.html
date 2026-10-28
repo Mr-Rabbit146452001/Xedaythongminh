@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sơ Đồ Quan Hệ Thực Thể (Database ERD) - Smart Retail Cart</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+    }
+    header {
+      width: 100%;
+      max-width: 1400px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      background: #1e293b;
+      padding: 16px 24px;
+      border-radius: 12px;
+      border: 1px solid #334155;
+    }
+    h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    p.subtitle {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      background: #2563eb;
+      color: #ffffff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn:hover {
+      background: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    .btn-secondary {
+      background: #334155;
+      color: #cbd5e1;
+    }
+    .btn-secondary:hover {
+      background: #475569;
+    }
+    #viewer-container {
+      width: 100%;
+      max-width: 1400px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px;
+    }
+    #svg-object {
+      width: 100%;
+      height: auto;
+      max-height: 85vh;
+      display: block;
+    }
+    footer {
+      margin-top: 16px;
+      font-size: 0.8rem;
+      color: #64748b;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div>
+      <h1>SƠ ĐỒ QUAN HỆ THỰC THỂ CƠ SỞ DỮ LIỆU (DATABASE ERD)</h1>
+      <p class="subtitle">Hệ thống xe đẩy mua sắm thông minh • CSDL PostgreSQL 15 (stroller_db) • Định dạng Vector chuẩn</p>
+    </div>
+    <div class="btn-group">
+      <a href="so_do_erd_database_stroller.svg" download="so_do_erd_database_stroller.svg" class="btn">
+        📥 Tải File Vector SVG
+      </a>
+      <a href="so_do_erd_database_stroller.png" download="so_do_erd_database_stroller.png" class="btn btn-secondary">
+        🖼️ Tải File Ảnh PNG (300 DPI)
+      </a>
+      <button onclick="window.print()" class="btn btn-secondary">
+        🖨️ In / Xuất PDF
+      </button>
+    </div>
+  </header>
+
+  <div id="viewer-container">
+    <img id="svg-object" src="so_do_erd_database_stroller.svg" alt="Sơ đồ quan hệ thực thể ERD chuẩn Vector" />
+  </div>
+
+  <footer>
+    Đồ án tốt nghiệp: Thiết kế và thi công mô hình xe đẩy mua sắm thông minh tích hợp AIoT cho siêu thị bán lẻ • Phân hệ Backend & CSDL
+  </footer>
+
+</body>
+</html>

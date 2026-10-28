@@ -50,25 +50,43 @@ fun PaymentSelectionScreen(
 ) {
     val cartItems by appViewModel.cartItemsState.collectAsState()
     val userState by appViewModel.userState.collectAsState()
+    val rfidGateEvent by appViewModel.rfidGateEvent.collectAsState()
     val summary = CartSummary(cartItems, userState)
     
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
     }
 
-    var selectedPaymentMethod by remember { mutableStateOf("QR Banking") }
+    val isGuest = userState == null
 
-    val paymentMethods = listOf(
-        PaymentMethodItem("QR Banking", Icons.Default.QrCode2),
-        PaymentMethodItem("Ví điện tử", Icons.Default.AccountBalanceWallet),
-        PaymentMethodItem("Tại quầy", Icons.Default.Storefront)
-    )
+    val paymentMethods = remember(isGuest) {
+        if (isGuest) {
+            // Khách vãng lai: ẨN ô lựa chọn "Thanh toán nhanh", chỉ cho phép chọn các phương thức thủ công
+            listOf(
+                PaymentMethodItem("QR Banking", Icons.Default.QrCode2),
+                PaymentMethodItem("Ví điện tử", Icons.Default.AccountBalanceWallet),
+                PaymentMethodItem("Tại quầy", Icons.Default.Storefront)
+            )
+        } else {
+            // Khách hàng đã đăng nhập tài khoản: Hiển thị ô "Thanh toán nhanh"
+            listOf(
+                PaymentMethodItem("Thanh toán nhanh", Icons.Default.Bolt),
+                PaymentMethodItem("QR Banking", Icons.Default.QrCode2),
+                PaymentMethodItem("Ví điện tử", Icons.Default.AccountBalanceWallet),
+                PaymentMethodItem("Tại quầy", Icons.Default.Storefront)
+            )
+        }
+    }
+
+    var selectedPaymentMethod by remember(isGuest) {
+        mutableStateOf(if (isGuest) "QR Banking" else "Thanh toán nhanh")
+    }
 
     OrganicGlassBackground(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color.Transparent,
-            topBar = { TopBar(statusText = stringResource(R.string.status_text_default)) }
+            topBar = { TopBar(statusText = if (userState != null) "KH: ${userState?.name} | Wi-Fi | 85%" else "Khách Vãng Lai | Wi-Fi | 85%", appViewModel = appViewModel) }
         ) { innerPadding ->
         ResponsiveLayout(
             windowSize = windowSize,
@@ -194,6 +212,57 @@ fun PaymentSelectionScreen(
                     modifier = modifier
                         .verticalScroll(rememberScrollState())
                 ) {
+                    // Banner Cổng An Ninh RFID quét nhận diện xe đẩy
+                    if (rfidGateEvent != null) {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 12.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            color = Color(0xFF0D47A1).copy(alpha = 0.08f),
+                            border = BorderStroke(1.5.dp, Color(0xFF0D47A1).copy(alpha = 0.35f))
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(38.dp)
+                                        .background(Color(0xFF0D47A1), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Sensors,
+                                        contentDescription = "RFID Gate",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "CỔNG AN NINH RFID ĐÃ NHẬN DIỆN XE ĐẨY",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFF0D47A1),
+                                        letterSpacing = 0.5.sp
+                                    )
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    val tagText = rfidGateEvent?.rfidTag ?: "CART_RFID"
+                                    val gateText = rfidGateEvent?.gateId ?: "GATE_01"
+                                    Text(
+                                        text = "Thẻ từ: " + tagText + " • Cổng: " + gateText + " — Vui lòng chọn phương thức thanh toán",
+                                        fontSize = 12.sp,
+                                        color = TextGray
+                                    )
+                                }
+                            }
+                        }
+                    }
+
                     Text(
                         text = stringResource(R.string.payment_selection_title),
                         fontSize = 18.sp,
@@ -279,7 +348,7 @@ fun PaymentSelectionScreen(
                     ) {
                         GlassButton(
                             onClick = {
-                                if (selectedPaymentMethod.contains("Tự động")) {
+                                if (selectedPaymentMethod == "Thanh toán nhanh" || selectedPaymentMethod.contains("Tự động")) {
                                     navController.navigate("auto_payment")
                                 } else {
                                     navController.navigate("payment_qr")
@@ -311,6 +380,7 @@ fun PaymentSelectionScreen(
                         GlassButton(
                             onClick = { 
                                 appViewModel.unlockCart()
+                                appViewModel.clearRfidGateEvent()
                                 navController.popBackStack() 
                             },
                             modifier = Modifier

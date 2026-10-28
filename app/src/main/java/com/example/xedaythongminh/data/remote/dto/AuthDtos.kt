@@ -54,7 +54,10 @@ data class CartStatusData(
     @SerializedName("hasUnscannedProduct") val hasUnscannedProduct: Boolean,
     @SerializedName("anomalyCode") val anomalyCode: String? = null,
     @SerializedName("anomalyReason") val anomalyReason: String? = null,
-    @SerializedName("anomalyMessage") val anomalyMessage: String? = null
+    @SerializedName("anomalyMessage") val anomalyMessage: String? = null,
+    @SerializedName("rfidGateDetected") val rfidGateDetected: Boolean? = false,
+    @SerializedName("rfidTag") val rfidTag: String? = null,
+    @SerializedName("gateId") val gateId: String? = null
 )
 
 data class CustomerResponse(

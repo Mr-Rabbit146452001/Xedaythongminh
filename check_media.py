@@ -1,0 +1,10 @@
+import json
+from pathlib import Path
+
+transcript_path = Path(r"C:\Users\LE THI HAU\.gemini\antigravity\brain\e26c93ce-f58f-4b76-bb0f-2b78cb3bf30c\.system_generated\logs\transcript.jsonl")
+with open(transcript_path, 'r', encoding='utf-8') as f:
+    for i, line in enumerate(f):
+        data = json.loads(line)
+        media = data.get('media', [])
+        if media:
+            print(f"Step {data.get('step_index', i)} | Media: {media}")

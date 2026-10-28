@@ -1,0 +1,90 @@
+
+--- PDF PAGE 9 ---
+Chương 1
+TỔNG QUAN ĐỀTÀI
+1.1
+Đặt vấn đềvà tính cấp thiết
+Trong ngành bán lẻ, hàng đợi thanh toán là "điểm nghẽn"lớn nhất làm giảm trải
+nghiệm khách hàng.Theo nghiên cứu của Adyen, việc khách hàng từbỏgiỏhàng do chờ
+đợi gây thất thoát tới 37,7 tỷUSD mỗi năm tại Mỹ. Đồng thời, 79% người tiêu dùng sẽ
+rời đi nếu phải xếp hàng quá 5 phút.
+Hình 1.1: Tình trạng xếp hàng chờđợi thanh toán tại siêu thị
+Các giải pháp tựphục vụhiện nay[2] vẫn yêu cầu khách hàng thao tác quét mã thủ
+công. Trong khi đó, các hệthống nhận diện tựđộng thuần bằng camera lại dễgặp sai số
+do góc mù và hiện tượng che khuất. Việc kết hợp đa cảm biến giữa thịgiác máy tính, cảm
+biến khối lượng và không gian là hướng đi tối ưu đểkhắc phục triệt đểvấn đềnày. Do
+đó, đềtài "Nâng cao trải nghiệm người dùng bằng xe đẩy hỗtrợmua hàng thông minh"
+được thực hiện nhằm mang đến giải pháp mua sắm hoàn toàn tựđộng, loại bỏtriệt để
+thời gian chờđợi của khách hàng.
+7
+
+--- PDF PAGE 10 ---
+Chương 1 TỔNG QUAN ĐỀTÀI
+1.2
+Mục tiêu nghiên cứu
+Mục tiêu tổng quát:
+Nghiên cứu và chếtạo mô hình xe đẩy mua hàng thông minh, tích hợp khảnăng tựđộng
+nhận diện, đối chiếu và cập nhật trạng thái giỏhàng theo thời gian thực xuyên suốt quá
+trình thao tác của người dùng.
+Mục tiêu cụthể:
+• Vềphần cứng: Thiết kế, lắp ráp xe đẩy và cấu hình MCU xửlý biên Raspberry
+Pi tích hợp cụm camera kép, cảm biến đo khối lượng Loadcell, cảm biến không gian
+ToF và module quét mã dựphòng GM65.
+• Vềtrí tuệnhân tạo (AI): Thu thập dữliệu và huấn luyện mô hình học sâu sử
+dụng kiến trúc mạng YOLO11 đểtrích xuất và nhận diện chính xác các sản phẩm
+mục tiêu.
+• Vềthuật toán điều khiển: Phát triển thuật toán kết hợp đa cảm biến nhằm đối
+chiếu chéo tín hiệu hình ảnh và sựbiến thiên khối lượng, từđó triệt tiêu các sai số
+vật lý do điểm mù hoặc che khuất.
+• Vềphần mềm giám sát: Hoàn thiện máy chủquản lý giao dịch Backend và ứng
+dụng giao diện Tablet App đểđồng bộthông tin mua sắm liền mạch đến người
+dùng.
+1.3
+Đối tượng và phạm vi nghiên cứu
+Đối tượng nghiên cứu: Đềtài tập trung nghiên cứu nền tảng xửlý biên Raspberry Pi
+4, mô hình học sâu nhận diện đối tượng YOLO, thuật toán hợp nhất dữliệu đa cảm biến
+và hệthống lưu trữ, truyền nhận dữliệu qua API.
+Phạm vi nghiên cứu:
+• Phạm vi phần cứng: Mô hình thửnghiệm được thiết kếgiới hạn trong dải đo định
+mức của cảm biến Loadcell với tải trọng tối đa 10 kg.
+• Phạm vi dữliệu: Mô hình AI được huấn luyện và đánh giá trên tập dữliệu đặc tả
+bao gồm 5 loại sản phẩm siêu thịphổbiến.
+• Môi trường thực nghiệm: Hệthống được đo kiểm trong điều kiện ánh sáng phòng
+tiêu chuẩn; các thao tác bỏvào hoặc lấy ra khỏi xe đẩy được thực hiện theo từng
+sản phẩm đơn lẻ.
+1.4
+Phương pháp nghiên cứu
+Đểhoàn thành các mục tiêu đềra, đềtài kết hợp sửdụng các phương pháp nghiên
+cứu sau:
+• Phương pháp nghiên cứu lý thuyết: Nghiên cứu tổng quan tài liệu khoa học
+vềkiến trúc IoT, điện toán biên, các mô hình mạng nơ-ron tích chập trong thịgiác
+máy tính và cơ chếgiao tiếp của các chuẩn kết nối nhúng (I2C, GPIO, UART)[1].
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+8
+
+--- PDF PAGE 11 ---
+Chương 1 TỔNG QUAN ĐỀTÀI
+• Phương pháp thực nghiệm chếtạo: Thiết kếvà gia công khung xe đẩy; thu
+thập, dán nhãn bộdữliệu hình ảnh; triển khai chương trình điều khiển đa tiến trình
+trên trạm xửlý biên.
+• Phương pháp đánh giá định lượng: Xây dựng kịch bản kiểm thửthực tếđểthu
+thập sốliệu, từđó tính toán độchính xác nhận diện của mô hình AI, độổn định
+của các module cảm biến và thời gian phản hồi của hệthống.
+1.5
+Cấu trúc của báo cáo
+Báo cáo nghiên cứu khoa học được bốcục thành 5 chương như sau:
+• Chương 1: Tổng quan đềtài – Trình bày tính cấp thiết, mục tiêu, đối tượng,
+phạm vi và phương pháp nghiên cứu.
+• Chương 2: Cơ sởlý thuyết và các nghiên cứu liên quan – Tổng quan các giải
+pháp xe đẩy thông minh hiện có, nền tảng điện toán biên, lý thuyết mạng YOLO
+và nguyên lý hoạt động của các cảm biến.
+• Chương 3: Thiết kếvà xây dựng hệthống – Chi tiết kiến trúc phần cứng,
+quy trình huấn luyện mô hình Vision AI, thuật toán Sensor Fusion và phần mềm
+Backend/Frontend.
+• Chương 4: Kết quảthực nghiệm và đánh giá – Phân tích sốliệu kiểm thử,
+đánh giá độchính xác nhận diện, độtin cậy phần cứng và hiệu năng tổng thểcủa
+hệthống.
+• Chương 5: Kết luận và hướng phát triển – Tổng kết kết quảđạt được, phân
+tích các hạn chếcòn tồn tại và đềxuất hướng nâng cấp tiếp theo.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+9

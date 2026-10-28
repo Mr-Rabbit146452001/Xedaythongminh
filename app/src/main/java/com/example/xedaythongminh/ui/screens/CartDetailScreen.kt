@@ -452,31 +452,50 @@ fun OrderSummarySection(
             Spacer(modifier = Modifier.height(24.dp))
 
             // Action Buttons
-            GlassButton(
-                onClick = onAutoPayment,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(14.dp),
-                variant = GlassButtonVariant.Primary
-            ) {
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Thanh toán tự động", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            }
+            val isGuest = userState == null
+            if (!isGuest) {
+                // Khách hàng có tài khoản: Cho phép chọn Thanh toán tự động / nhanh
+                GlassButton(
+                    onClick = onAutoPayment,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    variant = GlassButtonVariant.Primary
+                ) {
+                    Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Thanh toán nhanh", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
 
-            Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-            GlassButton(
-                onClick = onOtherPayment,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp),
-                shape = RoundedCornerShape(14.dp),
-                variant = GlassButtonVariant.Secondary
-            ) {
-                Icon(Icons.Default.CreditCard, contentDescription = "Other Pay", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Phương thức thanh toán khác", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
+                GlassButton(
+                    onClick = onOtherPayment,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    variant = GlassButtonVariant.Secondary
+                ) {
+                    Icon(Icons.Default.CreditCard, contentDescription = "Other Pay", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Phương thức thanh toán khác", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
+                }
+            } else {
+                // Khách vãng lai: ẨN hoàn toàn nút Thanh toán nhanh, chỉ hiển thị nút Chọn phương thức thanh toán
+                GlassButton(
+                    onClick = onOtherPayment,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    variant = GlassButtonVariant.Primary
+                ) {
+                    Icon(Icons.Default.CreditCard, contentDescription = "Pay", tint = Color.White, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Chọn phương thức thanh toán", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                }
             }
 
             Spacer(modifier = Modifier.height(10.dp))

@@ -128,7 +128,7 @@ export default function ProductsPage() {
       price: 25000,
       stock: 100,
       status: 'active',
-      imageUrl: '/products/sua_vinamilk.jpg',
+      imageUrl: '/products/8934673573344.jpg',
     });
     setIsModalOpen(true);
   };
@@ -330,12 +330,11 @@ export default function ProductsPage() {
                         <div className="w-10 h-10 rounded-xl border border-outline-variant/30 overflow-hidden bg-white shrink-0 relative flex items-center justify-center">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
-                            src={product.imageUrl || '/products/sua_vinamilk.jpg'}
->>>>>>> 86bd54e2c7bc6ef53e408f49af34505efe2ef825
+src={product.imageUrl || '/products/8934673573344.jpg'}
                             alt={product.name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
+                              (e.target as HTMLImageElement).src = '/products/8934673573344.jpg';
                             }}
                           />
                         </div>
@@ -529,7 +528,7 @@ export default function ProductsPage() {
                     disabled={modalMode === 'view'}
                     value={currentProduct.imageUrl}
                     onChange={(e) => setCurrentProduct({ ...currentProduct, imageUrl: e.target.value })}
-                    placeholder="/products/aquafina_500ml.jpg hoặc tên file..."
+                    placeholder="/products/8934673573344.jpg hoặc tên file..."
                     className="flex-1 bg-surface-container-low border border-outline-variant/60 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-primary disabled:opacity-75 text-xs font-mono"
                   />
                   {currentProduct.imageUrl && (
@@ -540,7 +539,7 @@ export default function ProductsPage() {
                         alt="Preview"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/products/sua_vinamilk.jpg';
+                          (e.target as HTMLImageElement).src = '/products/8934673573344.jpg';
                         }}
                       />
                     </div>

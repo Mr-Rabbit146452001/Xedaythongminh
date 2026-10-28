@@ -58,7 +58,7 @@ app.use('/products', express.static(staticImageDir));
 
 // Fallback: Nếu tệp ảnh không tìm thấy trên đĩa, tự động trả về ảnh sản phẩm mặc định (HTTP 200) thay vì 404
 app.use(['/images/:file', '/products/:file'], (req, res) => {
-  const fallback = path.join(staticImageDir, 'sua_vinamilk.jpg');
+  const fallback = path.join(staticImageDir, '8934673573344.jpg');
   if (fs.existsSync(fallback)) {
     return res.sendFile(fallback);
   }
@@ -76,6 +76,11 @@ let weightAnomalyDetected = false;
 let weightAnomalyCode = null;
 let weightAnomalyReason = null;
 let weightAnomalyMessage = null;
+
+// Trạng thái Cổng An Ninh RFID quét nhận diện thẻ từ xe đẩy
+let rfidGateDetected = false;
+let rfidTag = null;
+let rfidGateId = null;
 
 // Quản lý phiên thanh toán QR & Khóa đồng bộ đơn hàng
 const QR_VALIDITY_MS = 5 * 60 * 1000; // 5 phút hiệu lực mã QR (300 giây)
@@ -1488,18 +1493,43 @@ app.get('/api/admin/overview', async (req, res) => {
     const totalStockUnits = parseInt(pRes.rows[0]?.total_stock || 0);
     const totalInventoryValue = parseFloat(pRes.rows[0]?.total_value || 0);
 
-    // Top sản phẩm thực tế từ DB
-    const topPRes = await pool.query('SELECT id, name, price, stock, category, imageurl FROM Products ORDER BY price DESC LIMIT 4');
-    const topProducts = topPRes.rows.map((row, idx) => ({
-      rank: idx + 1,
-      id: row.id,
-      name: row.name,
-      price: parseFloat(row.price),
-      soldCount: 45 + (row.id * 18) % 60,
-      revenue: parseFloat(row.price) * (45 + (row.id * 18) % 60),
-      trend: 'up',
-      imageUrl: row.imageurl ? (row.imageurl.startsWith('http') || row.imageurl.startsWith('/') ? row.imageurl : `/products/${row.imageurl}`) : '/products/sua_vinamilk.jpg'
-    }));
+    // Top sản phẩm thực tế từ DB (kết nối cart_items nếu có lượt mua thực tế)
+    let topProducts = [];
+    try {
+      const topPRes = await pool.query(`
+        SELECT 
+          p.id, p.name, p.price, p.stock, p.category, p.imageurl,
+          COALESCE(SUM(ci.quantity), 0)::integer as sold_count,
+          COALESCE(SUM(ci.quantity * p.price), 0)::numeric as total_revenue
+        FROM Products p
+        LEFT JOIN cart_items ci ON ci.product_id = p.id
+        GROUP BY p.id, p.name, p.price, p.stock, p.category, p.imageurl
+        ORDER BY sold_count DESC, p.price DESC
+        LIMIT 5
+      `);
+      topProducts = topPRes.rows.map((row, idx) => ({
+        rank: idx + 1,
+        id: row.id,
+        name: row.name,
+        price: parseFloat(row.price),
+        soldCount: parseInt(row.sold_count || 0),
+        revenue: parseFloat(row.total_revenue || 0),
+        trend: parseInt(row.sold_count || 0) > 0 ? 'up' : 'neutral',
+        imageUrl: row.imageurl ? (row.imageurl.startsWith('http') || row.imageurl.startsWith('/') ? row.imageurl : `/products/${row.imageurl}`) : '/products/8934673573344.jpg'
+      }));
+    } catch (topErr) {
+      const topPRes = await pool.query('SELECT id, name, price, stock, category, imageurl FROM Products ORDER BY price DESC LIMIT 5');
+      topProducts = topPRes.rows.map((row, idx) => ({
+        rank: idx + 1,
+        id: row.id,
+        name: row.name,
+        price: parseFloat(row.price),
+        soldCount: 0,
+        revenue: 0,
+        trend: 'neutral',
+        imageUrl: row.imageurl ? (row.imageurl.startsWith('http') || row.imageurl.startsWith('/') ? row.imageurl : `/products/${row.imageurl}`) : '/products/8934673573344.jpg'
+      }));
+    }
 
     // Cảnh báo tồn kho thực tế từ DB
     const alertRes = await pool.query('SELECT id, name, stock, category FROM Products WHERE stock < 20 ORDER BY stock ASC');
@@ -1511,30 +1541,107 @@ app.get('/api/admin/overview', async (req, res) => {
       status: parseInt(row.stock) <= 0 ? 'out' : 'low'
     }));
 
+    // Tính toán đơn hàng và doanh thu thực tế trong ngày hôm nay
     let paidQrAmount = 0;
     let totalQrOrders = 0;
     let pendingQrOrders = 0;
     let paidOrdersCount = 0;
+    const startOfTodayMs = new Date().setHours(0, 0, 0, 0);
+
     for (const order of qrPaymentOrders.values()) {
-      totalQrOrders++;
-      if (order.status === 'PAID') {
-        paidQrAmount += (order.amountVnd || 0);
-        paidOrdersCount++;
-      } else if (order.status === 'PENDING') {
-        pendingQrOrders++;
+      const orderTime = order.createdAt ? new Date(order.createdAt).getTime() : 0;
+      if (orderTime >= startOfTodayMs) {
+        totalQrOrders++;
+        if (order.status === 'PAID') {
+          paidQrAmount += (order.amountVnd || 0);
+          paidOrdersCount++;
+        } else if (order.status === 'PENDING') {
+          pendingQrOrders++;
+        }
       }
     }
 
-    const sessRes = await pool.query("SELECT COUNT(*) as total, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as completed FROM ShoppingSessions");
-    const sessionCount = parseInt(sessRes.rows[0]?.total || 0);
-    const completedSessions = parseInt(sessRes.rows[0]?.completed || 0);
+    // Shopping sessions hôm nay
+    let sessionCount = 0;
+    let completedSessions = 0;
+    try {
+      const sessRes = await pool.query(`
+        SELECT 
+          COUNT(*)::integer as total, 
+          COALESCE(SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END), 0)::integer as completed 
+        FROM ShoppingSessions 
+        WHERE starttime >= CURRENT_DATE
+      `);
+      sessionCount = parseInt(sessRes.rows[0]?.total || 0);
+      completedSessions = parseInt(sessRes.rows[0]?.completed || 0);
+    } catch (e) {
+      try {
+        const iotSess = await pool.query(`
+          SELECT 
+            COUNT(*)::integer as total, 
+            COALESCE(SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END), 0)::integer as completed 
+          FROM shopping_sessions 
+          WHERE started_at_ms >= $1
+        `, [startOfTodayMs]);
+        sessionCount = parseInt(iotSess.rows[0]?.total || 0);
+        completedSessions = parseInt(iotSess.rows[0]?.completed || 0);
+      } catch (e2) {}
+    }
 
-    const todayOrders = Math.max(totalQrOrders + sessionCount, 8);
-    const todayRevenue = paidQrAmount > 0 ? (12500000 + paidQrAmount) : 12500000;
+    // Doanh thu từ ngân hàng thật hôm nay (bank_transactions)
+    let bankRevenue = 0;
+    try {
+      const bankRes = await pool.query(`
+        SELECT COALESCE(SUM(amount), 0)::numeric as total 
+        FROM bank_transactions 
+        WHERE status = 'SUCCESS' AND created_at >= CURRENT_DATE
+      `);
+      bankRevenue = parseFloat(bankRes.rows[0]?.total || 0);
+    } catch (e) {}
 
-    const sRes = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN status = \'in_use\' THEN 1 ELSE 0 END) as in_use FROM Strollers');
-    const totalStrollers = parseInt(sRes.rows[0]?.total || 8);
-    const inUseStrollers = Math.max(parseInt(sRes.rows[0]?.in_use || 0), 6);
+    const todayOrders = totalQrOrders + sessionCount;
+    const todayRevenue = paidQrAmount + bankRevenue;
+
+    // Trạng thái xe đẩy Smart Cart thực tế
+    let totalStrollers = 8;
+    let inUseStrollers = 0;
+    try {
+      const sRes = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN status = \'in_use\' THEN 1 ELSE 0 END) as in_use FROM Strollers');
+      if (sRes.rows.length > 0 && sRes.rows[0]?.total) {
+        totalStrollers = parseInt(sRes.rows[0]?.total || 8);
+        inUseStrollers = parseInt(sRes.rows[0]?.in_use || 0);
+      }
+    } catch (e) {}
+
+    // Doanh thu 7 ngày thực tế từ CSDL
+    const revenueTrend7Days = [0, 0, 0, 0, 0, 0, 0];
+    try {
+      const trendRes = await pool.query(`
+        SELECT 
+          (CURRENT_DATE - DATE(created_at))::integer as day_diff,
+          COALESCE(SUM(amount), 0)::numeric as total_amount
+        FROM bank_transactions
+        WHERE status = 'SUCCESS' AND created_at >= CURRENT_DATE - INTERVAL '6 days'
+        GROUP BY DATE(created_at)
+      `);
+      trendRes.rows.forEach(r => {
+        const diff = parseInt(r.day_diff);
+        if (diff >= 0 && diff < 7) {
+          const idx = 6 - diff;
+          revenueTrend7Days[idx] = Number((parseFloat(r.total_amount) / 1000000).toFixed(2));
+        }
+      });
+      revenueTrend7Days[6] = Number(((revenueTrend7Days[6] * 1000000 + paidQrAmount) / 1000000).toFixed(2));
+    } catch (trendErr) {}
+
+    // Phân bố trạng thái đơn hàng hôm nay thực tế
+    const processingOrders = pendingQrOrders + Math.max(0, sessionCount - completedSessions);
+    const orderStatusDistribution = {
+      paid: paidOrdersCount,
+      processing: processingOrders,
+      completed: completedSessions,
+      cancelled: 0
+    };
 
     res.json({
       status: 'Thành công',
@@ -1550,13 +1657,8 @@ app.get('/api/admin/overview', async (req, res) => {
         activeStrollers: inUseStrollers,
         topProducts,
         stockAlerts,
-        revenueTrend7Days: [10.5, 12.2, 9.8, 14.5, 11.0, 15.2, Number((todayRevenue / 1000000).toFixed(1))],
-        orderStatusDistribution: {
-          paid: Math.max(paidOrdersCount + completedSessions, 6),
-          processing: Math.max(pendingQrOrders, 1),
-          completed: Math.max(completedSessions, 1),
-          cancelled: 0
-        }
+        revenueTrend7Days,
+        orderStatusDistribution
       }
     });
   } catch (err) {
@@ -1679,7 +1781,7 @@ app.get('/api/admin/products', async (req, res) => {
       category: row.category || 'Đồ uống',
       stock: parseInt(row.stock || 0),
       status: parseInt(row.stock || 0) <= 0 ? 'out' : parseInt(row.stock || 0) < 20 ? 'low' : 'active',
-      imageUrl: row.imageurl ? (row.imageurl.startsWith('http') || row.imageurl.startsWith('/') ? row.imageurl : `/products/${row.imageurl}`) : '/products/sua_vinamilk.jpg'
+      imageUrl: row.imageurl ? (row.imageurl.startsWith('http') || row.imageurl.startsWith('/') ? row.imageurl : `/products/${row.imageurl}`) : '/products/8934673573344.jpg'
     }));
 
     res.json({ status: 'Thành công', total: formatted.length, data: formatted });
@@ -1696,7 +1798,7 @@ app.post('/api/admin/products', async (req, res) => {
   }
 
   try {
-    const imgFile = imageUrl ? path.basename(imageUrl) : 'sua_vinamilk.jpg';
+    const imgFile = imageUrl ? path.basename(imageUrl) : '8934673573344.jpg';
     const result = await pool.query(
       `INSERT INTO Products (barcode, name, price, category, stock, imageurl)
        VALUES ($1, $2, $3, $4, $5, $6)

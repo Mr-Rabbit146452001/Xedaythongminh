@@ -1,0 +1,538 @@
+
+--- PDF PAGE 12 (Thesis page 10) ---
+Chương 2
+CƠ SỞLÝ THUYẾT VÀ CÁC
+NGHIÊN CỨU LIÊN QUAN
+2.1
+Tổng quan nghiên cứu liên quan đến nhận diện
+hàng hóa và Edge AI
+2.1.1
+Các hướng nghiên cứu có liên quan
+Oh và Chun đềxuất xe đẩy kết hợp camera, Raspberry Pi, cảm biến kích hoạt và cân,
+nhưng khâu nhận diện YOLO thực thi trên máy chủ. Công trình gần với đềtài vềtích hợp
+thịgiác và cảm biến, đồng thời cho thấy vịtrí thực thi AI cần được phân biệt khi đánh
+giá độtrễ. RPC nghiên cứu nhận diện và đếm nhiều sản phẩm trong ảnh checkout, đặt
+ra khoảng cách giữa ảnh sản phẩm đơn dễthu thập và cảnh sửdụng thực tế. SKU-110K
+nghiên cứu phát hiện trong cảnh dày đặc, có giá trịkhi phân tích hộp chồng lấn và NMS.
+IncreACO nghiên cứu cập nhật danh mục trong checkout; hướng này gợi ý cần kiểm tra
+khảnăng giữchất lượng lớp cũ khi bổsung sản phẩm.
+Bảng 2.1: Đối chiếu trọng tâm các nghiên cứu liên quan
+Công trình
+Bài toán
+Liên hệvới đềtài
+Oh và Chun
+Xe đẩy tích hợp camera và cảm biến
+Đối chiếu kiến trúc server/local
+RPC
+Nhận diện và đếm tại checkout
+Khoảng cách miền ảnh
+RP2K
+Phân loại hàng hóa chi tiết
+Bao bì gần giống
+SKU-110K
+Phát hiện cảnh dày đặc
+Hộp trùng và bỏsót do NMS
+IncreACO
+Checkout khi cập nhật danh mục
+Đánh giá lớp cũ và lớp mới
+2.2
+Khái niệm và kiến trúc Edge Computing trong
+IoT
+2.2.1
+Vai trò của xửlý tại biên
+Xửlý tại biên là phương thức thực hiện một phần tác vụtính toán gần nơi phát sinh
+dữliệu, thay vì truyền toàn bộdữliệu lên máy chủtừxa. Shi và cộng sựphân tích khả
+năng của phương thức này trong giảm thời gian đáp ứng và chi phí băng thông, đồng
+thời chỉra yêu cầu quản lý tài nguyên và dữliệu phân tán[1]. Trong xe đẩy thông minh,
+10
+
+--- PDF PAGE 13 (Thesis page 11) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+ảnh và tín hiệu cảm biến được phát sinh ngay trên xe. Raspberry Pi có thểxác định một
+thao tác mua sắm trước khi gửi sựkiện đã tổng hợp tới máy chủ.
+Bài toán tại biên gồm hai quyết định khác nhau: nhận diện “vật gì” và xác định “thao
+tác gì”. Một ảnh chứa gói hàng có thểđược quan sát trong cảthao tác ADD và REMOVE;
+nhãn ảnh vì thếkhông đủđểsuy ra hướng giao dịch. Ngược lại, cân xác định được thay
+đổi tải nhưng không phân biệt được hai sản phẩm có khối lượng gần nhau. Vai trò của
+khối tại biên là ghép các bằng chứng này vào cùng một khoảng thời gian thao tác. Lựa
+chọn xửlý tại biên phải được chứng minh bằng phép đo độtrễvà mức sửdụng tài nguyên
+trên cấu hình thực tế, thay vì mặc định rằng mọi xửlý cục bộđều nhanh hơn xửlý đám
+mây.
+2.2.2
+Điện toán biên và vòng đời mô hình
+Điện toán biên đưa xửlý đến gần nguồn dữliệu. Edge AI áp dụng cách bốtrí này cho
+tác vụAI; trong xe đẩy, camera tạo ảnh và thiết bịtại xe tiền xửlý, suy luận, tạo danh
+sách sản phẩm. Máy chủcó thểquản lý danh mục, giá và giao dịch. Hệthống vẫn có thể
+kết nối cloud trong khi khâu nhận diện thực thi cục bộ.
+Huấn luyện cần tính loss, lưu activation cho lan truyền ngược và cập nhật trọng số;
+suy luận chủyếu lan truyền thuận với trọng sốcốđịnh. Vì vậy có thểtrain trên máy có
+GPU rồi export cho Raspberry Pi. Roboflow quản lý dữliệu; YOLO11n là mô hình phát
+hiện; NCNN/ONNX Runtime là lựa chọn thực thi sau export. Mô hình train trên Google
+Colab, lưu Ultralytics 8.4.177 và chạy NCNN trên Raspberry Pi 4 RAM 8 GB[6][7].
+Hình 2.1: Vòng đời dữliệu và mô hình Edge AI. Sơ đồnguyên lý, không biểu thịhiệu
+năng đã đo[8]
+2.2.3
+Độtrễthông lượng và tài nguyên
+Độtrễtoàn trình của một khung hình trong hệthống AI tại biên có thểđược phân
+rã thành:
+Te2e = Tcapture + Tqueue + Tpre + Tinfer + Tpost + Tlogic + Toutput
+(2.1)
+Các thành phần lần lượt là capture, chờhàng đợi, tiền xửlý, inference, hậu xửlý, xác
+nhận logic và xuất kết quảcủa cùng một mẫu. Pipeline nhiều luồng có thểchồng thời
+gian; không cộng trung bình của các phiên khác nhau đểsuy ra độtrễtoàn hệthống.
+FPS = N
+∆t;
+FPSsequential ≈
+1
+Tsample
+(2.2)
+FPS đo sốkhung hoàn tất trên thời gian thực, khác thời gian xửlý một khung. Camera
+30 FPS không có nghĩa detector đạt 30 FPS. Khi frame đến nhanh hơn khảnăng xửlý,
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+11
+
+--- PDF PAGE 14 (Thesis page 12) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+hàng đợi dài làm kết quảbịcũ. Giữframe mới giảm tuổi dữliệu nhưng có thểbỏthao
+tác ngắn; cần báo cảtỷlệbỏframe và hành động bỏsót.
+Sốtham sốlà sốphần tửhọc được trong trọng số, bias và hệsốchuẩn hóa. Checkpoint
+mới chứa 2.606.098 tham số; riêng trọng sốcần khoảng 10,42 MB ởFP32 hoặc 5,21 MB
+ởFP16. File best.pt là 5,47 MB, khác RAM tiến trình còn chứa activation, camera buffer
+và runtime. FLOPs thấp cũng chưa bảo đảm nhanh trên mọi backend.
+Lượng tửhóa dùng ít bit hơn cho trọng số/activation. PTQ hiệu chỉnh sau train; QAT
+mô phỏng lượng tửhóa khi train. Trong biểu thức affine, s là bước lượng tử, z biểu diễn
+điểm không.
+q = clip
+(︂
+round
+(︂x
+s
+)︂
++ z
+)︂
+;
+ˆx = s(q −z)
+(2.3)
+INT8 có thểthay đổi điểm và quyết định NMS, nên việc lựa chọn cấu hình phải xét cả
+chất lượng, latency, RAM và nhiệt độ. Phần kết quảso sánh cấu hình và sốđo trên thiết
+bịđược trình bày ởcuối báo cáo.
+2.2.4
+Phân chia trách nhiệm giữa thiết bịvà máy chủ
+Raspberry Pi đảm nhiệm thu nhận cảm biến, lưu dấu thời gian, suy luận ảnh, xác
+định mốc cân và tạo quyết định cục bộ. Máy chủquản lý danh mục sản phẩm, phiên mua
+sắm và tính nhất quán của giỏhàng. Giao diện hiển thịgiỏđã được máy chủxác nhận.
+Ranh giới này giúp phân biệt kết quảcảm nhận tại thiết bịvới giao dịch đã được ghi
+nhận chính thức. Mất mạng không đồng nghĩa giao dịch thất bại: tiến trình có thểgiữ
+giao dịch đang chờvà phát lại cùng định danh.
+Các hệthống thương mại như Amazon Dash Cart cũng sửdụng thịgiác máy tính và
+phối hợp cảm biến đểnhận biết hàng được thêm hoặc lấy ra [2]. Vì vậy, giá trịnghiên
+cứu của đềtài tập trung vào cách đồng bộbằng chứng, điều phối một mô hình cho hai
+camera và kiểm soát sai giao dịch trên thiết bịgiới hạn tài nguyên.
+2.2.5
+Tính thời gian thực trong hệthống nhận diện
+Hệthống hướng tới đáp ứng tương tác. Thời gian thực được đánh giá theo thời hạn
+đáp ứng của tác vụ, không chỉtheo tốc độhiển thịcamera. Camera 30 FPS cung cấp
+một khung hình khoảng mỗi 33,3 ms; nếu một lần suy luận mất 300 ms thì bộxửlý AI
+chỉhoàn thành khoảng 3,3 lần suy luận mỗi giây khi chạy nối tiếp. GiảsửTảnh là thời
+gian kểtừENTER đến khi có nhãn ảnh đủđiều kiện, Tcân là thời gian đến khi có mốc
+cân sau thao tác ổn định và Tkiểm là thời gian kiểm tra quyết định. Khi hai nhánh ảnh và
+cân chạy song song, quan hệthiết kếgần đúng là:
+Tquyết định ≈max(Tảnh, Tcân) + Tkiểm
+(2.4)
+Quan hệ(2.4) cho thấy giảm thời gian suy luận chỉgiúp giảm độtrễkhi nhánh ảnh
+đang là nút thắt. Nếu cân còn rung thì giảm thời gian AI không làm quyết định xuất hiện
+ngay. Khi tích hợp trực tuyến, độtrễđến giao diện còn bao gồm gửi sựkiện, xửlý máy
+chủvà cập nhật giao diện.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+12
+
+--- PDF PAGE 15 (Thesis page 13) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+2.3
+Cơ sởlý thuyết vềThịgiác máy tính và thuật
+toán nhận diện YOLO11n
+2.3.1
+Bài toán và biểu diễn ảnh
+Phát hiện đối tượng vừa xác định lớp vừa định vịtừng vật bằng hộp bao. Nó khác
+phân loại toàn ảnh, phân đoạn từng pixel và theo dõi đối tượng qua thời gian. Trong
+Smart Retail Cart, một SKU là một loại hàng; tay là đối tượng hỗtrợnhận biết tương
+tác, không phải hàng hóa đểtính tiền. Một prediction gồm hộp b, lớp c và điểm s. Detector
+không tựgiải quyết việc thêm hay lấy hàng: sản phẩm biến mất một frame có thểdo che
+khuất, không nhất thiết đã được lấy ra.
+Ảnh RGB có ba kênh. Đầu vào mạng thường theo B × C × H × W; với input train
+320 × 320, tensor FP32 1 × 3 × 320 × 320 chứa 307.200 giá trị, khoảng 1,23 MB thập
+phân. ThứtựRGB/BGR, chia 255, kiểu sốvà phép resize phải tương đương giữa train
+và inference.
+Letterbox giữtỷlệảnh rồi đệm đểđạt kích thước đích. Với ảnh 640 × 480 vào tensor
+320 × 320, ảnh thu còn 320 × 240, đệm trên/dưới 40 pixel. Tọa độy = 120 thành y = 100
+trong tensor; khi vẽlên ảnh gốc phải bỏphần đệm và chia tỷlệ.
+r = min
+(︃Wt
+W , Ht
+H
+)︃
+;
+x′ = rx + px;
+y′ = ry + py
+(2.5)
+2.3.2
+Tích chập tham sốvà activation
+Tích chập dùng cùng kernel tại nhiều vịtrí đểtổng hợp tín hiệu cục bộ. Mỗi kênh đầu
+ra kết hợp các kênh vào theo trọng sốđược học; đây là phép toán tạo feature map, không
+phải một quy tắc viết tay đểnhận ra tên hàng.
+zo,i,j =
+∑︂
+c,u,v
+Wo,c,u,vXc,i+u,j+v + bo
+(2.6)
+Pconv = k2CinCout
+g
++ Pbias
+(2.7)
+Với kernel k × k, Cin kênh vào, Cout kênh ra và g nhóm, sốtrọng sốkernel là k2CinCout
+g
+;
+bias được cộng riêng. Ví dụ3 × 3, ba kênh vào và 16 kênh ra có 432 trọng số. Nếu Conv
+không có bias và BatchNorm có gamma, beta cho 16 kênh thì khối có 464 tham sốhọc
+được. Running mean/variance là buffer, không cộng như tham sốđược optimizer cập
+nhật.
+MAC là một phép nhân tích lũy; FLOPs là quy ước đếm phép toán sốthực. Kernel
+432 trọng sốchạy tại 320 × 320 vịtrí cần 44.236.800 MAC; nếu tính hai FLOPs/MAC
+thì khoảng 88.473.600 FLOPs, chưa cộng chuẩn hóa hay activation. Tham sốít không có
+nghĩa mọi tầng đều ít phép tính hoặc dùng ít RAM.
+BatchNorm dùng thống kê batch khi train và thống kê đã tích lũy khi eval; SiLU có
+dạng xσ(x), giúp mạng biểu diễn phi tuyến. Stride giảm kích thước feature map và chi
+phí nhưng có thểmất chi tiết logo nhỏ. Hai Conv 3 × 3 stride 2 nối tiếp có trường tiếp
+nhận lý thuyết 7 pixel và bước nhảy 4 pixel; đó là ví dụcục bộ, không phải trường tiếp
+nhận đầy đủcủa YOLO11n.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+13
+
+--- PDF PAGE 16 (Thesis page 14) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+2.3.3
+Kiến trúc YOLO11n và lựa chọn biến thểnano
+YOLO phát hiện hộp và lớp từtoàn ảnh theo nguyên lý một giai đoạn. YOLO11 kế
+thừa nguyên lý này, còn cấu trúc và loss khác YOLO đầu tiên. Nano thu nhỏđộsâu và độ
+rộng; cấu hình tham chiếu Ultralytics v8.3.0 dùng depth=0,50 và width=0,25. Checkpoint
+mới lưu cùng scale n, depth=0,50 và width=0,25; phiên bản thư viện train là 8.4.177.
+Hình 2.2: Backbone, neck và head của YOLO11n. Sơ đồchức năng; không phải toàn bộ
+module trong model summary.
+Backbone trích đặc trưng; neck upsample và concat đểkết hợp ngữnghĩa tầng sâu
+với chi tiết tầng nông; head dựđoán trên P3/P4/P5, stride 8/16/32. Input 640 tạo
+802 + 402 + 202 = 8.400 điểm tham chiếu; input 320 chỉcó 2.100. Tăng cạnh ảnh gấp đôi
+làm sốvịtrí tăng bốn lần, còn latency phụthuộc backend.
+2.3.4
+C3k2 SPPF và C2PSA
+C3k2 dùng các nhánh tách–ghép của họC2f, giữđường truyền ngắn và xửlý phần
+đặc trưng qua Bottleneck hoặc C3k theo cấu hình. Concat nối theo chiều kênh, khác cộng
+residual; hai nhánh 128 và 256 kênh cùng H, W tạo 384 kênh. Cơ chếnày hỗtrợtái sử
+dụng đặc trưng và gradient, không tựchứng minh cải thiện trên một SKU. [?]
+SPPF nối tiếp max pooling 5 × 5 stride 1 rồi concat với đầu vào; vùng gộp hiệu dụng
+tương ứng 5, 9 và 13 ô. Pooling không có tham sốhọc được, nhưng Conv chiếu kênh
+trước/sau vẫn có. C2PSA tách một phần đặc trưng qua attention và feed-forward rồi hợp
+nhất. Nguyên lý attention là:
+Attention(Q, K, V ) = softmax
+(︃QKT
+√dk
+)︃
+V
+(2.8)
+Q, K, V lần lượt biểu diễn truy vấn, khóa và giá trị. Softmax chuẩn hóa mức liên quan
+giữa vịtrí; tương tác tăng theo bình phương sốvịtrí nên xửlý ởfeature map nhỏgiảm
+chi phí. Attention có thểkhai thác ngữcảnh, cũng có thểhọc lệthuộc nền; cần test trên
+nền và ánh sáng mới.
+Bảng 2.2: Benchmark COCO 80 lớp ở640 × 640
+Thông số
+YOLOv8n
+YOLO11n
+mAP50–95 validation
+37,3%
+39,5%
+Tham sốcông bốlàm tròn
+3,2 triệu
+2,6 triệu
+Khối lượng tính toán
+8,7 GFLOPs
+6,5 GFLOPs
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+14
+
+--- PDF PAGE 17 (Thesis page 15) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+COCO là cơ sởchọn YOLO11n làm baseline: ít tham sốvà FLOPs hơn, mAP50–95
+cao hơn YOLOv8n. Chưa thểkết luận hơn trên xe đẩy: cần cùng split, train và đo trên
+cùng Pi/backend. Latency GPU công bốkhác thiết bịkhông phải đối chứng công bằng.
+2.3.5
+Detect head anchor free và hồi quy phân bố
+Head chuẩn có nhánh phân loại và hồi quy khoảng cách bốn cạnh hộp. Anchor-free
+không dùng tập anchor box có tỷlệđịnh sẵn, nhưng vẫn có anchor points làm điểm tham
+chiếu. Điểm lớp qua sigmoid; không có nhánh objectness riêng trong head tham chiếu.
+Hình 2.3: Detect head phù hợp checkpoint sáu lớp. Sơ đồgiải thích đầu ra cơ bản, không
+bao gồm NMS trong export.
+Với reg_max = 16 và C lớp, đầu ra trước giải mã có 64 + C kênh: bốn cạnh × 16 bin
+và C logits. Model sáu lớp có 70 kênh; sau giải mã cơ bản còn bốn tọa độvà sáu điểm
+lớp, tổng 10. Input 320 cho 2.100 vịtrí dựđoán. Export có NMS tích hợp hoặc đổi layout
+có thểkhác; parser phải kiểm tra shape thực.
+Hồi quy phân bốdùng softmax trên từng cạnh rồi lấy kỳvọng đểthu khoảng cách liên
+tục. Khoảng cách l, t, r, b quanh điểm tham chiếu được nhân stride đểchuyển sang pixel.
+d =
+15
+∑︂
+k=0
+k · pk;
+pk =
+ezk
+∑︁15
+j=0 ezj
+(2.9)
+x1 = s(xa −l);
+y1 = s(ya −t);
+x2 = s(xa + r);
+y2 = s(ya + b)
+(2.10)
+Distribution Focal Loss (DFL) phân mục tiêu y vào hai bin kềi = floor(y) và i+1 với
+trọng sốtổng bằng 1:
+LDFL = −((i + 1) −y) log pi −(y −i) log pi+1
+(2.11)
+Ví dụtoán học y = 7, 1875 cho q7 = 0, 8125 và q8 = 0, 1875. Nếu 16 logits bằng
+nhau, mỗi xác suất là 1/16; gradient theo logit là p −q: bin 7 bằng −0, 75; bin 8 bằng
+−0, 125; các bin còn lại +0, 0625. Đây là minh họa cơ chếhọc, không phải gradient đo từ
+checkpoint.
+Cross entropy tối thiểu bằng entropy mục tiêu, khoảng 0,4826 trong ví dụ; không bắt
+buộc tiến về0. Kỳvọng đúng chưa bảo đảm phân bốđúng. DFL giám sát phân bốkhoảng
+cách; CIoU giám sát hộp đã giải mã. Mô hình phải học từảnh và nhãn phù hợp miền xe
+đẩy, không chỉtừkiến trúc nhỏgọn.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+15
+
+--- PDF PAGE 18 (Thesis page 16) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+2.3.6
+Roboflow và tổchức dữliệu có nhãn
+Roboflow là nền tảng hỗtrợthu nhận, quản lý, gán nhãn, tạo phiên bản dữliệu thị
+giác, huấn luyện và triển khai. Trong quy trình của đềtài, nền tảng chủyếu chuẩn bịbộ
+dữliệu có nhãn đểdùng với Ultralytics. Roboflow không phải kiến trúc mạng và không
+tựbảo đảm nhãn đúng. Workspace chứa project; project xác định nhiệm vụvà hệlớp;
+version lưu trạng thái dữliệu dùng cho một lượt train.
+Xuất dataset theo định dạng “yolov11” chưa chứng minh đã train YOLO11n. Nếu dùng
+Roboflow Train phải ghi đúng model dịch vụlựa chọn; không mặc định Fast/Accurate là
+YOLO11n. Thêm nhãn hay SKU cũng chưa cập nhật trọng số, cần huấn luyện và đánh
+giá lại.
+Hình 2.4: Gán nhãn tay và sản phẩm trong quy trình dữliệu. Minh họa nguyên lý, không
+phải ảnh dataset thực tế.
+Ground truth detection gồm lớp và hộp từng đối tượng. Tay cầm Poca có thểcó hai
+hộp chồng nhau. Cần thống nhất hộp phần nhìn thấy hay toàn vật suy diễn, trường hợp
+cắt mép, che khuất nặng và SKU chưa chắc chắn. Nhãn do model gợi ý phải được duyệt
+cảbox sai lẫn box thiếu; không dùng prediction của chính model làm chuẩn đểtựđánh
+giá.
+Nhãn YOLO detection là class_id cùng tâm x, tâm y, rộng và cao chuẩn hóa theo
+kích thước ảnh:
+xc = x1 + x2
+2W
+;
+yc = y1 + y2
+2H
+;
+w = x2 −x1
+W
+;
+h = y2 −y1
+H
+(2.12)
+Ví dụảnh 640 × 480, hộp (160,120)–(320,360) cho (0,375; 0,5; 0,25; 0,5). Class ID là chỉ
+sốtheo names, không phải confidence. Nhãn segmentation chứa các đỉnh đa giác; chuyển
+min/max thành hộp làm mất hình dạng, không biến detector thành model segmentation.
+Khi tay là lớp mục tiêu, ảnh chỉcó tay cần box tay; không Mark Null toàn ảnh.
+2.3.7
+Chia tập và tăng cường dữliệu
+Train cập nhật trọng số; validation chọn cấu hình; test đánh giá cuối. Nên chia theo
+phiên chụp/nguồn trước augmentation đểtránh frame gần nhau rơi vào nhiều split. Tỷ
+lệ70/20/10 không tựchứng minh độc lập.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+16
+
+--- PDF PAGE 19 (Thesis page 17) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+Augmentation tạo biến đổi khi train; preprocessing chuẩn hóa đầu vào. Blur, sáng tối
+và góc nhìn cần phù hợp cảnh xe đẩy. Crop phải sửa box; grayscale/flip có thểmất màu
+hay đảo chữSKU. Nếu augment offline trên Roboflow và online bằng Ultralytics, ghi rõ
+cảhai. Version, manifest split, names và checksum giúp truy vết kết quả.
+2.3.8
+Gán mẫu hàm mất mát và huấn luyện
+TaskAlignedAssigner lựa chọn ứng viên theo điểm phân loại và chất lượng định vị,
+kiểm tra vịtrí trong vật và xửlý xung đột. Assignment tạo mục tiêu khi học; NMS lọc
+prediction khi suy luận. Loss tham chiếu gồm box, classification và DFL; classification
+dùng BCEWithLogitsLoss và có thểnhận score mềm từassignment. [?]
+L = λboxLbox + λclsLcls + λdflLdfl
+(2.13)
+LCIoU = 1 −IoU + ρ2
+c2 + αv
+(2.14)
+CIoU kết hợp IoU, khoảng cách tâm ρ và khác biệt tỷlệv; c là đường chéo hộp
+bao chung, α điều chỉnh đóng góp của v. Hai hộp cùng IoU vẫn có thểnhận mức phạt
+khác.Sau forward, gradient truyền qua head, neck, backbone; optimizer cập nhật trọng
+số. Learning rate điều khiển bước cập nhật; thuật toán thực có thểthêm momentum hoặc
+weight decay.
+Epoch là một lượt qua tập train, batch là sốảnh trong một bước, seed kiểm soát một
+phần ngẫu nhiên. Transfer learning khởi tạo từtrọng sốmiền nguồn rồi fine-tune; head
+phải khớp sốlớp. Freeze giảm phần được cập nhật, chưa bảo đảm tốt khi miền ảnh đổi.
+Checkpoint tốt nhất không nhất thiết là epoch cuối; dùng validation và tiêu chí định
+trước, giữtest cho đánh giá cuối.
+Checkpoint lưu hsv_h/s/v=0,015/0,7/0,4; translate=0,1; scale=0,5; fliplr=0,5;
+mosaic=1,0; close_mosaic=10; mixup/cutmix=0. Đây là augmentation online khi train.
+README của ZIP ghi không preprocessing/augmentation trên Roboflow; hai giai đoạn
+không được đồng nhất. Cần xem ảnh hưởng của flip lên chữvà đặc điểm SKU.
+2.3.9
+Hậu xửlý và thước đo đánh giá
+Confidence filtering loại điểm thấp; NMS giữhộp điểm cao và bỏhộp trùng theo
+ngưỡng IoU. NMS theo lớp giúp giữriêng tay và hàng; hai vật cùng loại gần nhau vẫn
+có thểbịloại nhầm. IoU của NMS so hai prediction, còn IoU đánh giá so prediction với
+ground truth.
+IoU(A, B) = |A ∩B|
+|A ∪B|
+(2.15)
+Confidence 0,9 không mặc nhiên có nghĩa 90% đúng ngoài thực tế. [10] Chọn ngưỡng
+theo chi phí bỏsót/thêm nhầm trên validation rồi cốđịnh trước test. Một TP phải đúng
+lớp và khớp nhãn theo giao thức IoU; hộp trùng/sai lớp là FP, đối tượng không được tìm
+thấy là FN. Mỗi nhãn chỉđược ghép TP một lần.
+P =
+TP
+TP + FP ;
+R =
+TP
+TP + FN ;
+F1 = 2 P · R
+P + R
+(2.16)
+AP ≈
+∫︂1
+0
+Pinterp(r)dr;
+mAP = 1
+C
+C
+∑︂
+c=1
+APc
+(2.17)
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+17
+
+--- PDF PAGE 20 (Thesis page 18) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+Precision đo mức đúng của prediction; Recall đo khảnăng tìm đủvật; F1 cân bằng
+hai sốtại một ngưỡng. AP tổng hợp đường Precision–Recall; mAP trung bình qua lớp.
+mAP50–95 còn trung bình ởIoU 0,50 đến 0,95, bước 0,05, đòi định vịchặt hơn mAP50.
+PR curve, F1–confidence và confusion matrix cần prediction/ground truth theo đối
+tượng; bảng sốlượt thành công không đủdựng chúng. Tỷlệđúng SKU theo thao tác,
+fallback, false add/remove và giỏđúng toàn bộlà các chỉsốhệthống riêng, cần báo ngoài
+metric detector.
+2.4
+Nguyên lý hoạt động của các cảm biến đo lường
+2.4.1
+Cảm biến khối lượng (Loadcell) và mạch chuyển đổi
+Chuyển đổi lực thành tín hiệu điện
+Loadcell biến đổi biến dạng cơ học do lực tác dụng thành biến thiên điện trởcủa điện
+trởđo biến dạng. Trong mô hình đàn hồi tuyến tính, biến thiên tương đối của điện trở
+được mô tảbởi hệsốnhạy điện trởGF và biến dạng tương đối ε:
+∆R
+R = GF · ε
+(2.18)
+Các phần tửđo được bốtrí trong cầu Wheatstone đểtạo điện áp vi sai giữa hai đầu tín
+hiệu. Khi tải thay đổi, cầu mất cân bằng và điện áp vi sai thay đổi theo tải trong vùng
+làm việc đã hiệu chuẩn. Bốn dây của một loadcell cầu đầy đủcó vai trò kích thích dương
+E+, kích thích âm E-, tín hiệu dương A+ và tín hiệu âm A-. Không thểxác định chắc
+chắn chức năng dây chỉtừmàu dây nếu chưa có tài liệu của loadcell cụthể. Đại lượng
+phần mềm biểu diễn bằng gram được suy ra từlực tác dụng lên bàn cân trong điều kiện
+đo đã hiệu chuẩn. Khi người sửdụng tì tay, khi xe tăng tốc hoặc khi khay chạm vào khung
+cốđịnh, lực đo không chỉdo khối lượng hàng hóa. Những tác động này tạo sai sốcó thể
+lớn hơn nhiễu điện tử. Do đó, cơ cấu truyền lực và điều kiện xe đứng yên là một phần
+của phương pháp đo, không thểxửlý hoàn toàn bằng cách tăng độlàm mượt sốliệu.
+Thu nhận tín hiệu bằng HX711
+HX711 là bộchuyển đổi tương tựsang số24 bit dùng cho tín hiệu cầu điện trở, có
+bộkhuếch đại lập trình được và tốc độđầu ra danh định 10 hoặc 80 mẫu mỗi giây theo
+cấu hình RATE [3]. Độrộng 24 bit là độrộng mã số; độphân giải hữu dụng và sai số
+cân còn phụthuộc nhiễu, loadcell, nguồn cấp và lắp đặt cơ khí. Tốc độđọc phần mềm
+không nhất thiết bằng tốc độdanh định của ADC. DOUT xuống mức thấp báo hiệu dữ
+liệu sẵn sàng. Bộđọc phát xung PD_SCK đểdịch 24 bit dữliệu; tổng 25 xung chọn kênh
+A với hệsốkhuếch đại 128 cho chu kỳtiếp theo. Nếu PD_SCK được giữmức cao quá
+60 µs, HX711 chuyển sang chếđộgiảm công suất . Một vòng phát xung bằng Python bị
+tạm dừng dưới tải AI vì thếcó thểgây gián đoạn phép đo, dù dây nối không thay đổi.
+Cần phân biệt lỗi thời gian phát xung với nhiễu tương tự. Lỗi phát xung có thểxuất hiện
+thành giá trịcực đoan hoặc reset theo tải CPU; nhiễu tương tựthường liên quan nguồn,
+đường tín hiệu và môi trường điện từ. Hai nhóm lỗi có thểcùng tồn tại. Chẩn đoán phải
+đối chiếu giá trịraw, dấu thời gian, sốlần reset và phép đo xung SCK thay vì gộp mọi
+biểu hiện thành “cân nhiễu”.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+18
+
+--- PDF PAGE 21 (Thesis page 19) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+Hiệu chuẩn và xác định độthay đổi tải
+Gọi r là mã ADC, r0 là mã trung bình hoặc trung vịkhi cân không tải, và k là hệsố
+hiệu chuẩn tính theo mã ADC trên gram. Khối lượng hiển thịm được xác định bởi:
+m = r −r0
+k
+(2.19)
+Tare cập nhật r0 đểđưa trạng thái không tải vềgần 0 g. Hiệu chuẩn hệsốk sửdụng
+tải tham chiếu có khối lượng biết trước; thao tác này khác với tare. Nếu đổi r0 khi giỏ
+còn chứa hàng, phần mềm sẽcoi tải đó là nền mới và không còn biểu diễn đúng tổng khối
+lượng so với trạng thái giỏtrống. Hệsốk có thểâm do chiều đấu tín hiệu của cầu; dấu
+âm không phải lỗi nếu chiều biến đổi khối lượng đã được kiểm tra bằng tải tham chiếu.
+Đối với một thao tác, việc xác định hành động dựa trên mốc ổn định trước và sau
+thao tác:
+∆W = Wsau −Wtrước = rsau −rtrước
+k
+(2.20)
+Offset r0 triệt tiêu trong (2.20) nếu cùng một hệhiệu chuẩn được sửdụng. Vì vậy, giỏ
+đang có hàng vẫn có thểphát hiện ADD hoặc REMOVE dựa trên chênh lệch. Tuy nhiên,
+không được ghép hai mốc thuộc hai thời kỳADC bịngăn cách bởi reset hoặc mất mẫu.
+Khi đo nhiều vịtrí đặt tải và nhiều mức tải, sai sốhệsốk, độlặp lại và sai sốdo vịtrí
+cần được đánh giá riêng.
+2.4.2
+Cảm biến khoảng cách ToF và nguyên lý quét mã vạch
+Đo khoảng cách và tạo sựkiện ToF
+Nguyên lý thời gian bay (Time-of-Flight) xác định khoảng cách từthời gian ánh sáng
+đi tới vật và phản xạtrởlại. Với vận tốc ánh sáng c và thời gian khứhồi τ, mô hình lý
+tưởng được xác định bởi:
+d = c · τ
+2
+(2.21)
+Cảm biến VL53L0X tích hợp bộphát VCSEL hồng ngoại và bộthu SPAD, cung cấp
+kết quảkhoảng cách qua giao tiếp I2C [4]. Dữliệu ToF trong đềtài dùng đểphát hiện
+vật hoặc tay đi vào vùng thao tác. Nó không cung cấp nhãn sản phẩm và ba cảm biến
+trong cấu hình này không được dùng như ba camera hay một hệđo chiều sâu đa điểm đã
+hiệu chuẩn.
+Các cảm biến cùng loại có cùng địa chỉI2C mặc định sau khi khởi động. Đểcùng hoạt
+động trên một bus giao tiếp, phần mềm giữcác chân XSHUT ởtrạng thái tắt, bật lần lượt
+từng cảm biến và thiết lập địa chỉmới. Địa chỉ0x52 được tài liệu của hãng ST biểu diễn
+theo dạng có bit đọc/ghi; địa chỉ7-bit tương ứng là 0x29 [?]. Mã nguồn của đềtài gán
+ba địa chỉ7-bit lần lượt là 0x30, 0x31 và 0x32 sau quá trình khởi tạo.
+Điểm khác biệt giữa lấy mẫu nhanh và tạo sựkiện đáng tin cậy nằm ởkhâu kiểm tra
+mẫu mới. Nếu chương trình đọc lặp lại một kết quảcũ, nhiều lần đọc không chứng minh
+vật đã hiện diện trong nhiều phép đo độc lập. Vì vậy, sựkiện ENTER yêu cầu các lần đo
+mới liên tiếp ởít nhất một cảm biến; trong khi sựkiện CLEAR yêu cầu một chuỗi đợt cập
+nhật đồng bộcủa toàn bộnhóm cảm biến. Các giá trị8190 hoặc 8191 trong nhật ký hệ
+thống (log) không được diễn giải thành khoảng cách vật lý thực tếlớn hơn 8 m.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+19
+
+--- PDF PAGE 22 (Thesis page 20) ---
+Chương 2 CƠ SỞLÝ THUYẾT VÀ CÁC NGHIÊN CỨU LIÊN QUAN
+Quét mã vạch và định danh dựphòng
+Mã vạch biểu diễn một định danh bằng cấu trúc quang học đã mã hóa. Bộđọc thu
+ảnh hoặc tín hiệu phản xạ, giải mã và trảchuỗi định danh; ứng dụng sau đó đối chiếu
+chuỗi này với danh mục. Nhãn AI và mã vạch có bản chất khác nhau: nhãn AI là kết quả
+suy luận từngoại hình, còn mã vạch là định danh đã được gán. GM65 hỗtrợcác giao
+tiếp như USB và UART; tài liệu mô đun cũng mô tảUSB VCom [5]. Trong cấu hình mã
+nguồn V2 đang có, ứng dụng đọc GM65 bằng cổng nối tiếp qua USB, ưu tiên định danh
+ổn định của thiết bịrồi tìm cổng tty phù hợp. Vì vậy, bản sơ đồkết nối cần thểhiện USB
+của Pi, không mặc định vẽGM65 vào UART BCM14 và BCM15. Cách đọc qua USB
+VCom vẫn là xửlý một luồng byte có tốc độtruyền và ký tựkết thúc, khác với việc mô
+phỏng bàn phím USB. Quét mã vạch chỉgiải quyết phần định danh. Khi cần xác nhận
+REMOVE, ứng dụng vẫn phải xác định tải giảm và kiểm tra sản phẩm có trong giỏ. Một
+mã quét hợp lệkhông tựchứng minh món đã đi vào hoặc ra khỏi xe. Cơ chếdựphòng
+phải ghép mã quét với lượt đang chờxác nhận đểtránh dùng lại mã của thao tác trước.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+20

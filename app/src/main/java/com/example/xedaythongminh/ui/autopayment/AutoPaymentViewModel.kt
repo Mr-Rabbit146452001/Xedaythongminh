@@ -70,6 +70,9 @@ class AutoPaymentViewModel(
                 lastSessionId = event.sessionId
                 startPaymentExecution(event.customerId, event.sessionId)
             }
+            is AutoPaymentUiEvent.SyncCartItems -> {
+                _uiState.value = _uiState.value.copy(cartItems = event.items)
+            }
             is AutoPaymentUiEvent.Retry -> {
                 startPaymentExecution(lastCustomerId, lastSessionId)
             }

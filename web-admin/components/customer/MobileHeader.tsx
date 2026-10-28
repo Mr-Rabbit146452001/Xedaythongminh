@@ -29,17 +29,18 @@ export default function MobileHeader({
       <div className="flex items-center justify-between">
         {/* Brand & Stroller Logo & ID */}
         <div className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/img_smart_cart_logo.png"
             alt="Smart Cart Logo"
-            className="w-10 h-10 object-contain drop-shadow"
+            className="h-9 w-auto max-w-[60px] object-contain drop-shadow"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/logo.png';
             }}
           />
           <div>
             <div className="flex items-center gap-1.5">
-              <span className="text-sm font-black tracking-tight text-white uppercase">SMARTCART</span>
+              <span className="text-sm font-black tracking-tight text-white uppercase">SMART CART</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-extrabold border border-white/40 shadow-sm">
                 PWA
               </span>

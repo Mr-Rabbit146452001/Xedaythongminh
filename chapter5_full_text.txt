@@ -1,0 +1,139 @@
+
+--- PDF PAGE 77 ---
+Chương 5
+KẾT LUẬN VÀ HƯỚNG PHÁT
+TRIỂN
+5.1
+Kết luận và các kết quảđạt được
+Nghiên cứu "Thiết kếvà thi công mô hình xe đẩy mua sắm thông minh tích hợp AIoT
+cho siêu thịbán lẻ"đã chứng minh tính khảthi, độtin cậy và hiệu năng vượt trội của
+việc ứng dụng điện toán biên (Edge Computing trên Raspberry Pi 4 Model B) kết hợp
+mô hình thịgiác học sâu (YOLO11n) trực tiếp vào quy trình bán lẻtựđộng. Qua quá
+trình triển khai thực tếvà kiểm thửhệthống toàn diện, đềtài đã hoàn thành trọn vẹn
+các mục tiêu nghiên cứu trọng tâm:
+1. Xây dựng kiến trúc hệthống 3 tầng hiện đại và tin cậy: Thiết kếthành
+công mô hình tích hợp đồng bộgiữa tầng thiết bịbiên (Raspberry Pi 4, cảm biến
+khối lượng Loadcell HX711, cảm biến khoảng cách ToF VL53L0X, đầu quét mã
+vạch GM65, Camera AI), tầng máy chủtrung tâm (FastAPI, PostgreSQL, Node.js
+Express, ThingsBoard Cloud) và tầng giao diện tương tác (Tablet App, Web Admin,
+PWA).
+2. Chuẩn hóa CSDL và cơ chếxửlý dữliệu chuẩn công nghiệp: Xây dựng cơ
+sởdữliệu PostgreSQL 15 chuẩn hóa gồm 6 bảng nghiệp vụchính cốt lõi, bảo đảm
+tuyệt đối tính toàn vẹn giao dịch ACID, cơ chếxửlý lũy đẳng (Idempotency) ngăn
+ngừa trùng lặp dữliệu và mô hình Transactional Outbox Pattern đảm bảo khảnăng
+đồng bộthời gian thực không mất mát sựkiện.
+3. Thẩm định chức năng xuất sắc qua bộ230 lượt kiểm thửtích hợp: Thực
+nghiệm thành công 5 kịch bản ca biên (edge cases) phức tạp bao gồm luồng chuẩn,
+phát hiện bất thường khối lượng chống gian lận thương mại, xửlý tín hiệu AI điểm
+tin cậy thấp, cơ chếcứu hộmởkhóa qua đầu quét GM65 và khảnăng tựkhôi phục
+khi mất kết nối mạng. Hệthống đạt tỷlệphê duyệt và nghiệm thu chức năng tuyệt
+đối 100% (230/230 lượt).
+4. Nghiệm thu thực tếqua 150 cặp thửnghiệm hoàn chỉnh (300 lượt vào/ra):
+Mô hình Camera AI đạt tỷlệnhận diện chính xác ngay lập tức 89, 67% (269/300
+lượt). Đối với 10, 33% sốlượt rơi vào góc khuất hoặc lóa sáng (31/300 lượt), cơ chế
+chuyển hướng quét bổsung qua GM65 đã giải quyết triệt để, đưa tỷlệchốt đơn
+chính xác của toàn hệthống đạt 100, 00% (tỷlệlỗi 0, 00%). Đồng thời, cảm biến
+Loadcell HX711 duy trì độchênh lệch tuyệt đối trung bình |vo −ra| cực nhỏ(từ
+0, 20 g đến 0, 29 g), khẳng định tính ổn định cao cho thuật toán Sensor Fusion.
+75
+
+--- PDF PAGE 78 ---
+Chương 5 KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
+5. Hiệu năng đáp ứng thời gian thực tối ưu: Đo kiểm thực tếdịch vụBackend
+FastAPI ghi nhận thời gian xửlý trung bình đạt 28, 4 ms (ngưỡng P99 = 58, 1 ms <
+100 ms), kết hợp giao diện ứng dụng trên Tablet hoạt động mượt mà, đồng bộtrạng
+thái ổn định, tạo nền tảng kỹthuật vững chắc đểđưa mô hình vào áp dụng trong
+môi trường thương mại thực tế.
+5.2
+Hạn chếcủa đềtài
+Mặc dù đạt được những kết quảrất khảquan, hệthống vẫn tồn tại một sốgiới hạn
+kỹthuật cần tiếp tục hoàn thiện trong các giai đoạn nghiên cứu tiếp theo:
+1. Quy mô danh mục hàng hóa thửnghiệm: Đềtài mới chỉtập trung huấn luyện
+và đánh giá trên bộsản phẩm bán lẻtiêu biểu đại diện cho các nhóm hình dạng,
+chất liệu bao bì và đặc tính phản quang khác nhau; chưa mởrộng đánh giá trên
+quy mô hàng nghìn SKU của các đại siêu thị.
+2. Đặc tính cơ khí của cấu trúc 1 Loadcell tâm bàn cân: Kết cấu sửdụng 01
+cảm biến chịu lực đơn điểm đặt tại chính tâm bàn cân đáy giỏphù hợp với giỏhàng
+thểtích vừa và nhỏ. Khi hàng hóa bịđặt quá lệch vềcác góc mép xa, mô-men uốn
+cơ học có thểtạo sai sốcân tĩnh nhẹ, đòi hỏi hệthống phải duy trì ngưỡng dung
+sai an toàn từ±1, 0 g ÷ 1, 3 g.
+3. Giới hạn bài toán xửlý thịgiác máy tính: Mô hình hiện tại mới chỉđược tối
+ưu hóa cho bài toán từng sản phẩm đi qua vùng quan sát theo luồng tuần tự(mỗi
+lượt 01 sản phẩm). Hệthống chưa xửlý tổng quát trường hợp người mua thảcùng
+lúc nhiều sản phẩm (3 ÷ 4 món) chồng chéo che lấp hoàn toàn lẫn nhau vào giỏ
+hàng.
+4. Môi trường tích hợp cổng thanh toán mô phỏng: Do các rào cản vềpháp lý
+và chính sách môi trường thửnghiệm (sandbox) ngân hàng thương mại, quy trình
+thanh toán hiện tại đang triển khai qua máy chủmô phỏng Mock Bank (cổng 4000)
+đểhoàn thiện luồng trải nghiệm khép kín trong phòng thí nghiệm.
+5.3
+Hướng phát triển trong tương lai
+Từnhững kết quảthu được và các hạn chếđã chỉra, định hướng nâng cấp hệthống
+trong tương lai tập trung vào các giải pháp kỹthuật sau:
+1. Kiến trúc Caching hiệu năng cao: Bổsung tầng bộnhớđệm nhanh Redis In-
+Memory Cache cho danh mục sản phẩm và dữliệu phiên mua sắm, giúp triệt tiêu
+độtrễđọc/ghi CSDL đĩa cứng, hạthời gian xửlý phản hồi Backend xuống dưới
+15 ms.
+2. Nâng cấp cụm 4 Loadcell bù trừtrọng tâm: Cải tiến kết cấu cơ khí sang hệ
+thống 04 cảm biến tải trọng đặt tại 04 góc đáy giỏkết hợp thuật toán tính toán
+trọng tâm, nâng độchính xác cân tĩnh đạt dải dung sai ±0, 5 g bất kểvịtrí đặt
+hàng hóa.
+3. Thịgiác AI góc rộng kết hợp Tracking đa đối tượng: Bổsung camera phụ
+góc rộng và tích hợp thuật toán bám vết đối tượng đa luồng (Multi-Object Tracking
+— MOT như ByteTrack / DeepSORT) kết hợp bộgia tốc phần cứng chuyên dụng
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+76
+
+--- PDF PAGE 79 ---
+Chương 5 KẾT LUẬN VÀ HƯỚNG PHÁT TRIỂN
+(Google Coral TPU / NPU) nhằm xửlý chính xác hành vi thảđồng thời nhiều sản
+phẩm (Multi-item transactions).
+4. Đồng bộgiao diện thời gian thực qua giao thức WebSocket/MQTT: Thay
+thếcơ chếkiểm tra định kỳ(Polling 650 ms) hiện tại bằng kênh truyền song công
+hai chiều WebSocket hoặc MQTT, giúp màn hình Tablet cập nhật ngay lập tức
+trạng thái giỏhàng với độtrễ< 50 ms.
+5. Tích hợp Cổng thanh toán thương mại không chạm: Đăng ký kết nối chính
+thức với các SDK cổng thanh toán ngân hàng (VNPay, MoMo, ZaloPay) đểtriển
+khai tính năng thanh toán tựđộng không chạm (Touchless Payment) tích hợp thẳng
+vào ứng dụng PWA trên di động của người dùng.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+77
+
+--- PDF PAGE 80 ---
+TÀI LIỆU THAM KHẢO
+[1] W. Shi, J. Cao, Q. Zhang, Y. Li và L. Xu, “Edge Computing: Vision and
+Challenges”, IEEE Internet of Things Journal, tập 3, số5, tr. 637–646, 2016. DOI:
+10.1109/JIOT.2016.2579198. Truy cập ngày 14 tháng 10 năm 2026.
+[2] Amazon, “Amazon Dash Cart: New features and Whole Foods Market expansion”,
+2022. Truy cập ngày 14 tháng 10 năm 2026.
+[3] AVIA Semiconductor, HX711 24 Bit Analog to Digital Converter for Weigh Scales,
+tài liệu kỹthuật V2.0, bản lưu do SparkFun phân phối. Truy cập ngày 14 tháng 10
+năm 2026.
+[4] STMicroelectronics, VL53L0X Time of Flight ranging sensor, datasheet DS11555,
+Rev 6, 2024. Truy cập ngày 14 tháng 10 năm 2026.
+[5] Unit Electronics, GM65 Bar Code Reader Module User Manual, bản lưu nhà phân
+phối. Tài liệu mô tảmodule; kết nối USB serial xác định từfirmware [13]. Truy cập
+ngày 14 tháng 10 năm 2026.
+[6] Raspberry Pi Ltd, Raspberry Pi computer hardware, tài liệu phần cứng và giao tiếp
+thiết bị. Truy cập ngày 17 tháng 10 năm 2026.
+[7] Raspberry Pi Ltd, Raspberry Pi computer hardware, mục GPIO và Voltage
+specifications. Truy cập ngày 17 tháng 10 năm 2026.
+[8] Google, Getting started with LiteRT, tài liệu Google AI Edge. Truy cập ngày 14
+tháng 10 năm 2026.
+[9] Ultralytics, Ultralytics YOLO11, tài liệu mô hình. Truy cập ngày 14 tháng 10 năm
+2026.
+[10] C. Guo, G. Pleiss, Y. Sun và K. Q. Weinberger, “On Calibration of Modern Neural
+Networks”, Proceedings of the 34th International Conference on Machine Learning,
+PMLR 70, tr. 1321–1330, 2017. Truy cập ngày 14 tháng 10 năm 2026.
+[11] joan2937, Dựán pigpio, mã nguồn và tài liệu giao tiếp GPIO, waveform và thông
+báo có dấu thời gian. Kho mã GitHub. Truy cập ngày 14 tháng 10 năm 2026.
+[12] NIST/SEMATECH, e-Handbook of Statistical Methods, mục 7.2.4.1 Confidence
+intervals. Truy cập ngày 14 tháng 10 năm 2026.
+[13] VinhQV,
+Smart-Cart-Retail-Raspberry-Pi,
+nhánh
+v3-final,
+commit
+8a6ea95a5d72470d3569c887f7d3ef4a50239f7f. Đối chiếu mã nguồn và model
+ngày 17 tháng 10 năm 2026.
+78

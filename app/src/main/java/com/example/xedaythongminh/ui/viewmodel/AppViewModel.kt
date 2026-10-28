@@ -19,6 +19,7 @@ import com.example.xedaythongminh.domain.model.ViolationSource
 import com.example.xedaythongminh.domain.model.SensorAnomaly
 import com.example.xedaythongminh.domain.model.AnomalyType
 import com.example.xedaythongminh.domain.model.StaffVerificationResult
+import com.example.xedaythongminh.domain.model.RfidGateEvent
 
 class AppViewModel constructor(
     private val cartRepository: CartRepository,
@@ -52,6 +53,10 @@ class AppViewModel constructor(
 
     private val _activeAnomaly = MutableStateFlow<SensorAnomaly?>(null)
     val activeAnomaly: StateFlow<SensorAnomaly?> = _activeAnomaly.asStateFlow()
+
+    // Sự kiện Cổng An Ninh RFID quét nhận diện thẻ từ xe đẩy
+    private val _rfidGateEvent = MutableStateFlow<RfidGateEvent?>(null)
+    val rfidGateEvent: StateFlow<RfidGateEvent?> = _rfidGateEvent.asStateFlow()
 
     private val _sessionQrUrl = MutableStateFlow<String?>(null)
     val sessionQrUrl: StateFlow<String?> = _sessionQrUrl.asStateFlow()
@@ -306,6 +311,35 @@ class AppViewModel constructor(
     /**
      * Nhân viên xác nhận đã khắc phục sai lệch thực tế trên xe đẩy (đã lấy hàng thừa ra hoặc đã bỏ hàng thiếu vào lại)
      */
+    /**
+     * Kích hoạt giả lập tình huống xe đẩy đi qua cổng an ninh RFID
+     */
+    fun triggerSimulatedRfidGate(rfidTag: String = "CART_RFID_8888", gateId: String = "GATE_01") {
+        android.util.Log.d("SmartCart_RFID", "Kích hoạt giả lập quét xe qua cổng an ninh RFID: $rfidTag ($gateId)")
+        _rfidGateEvent.value = RfidGateEvent(rfidTag = rfidTag, gateId = gateId)
+        viewModelScope.launch {
+            try {
+                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.triggerRfidGate(
+                    mapOf("detected" to true, "tag" to rfidTag, "gate_id" to gateId)
+                )
+            } catch (ignored: Exception) {}
+        }
+    }
+
+    /**
+     * Đặt lại trạng thái sự kiện quét RFID sau khi xử lý xong hoặc hủy
+     */
+    fun clearRfidGateEvent() {
+        _rfidGateEvent.value = null
+        viewModelScope.launch {
+            try {
+                com.example.xedaythongminh.data.remote.RetrofitClient.apiService.triggerRfidGate(
+                    mapOf("detected" to false)
+                )
+            } catch (ignored: Exception) {}
+        }
+    }
+
     fun confirmAnomalyCorrectedByStaff() {
         _isAnomalyCorrected.value = true
         resolveWeightAnomaly()
@@ -692,6 +726,7 @@ class AppViewModel constructor(
         _isQrExpired.value = false
         _lastCompletedCartItems.value = emptyList()
         _sessionQrUrl.value = null
+        _rfidGateEvent.value = null
         _lastScannedItem.value = null
         _scanEventTimestamp.value = 0L
         _cartNotificationState.value = null
@@ -949,6 +984,17 @@ class AppViewModel constructor(
                                         com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
                                     }
                                     _activeAnomaly.value = null
+                                }
+
+                                // 4. Đồng bộ sự kiện cổng an ninh RFID quét thẻ từ trên xe đẩy
+                                val isRfidDetected = data?.rfidGateDetected == true
+                                if (isRfidDetected) {
+                                    if (_rfidGateEvent.value == null) {
+                                        val tag = data?.rfidTag ?: "CART_RFID_8888"
+                                        val gate = data?.gateId ?: "GATE_01"
+                                        android.util.Log.d("SmartCart_RFID", "Nhận tín hiệu RFID quét từ Server: tag=$tag, gate=$gate")
+                                        _rfidGateEvent.value = RfidGateEvent(rfidTag = tag, gateId = gate)
+                                    }
                                     if (_invalidScannedProduct.value?.source == ViolationSource.LOADCELL_ANOMALY) {
                                         _invalidScannedProduct.value = null
                                     }
@@ -990,6 +1036,7 @@ class AppViewModel constructor(
         // Cancel existing job if running
         qrPollingJob?.cancel()
         _sessionQrUrl.value = null
+        _rfidGateEvent.value = null
         _userState.value = null // BẢO MẬT: Luôn reset trạng thái khách hàng khi bắt đầu phiên quét mới
         
         viewModelScope.launch {
@@ -1040,6 +1087,7 @@ class AppViewModel constructor(
     fun stopQrLoginSession() {
         qrPollingJob?.cancel()
         _sessionQrUrl.value = null
+        _rfidGateEvent.value = null
     }
 
     fun loginCustomerWithId(customerId: String, onSuccess: () -> Unit = {}, onFailure: (String) -> Unit = {}) {
@@ -1172,6 +1220,7 @@ class AppViewModel constructor(
     fun logoutUser() {
         _userState.value = null
         _sessionQrUrl.value = null
+        _rfidGateEvent.value = null
         qrPollingJob?.cancel()
         resetSessionStartCartCheck()
     }

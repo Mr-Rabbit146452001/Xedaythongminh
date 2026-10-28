@@ -57,7 +57,28 @@ fun AutoPaymentScreen(
 ) {
     val uiState by autoPaymentViewModel.uiState.collectAsState()
     val userState by appViewModel.userState.collectAsState()
-    val summary = CartSummary(uiState.cartItems, userState)
+    val appCartItems by appViewModel.cartItemsState.collectAsState()
+    val rfidGateEvent by appViewModel.rfidGateEvent.collectAsState()
+
+    // Tự động đồng bộ giỏ hàng từ AppViewModel nếu AutoPaymentViewModel chưa có
+    LaunchedEffect(appCartItems) {
+        if (appCartItems.isNotEmpty() && uiState.cartItems.isEmpty()) {
+            autoPaymentViewModel.onEvent(AutoPaymentUiEvent.SyncCartItems(appCartItems))
+        }
+    }
+
+    // Bảo vệ phiên: Khách vãng lai (không đăng nhập) không được sử dụng thanh toán nhanh/tự động
+    LaunchedEffect(userState) {
+        if (userState == null) {
+            android.util.Log.w("SmartCart_AutoPay", "Khách vãng lai không được sử dụng thanh toán nhanh -> Chuyển hướng sang payment_selection")
+            navController.navigate("payment_selection") {
+                popUpTo("auto_payment") { inclusive = true }
+            }
+        }
+    }
+
+    val displayCartItems = if (uiState.cartItems.isNotEmpty()) uiState.cartItems else appCartItems
+    val summary = CartSummary(displayCartItems, userState)
 
     val formatVnd = { amount: Long ->
         NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN")).format(amount) + "đ"
@@ -104,7 +125,7 @@ fun AutoPaymentScreen(
                                     color = TextDark
                                 )
                                 Text(
-                                    text = "${uiState.cartItems.sumOf { it.quantity }} sản phẩm",
+                                    text = "${displayCartItems.sumOf { it.quantity }} sản phẩm",
                                     fontSize = 13.sp,
                                     color = TextGray
                                 )
@@ -120,7 +141,7 @@ fun AutoPaymentScreen(
                                     .verticalScroll(rememberScrollState()),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                uiState.cartItems.forEach { item ->
+                                displayCartItems.forEach { item ->
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -338,6 +359,55 @@ fun AutoPaymentScreen(
                                 StepDivider(active = uiState.currentStepIndex >= 4)
                                 StepItem(number = "4", label = "Hoàn tất", active = uiState.currentStepIndex >= 4)
                             }
+
+                            // Banner Cổng An Ninh RFID quét nhận diện xe đẩy
+                            if (rfidGateEvent != null) {
+                                Spacer(modifier = Modifier.height(14.dp))
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(14.dp),
+                                    color = Color(0xFFF0F7FF),
+                                    border = BorderStroke(1.5.dp, PrimaryBlue.copy(alpha = 0.6f))
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .background(PrimaryBlue.copy(alpha = 0.12f), CircleShape),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.QrCodeScanner,
+                                                contentDescription = null,
+                                                tint = PrimaryBlue,
+                                                modifier = Modifier.size(22.dp)
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = "CỔNG AN NINH RFID ĐÃ NHẬN DIỆN XE ĐẨY",
+                                                fontSize = 11.sp,
+                                                fontWeight = FontWeight.ExtraBold,
+                                                color = PrimaryBlue,
+                                                letterSpacing = 0.5.sp
+                                            )
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            val tagText = rfidGateEvent?.rfidTag ?: "CART_RFID"
+                                            val gateText = rfidGateEvent?.gateId ?: "GATE_01"
+                                            Text(
+                                                text = "Thẻ từ: " + tagText + " • Cổng: " + gateText + " — Chờ xác nhận thanh toán",
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = Color(0xFF1E293B)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
 
                         Spacer(modifier = Modifier.height(24.dp))
@@ -519,7 +589,7 @@ fun AutoPaymentScreen(
                                         modifier = Modifier.fillMaxWidth().height(52.dp),
                                         shape = RoundedCornerShape(14.dp),
                                         variant = GlassButtonVariant.Primary,
-                                        enabled = uiState.cartItems.isNotEmpty() && uiState.selectedMethod != null
+                                        enabled = (displayCartItems.isNotEmpty() || uiState.cartItems.isNotEmpty()) && uiState.selectedMethod != null
                                     ) {
                                         Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(20.dp))
                                         Spacer(modifier = Modifier.width(8.dp))
@@ -534,6 +604,7 @@ fun AutoPaymentScreen(
                                     GlassButton(
                                         onClick = {
                                             appViewModel.unlockCart()
+                                            appViewModel.clearRfidGateEvent()
                                             navController.popBackStack()
                                         },
                                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -550,6 +621,7 @@ fun AutoPaymentScreen(
                                     GlassButton(
                                         onClick = {
                                             // Điều hướng tới màn hình thành công chuẩn của App
+                                            appViewModel.clearRfidGateEvent()
                                             navController.navigate("payment_success") {
                                                 popUpTo("cart_detail") { inclusive = true }
                                             }

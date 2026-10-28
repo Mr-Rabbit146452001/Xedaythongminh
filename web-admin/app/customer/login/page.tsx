@@ -258,16 +258,17 @@ export default function CustomerLoginPage() {
       <div className="flex-1 max-w-md w-full mx-auto px-4 py-6 flex flex-col justify-center">
         {/* Brand Banner */}
         <div className="text-center mb-5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/img_smart_cart_logo.png"
             alt="Smart Cart Logo"
-            className="w-28 h-28 sm:w-32 sm:h-32 object-contain mx-auto mb-1"
+            className="h-24 sm:h-28 w-auto max-w-[220px] object-contain mx-auto mb-2 drop-shadow-md"
             onError={(e) => {
               (e.target as HTMLImageElement).src = '/logo.png';
             }}
           />
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0D47A1] uppercase">
-            SMARTCART MEMBER
+            SMART CART MEMBER
           </h1>
           <p className="text-xs font-semibold text-[#666666] mt-1 max-w-xs mx-auto">
             Hệ sinh thái mua sắm thông minh & Ví thanh toán không chạm

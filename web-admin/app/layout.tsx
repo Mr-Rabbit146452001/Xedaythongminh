@@ -5,6 +5,11 @@ import AppShell from '@/components/AppShell';
 export const metadata: Metadata = {
   title: 'SMART CART — Retail Intelligence & Customer App',
   description: 'Hệ thống Quản trị Bán lẻ Thông minh & Trải nghiệm Mua sắm Khách hàng Smart Cart',
+  icons: {
+    icon: '/img_smart_cart_logo.png',
+    shortcut: '/img_smart_cart_logo.png',
+    apple: '/img_smart_cart_logo.png',
+  },
 };
 
 export const viewport: Viewport = {

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sơ Đồ Khối Luồng Hoạt Động - Xe Đẩy Thông Minh AIoT</title>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --secondary: #0f172a;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      padding: 30px 20px;
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+      padding: 40px;
+      border: 1px solid #e2e8f0;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 35px;
+      padding-bottom: 25px;
+      border-bottom: 2px solid #f1f5f9;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 16px;
+      background: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 9999px;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    h1 {
+      font-size: 1.85rem;
+      color: #0f172a;
+      margin-bottom: 10px;
+      font-weight: 800;
+    }
+    p.subtitle {
+      color: #64748b;
+      font-size: 1.05rem;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+      padding: 15px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #334155;
+    }
+    .color-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+    }
+    .diagram-container {
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid #cbd5e1;
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+    }
+    .action-bar {
+      margin-top: 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      padding-top: 20px;
+      border-top: 1px solid #f1f5f9;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #0284c7;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 0.95rem;
+      cursor: pointer;
+      border: none;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #0369a1; }
+    .btn-outline {
+      background: #ffffff;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      color: #0f172a;
+    }
+    .guide-box {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 10px;
+    }
+    .guide-box h3 {
+      color: #166534;
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .guide-box ol {
+      padding-left: 20px;
+      color: #15803d;
+      font-size: 0.95rem;
+    }
+    .guide-box li { margin-bottom: 6px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <span class="badge">Đồ Án Tốt Nghiệp — Kiến Trúc Hệ Thống AIoT</span>
+    <h1>SƠ ĐỒ KHỐI LUỒNG HOẠT ĐỘNG TOÀN TRÌNH</h1>
+    <p class="subtitle">Hệ thống Xe Đẩy Mua Sắm Thông Minh (App Tablet, Cảm biến IoT, Cơ chế 650ms Polling, Anomaly & VietQR)</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="color-dot" style="background: #0284c7;"></span> Giai đoạn 1: Khởi tạo phiên</div>
+    <div class="legend-item"><span class="color-dot" style="background: #0d9488;"></span> Giai đoạn 2: Cảm biến & Polling 650ms</div>
+    <div class="legend-item"><span class="color-dot" style="background: #dc2626;"></span> Giai đoạn 3: Bảo mật & Xử lý bất thường</div>
+    <div class="legend-item"><span class="color-dot" style="background: #16a34a;"></span> Giai đoạn 4: Thanh toán VietQR & Đóng phiên</div>
+  </div>
+
+  <div class="diagram-container">
+    <div class="mermaid">
+flowchart TD
+    %% Khởi tạo phong cách
+    classDef startEnd fill:#0f172a,stroke:#334155,stroke-width:2px,color:#ffffff,font-weight:bold,rx:20,ry:20;
+    classDef g1 fill:#e0f2fe,stroke:#0284c7,stroke-width:2px,color:#0369a1,font-weight:600;
+    classDef g2 fill:#ccfbf1,stroke:#0d9488,stroke-width:2px,color:#115e59,font-weight:600;
+    classDef g3 fill:#fee2e2,stroke:#ef4444,stroke-width:2px,color:#991b1b,font-weight:600;
+    classDef g4 fill:#dcfce7,stroke:#22c55e,stroke-width:2px,color:#166534,font-weight:600;
+    classDef condition fill:#fef3c7,stroke:#f59e0b,stroke-width:2px,color:#92400e,font-weight:bold;
+
+    Start(["BẮT ĐẦU: Khách hàng tiếp cận Xe đẩy"]) :::startEnd
+    
+    %% GIAI ĐOẠN 1
+    subgraph G1 ["GIAI ĐOẠN 1: KHỞI TẠO PHIÊN & KIỂM TRA GIỎ"]
+        BatDauTouch["Màn hình Chào mừng (Welcome Screen)<br/>Khách bấm nút 'Bắt đầu mua sắm'"]:::g1
+        KiemTraTrong{"Kiểm tra cân Loadcell:<br/>Giỏ hàng có rỗng (W = 0g)?"}:::condition
+        CanhBaoLeftover["Bật cảnh báo LeftoverCartWarningOverlay<br/>Yêu cầu dọn sạch hàng còn sót"]:::g3
+        TaoSessionAPI["Gửi POST /api/v1/sessions<br/>Cấp mã phiên activeSessionId"]:::g1
+        XacThucMember{"Quét QR hội viên PWA?"}:::condition
+        AttachMember["Gắn Member ID & Áp dụng Voucher"]:::g1
+        GuestMode["Thiết lập phiên Khách vãng lai"]:::g1
+        VaoMainUI["Chuyển vào Màn hình Mua sắm chính<br/>Bố cục Tablet Landscape 65/35"]:::g1
+    end
+
+    Start --> BatDauTouch
+    BatDauTouch --> KiemTraTrong
+    KiemTraTrong -- "Sai (Có hàng sót)" --> CanhBaoLeftover
+    CanhBaoLeftover --> KiemTraTrong
+    KiemTraTrong -- "Đúng (0g)" --> TaoSessionAPI
+    TaoSessionAPI --> XacThucMember
+    XacThucMember -- "Có" --> AttachMember
+    XacThucMember -- "Không" --> GuestMode
+    AttachMember --> VaoMainUI
+    GuestMode --> VaoMainUI
+
+    %% GIAI ĐOẠN 2
+    subgraph G2_BOX ["GIAI ĐOẠN 2: CẢM BIẾN IOT & ĐỒNG BỘ REAL-TIME (POLLING 650ms)"]
+        HanhDongKhach["Khách hàng lấy hàng đặt vào giỏ xe"]:::g2
+        CumSensor["Cụm cảm biến phần cứng kích hoạt:<br/>• Camera AI: Nhận diện hình ảnh vật thể<br/>• Cân HX711: Ghi nhận trọng lượng delta W<br/>• Đầu quét GM65: Quét Barcode EAN-13"]:::g2
+        ServerPush["Gửi gói tin telemetry lên API Gateway & Database"]:::g2
+        PollingRoutine["Coroutine ngầm trên Tablet Polling mỗi 650ms<br/>GET /api/v1/cart/{sessionId}"]:::g2
+        DiffCheck{"Thuật toán so khớp Diffing:<br/>Có thay đổi giỏ hàng?"}:::condition
+        CapNhatUI["• Phát âm thanh Ting thông báo<br/>• Hiện Pill 'Đã thêm sản phẩm +1'<br/>• Recomposition danh sách (65%)<br/>• Cập nhật tổng tiền (35%)"]:::g2
+        KeepUI["Duy trì trạng thái giao diện hiện tại"]:::g2
+        CheckBamThanhToan{"Khách nhấn 'Thanh toán'?"}:::condition
+    end
+
+    VaoMainUI --> HanhDongKhach
+    HanhDongKhach --> CumSensor
+    CumSensor --> ServerPush
+    ServerPush --> PollingRoutine
+    PollingRoutine --> DiffCheck
+    DiffCheck -- "Có" --> CapNhatUI
+    DiffCheck -- "Không" --> KeepUI
+    CapNhatUI --> CheckBamThanhToan
+    KeepUI --> CheckBamThanhToan
+    CheckBamThanhToan -- "Chưa (Tiếp tục mua)" --> HanhDongKhach
+
+    %% GIAI ĐOẠN 3
+    subgraph G3_BOX ["GIAI ĐOẠN 3: KHÓA BẢO MẬT & KIỂM TRA BẤT THƯỜNG (ANOMALY)"]
+        KhoaCart["Kích hoạt isCartLocked = true<br/>Chụp bản sao giỏ _lockedCartSnapshot"]:::g3
+        KiemTraCan{"Cân đối trọng lượng:<br/>W_thực tế == W_danh mục?"}:::condition
+        BaoDongAnomaly["Hiện SensorAnomalyDialog:<br/>Cảnh báo lệch trọng lượng chưa xác nhận!"]:::g3
+        ChonXuLy{"Phương thức xử lý bất thường?"}:::condition
+        QuetGM65["Khách quét mã vạch qua GM65 để đối soát"]:::g2
+        StaffPIN["Nhân viên siêu thị nhập mã PIN 8888"]:::g3
+    end
+
+    CheckBamThanhToan -- "Có" --> KhoaCart
+    KhoaCart --> KiemTraCan
+    KiemTraCan -- "Sai (Lệch tải/Nghi gian lận)" --> BaoDongAnomaly
+    BaoDongAnomaly --> ChonXuLy
+    ChonXuLy -- "Khách quét bù" --> QuetGM65
+    ChonXuLy -- "Hỗ trợ kỹ thuật" --> StaffPIN
+    QuetGM65 --> KiemTraCan
+    StaffPIN --> KiemTraCan
+
+    %% GIAI ĐOẠN 4
+    subgraph G4_BOX ["GIAI ĐOẠN 4: THANH TOÁN VIETQR & ĐÓNG PHIÊN"]
+        ChonPTTT["Chọn phương thức thanh toán:<br/>VietQR Động / Thẻ / Quầy"]:::g4
+        TaoQR["Sinh VietQR động gắn Mã đơn + Tổng tiền<br/>Đồng hồ đếm ngược chờ Webhook"]:::g4
+        CheckWebhook{"Nhận tín hiệu Webhook<br/>thành công từ Ngân hàng?"}:::condition
+        WaitQR["Chờ Webhook phản hồi..."]:::g4
+        ThanhCongUI["Màn hình 'Thanh toán thành công!'<br/>• Xuất hóa đơn điện tử<br/>• Gửi thông báo đến Web PWA khách"]:::g4
+        XoaSession["Giải phóng activeSessionId<br/>Xóa dữ liệu bộ nhớ đệm giỏ hàng"]:::g4
+        TraXe["Màn hình hướng dẫn lấy hàng<br/>và di chuyển xe về trạm sạc"]:::g4
+    end
+
+    KiemTraCan -- "Đúng (Khớp an toàn)" --> ChonPTTT
+    ChonPTTT --> TaoQR
+    TaoQR --> CheckWebhook
+    CheckWebhook -- "Đang chờ" --> WaitQR
+    WaitQR --> CheckWebhook
+    CheckWebhook -- "Xác nhận thành công" --> ThanhCongUI
+    ThanhCongUI --> XoaSession
+    XoaSession --> TraXe
+
+    EndNode(["KẾT THÚC: Phiên mua sắm hoàn tất"]) :::startEnd
+    TraXe --> EndNode
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <div>
+      <span style="font-size: 0.9rem; color: #64748b;">Định dạng sơ đồ chuẩn: <strong>Mermaid Standard Flowchart</strong></span>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-outline" onclick="window.print()">🖨️ In / Lưu PDF</button>
+      <button class="btn" onclick="navigator.clipboard.writeText(document.querySelector('.mermaid').innerText).then(() => alert('Đã sao chép mã nguồn Mermaid vào bộ nhớ đệm!'))">📋 Sao chép mã Mermaid</button>
+    </div>
+  </div>
+
+  <div class="guide-box">
+    <h3>💡 Hướng Dẫn Sử Dụng Sơ Đồ Này Cho Báo Cáo & Slide</h3>
+    <ol>
+      <li><strong>Chèn vào Word:</strong> Bạn có thể mở trang này trên trình duyệt, dùng tổ hợp phím <code>Windows + Shift + S</code> để chụp lại sơ đồ sắc nét và dán vào Word ở Mục 3.5.2 (hoặc lưu dạng PDF/In ấn).</li>
+      <li><strong>Chèn vào Markdown / Notion / GitHub:</strong> Bấm nút <em>"📋 Sao chép mã Mermaid"</em> ở trên và dán vào khối mã <code>```mermaid ... ```</code>.</li>
+      <li><strong>Thuyết minh bảo vệ Đồ án:</strong> Sơ đồ được chia làm 4 giai đoạn phân biệt màu rõ ràng: <strong>Xanh dương</strong> (Khởi tạo phiên) ➔ <strong>Xanh ngọc</strong> (Xử lý đa cảm biến & Polling 650ms) ➔ <strong>Đỏ</strong> (Bảo vệ chống gian lận & Xử lý bất thường) ➔ <strong>Xanh lá</strong> (Thanh toán VietQR & Thu hồi phiên).</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'base',
+    themeVariables: {
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      fontSize: '13px',
+      primaryColor: '#e0f2fe',
+      edgeColor: '#64748b'
+    },
+    flowchart: {
+      curve: 'basis',
+      nodeSpacing: 45,
+      rankSpacing: 40
+    }
+  });
+</script>
+
+</body>
+</html>

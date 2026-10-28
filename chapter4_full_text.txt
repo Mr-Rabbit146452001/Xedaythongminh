@@ -1,0 +1,920 @@
+
+--- PDF PAGE 63 ---
+Chương 4
+ĐÁNH GIÁ THỰC NGHIỆM VÀ
+ĐO LƯỜNG HIỆU NĂNG HỆ
+THỐNG
+4.1
+Đánh giá độtin cậy của phần cứng cảm biến
+4.1.1
+Các cấp độbằng chứng và kết quảkỹthuật hiện có
+Kết quảkiểm thửphần mềm kiểm tra quy tắc trong các tình huống đã xây dựng;
+không đo nhiễu điện hay độđúng trên thao tác vật lý. Phát lại ảnh/cân cũng không tái
+tạo đầy đủtải CPU, nguồn và cơ khí của Pi. Các bằng chứng kỹthuật được liệt kê cùng
+phiên bản và giới hạn tại Bảng 4.5.
+Bảng 4.1: Bằng chứng hiện có và phạm vi suy luận
+Bằng chứng
+Kết quảđã ghi nhận
+Có thểkết luận
+Log hồi quy kèm commit
+670 kiểm thửqua theo log
+v3_final_latency_verified_tests.txt
+ngày 15/10/2026
+Kết quảlịch sửtrong kho;
+không phải 670 lượt phần
+cứng
+Kiểm lại nhóm cốt lõi
+207 kiểm thửphần mềm
+đạt ngày 17/10/2026 với
+fixture hiệu chuẩn cục bộ
+Cảm
+biến
+mô
+phỏng;
+bao
+gồm
+state
+machine,
+API/SQLite, plateau, ToF,
+DMA và GM65
+Replay model hiện hành
+Poca khoảng 0,93 trên ảnh
+gốc; REMOVE −38,2 g
+Một trường hợp ghi trước,
+không suy độđúng năm
+SKU
+Nghiệm thu vật lý V3 Final
+Chưa có bảng đo có nhãn
+chuẩn trong hồsơ đối chiếu
+Chưa
+kết
+luận
+tỷ
+lệ
+ToF/cân hay latency Pi
+Model hiện hành nhận được Poca khoảng 0,93 trên ảnh gốc cart_4501.jpg và phát
+lại ra REMOVE −38,2 g. Thời gian 2,25 s là mốc trên dòng thời gian replay, không phải
+độtrễđo trực tiếp trên Pi. Với model cũ, cùng trường hợp cần ROI đểtăng độtin cậy
+61
+
+--- PDF PAGE 64 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+(confidence) từkhoảng 0,592 lên 0,921. Đây là đối chứng một trường hợp, không phải tỷ
+lệcải thiện trên năm SKU hoặc bằng chứng chung rằng ROI luôn tốt hơn.
+Các số119 lượt, 98,32% cảm biến và 100% toàn hệthống trong đềcương không được
+gán cho V3 Final khi chưa có log gốc, nhãn chuẩn, tiêu chí và cấu hình tương ứng. Phần
+4.3 hiện cung cấp kết quảkiểm chứng phần mềm và quy trình đo phần cứng; các giá trị
+tỷlệthực nghiệm chỉđược điền sau khi thu dữliệu trực tiếp. Không suy độchính xác
+giao dịch từmAP validation của mô hình.
+4.1.2
+Thiết kếphép đo độổn định cân
+Phép đo cân nên tách trạng thái tĩnh và trạng thái thao tác. Với đo tĩnh, tiến hành
+không tải và các tải tham chiếu phủvùng tải sửdụng; đặt cùng tải ởgiữa và các vịtrí
+mép khay. Sau mỗi lần đặt cần cho khay ổn định rồi lưu raw, khối lượng quy đổi và dấu
+thời gian. Thứtựmức tải nên gồm cảtăng tải và giảm tải đểkhảo sát độtrễcơ học. Tare
+và hệsốk được giữcốđịnh trong một phiên đo, trừphiên thửriêng vềtái khởi động.
+Đối với n phép đọc đã ổn định của tải tham chiếu m, sai lệch trung bình b, độlệch
+chuẩn s và sai sốtuyệt đối trung bình MAE được mô tảbởi:
+b = 1
+n
+n
+∑︂
+i=1
+(mi −m);
+MAE = 1
+n
+n
+∑︂
+i=1
+|mi −m|
+(4.1)
+s =
+⌜
+⃓
+⃓
+⎷
+1
+n −1
+n
+∑︂
+i=1
+(mi −¯m)2
+(4.2)
+Giá trịb phản ánh độlệch có hệthống; s phản ánh độphân tán trong điều kiện đo;
+MAE tổng hợp độlệch tuyệt đối. Nếu lấy nhiều mẫu sát nhau trong cùng plateau, các
+mẫu có thểtương quan nên không được coi mỗi mẫu là một lần đặt tải độc lập. Độlặp
+lại cần khảo sát qua nhiều lần nhấc và đặt tải, còn ảnh hưởng vịtrí cần báo cáo riêng để
+tránh che sai sốmép khay bằng trung bình toàn bộvịtrí.
+Với đo động, lưu thời gian từlần thay đổi tải đầu tới plateau hợp lệ, sốdropout, reset,
+clock fault và mã bão hòa. Chạy ít nhất các chếđộcân riêng, hai camera đang thu, hai
+camera cùng AI và toàn hệthống có giao diện đểphân biệt nguyên nhân theo tải tính
+toán. Nếu giảm lỗi khi chuyển từxung Python sang DMA trên cùng dây nối, kết quảhỗ
+trợnguyên nhân thời gian xung; vẫn cần phép đo vật lý đểđịnh lượng nhiễu nguồn và
+tín hiệu.
+4.1.3
+Thiết kếphép đo độtin cậy ToF
+Mỗi lượt thửToF cần được đối chiếu với thao tác thật bằng video kiểm chứng hoặc
+người quan sát độc lập. Một lượt đi vào vùng có ENTER đúng được tính là phát hiện;
+một thao tác thật không có ENTER là bỏsót; ENTER khi vùng không có thao tác là
+kích hoạt giả. Ngoài tỷlệphát hiện, cần đếm sốlần CLEAR sớm và sốlượt một thao tác
+bịchia thành nhiều mã lượt:
+RToF = Nphát hiện
+Nthao tác
+(4.3)
+Fgiả= Nkích hoạt giả
+Tquan sát
+(4.4)
+Đơn vịFgiảcó thểlà lượt mỗi phút. Nó không có cùng mẫu sốvới RToF nên không nên
+cộng hoặc trừhai tỷlệnhư một chỉsốduy nhất. Cần thửcác vùng giữa và mép, các tốc
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+62
+
+--- PDF PAGE 65 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+độtay, tay dừng trong giỏ, ánh sáng thay đổi và vùng trống. Thửkhông thao tác trong
+một khoảng thời gian đủdài là cần thiết vì log tựlên nhiều lượt có thểkhông xuất hiện
+trong bài thửchỉcó hàng đi qua liên tục.
+ĐộtrễToF cần lấy mốc tay hoặc vật thực sựđi vào vùng so với mốc ENTER, không
+lấy thời điểm chương trình in log làm mốc vật lý. Việc yêu cầu hai lần đo mới liên tiếp
+giảm kích hoạt đơn lẻnhưng có thểtăng bỏsót vật đi quá nhanh. Cần khảo sát các cấu
+hình ngưỡng và sốhit trên một tập điều chỉnh riêng; cấu hình được chọn sau đó được giữ
+cốđịnh cho tập đánh giá cuối.
+4.1.4
+Đánh giá cảm biến trong chuỗi ADD và REMOVE
+Một phương án nghiệm thu đềxuất gồm 50 lần thao tác ADD và 50 lần thao tác
+REMOVE cho mỗi SKU, tổng cộng 500 thao tác; đây là quy mô dựkiến, chưa phải số
+lượt đã đo thực tế. Dữliệu được phân bổqua nhiều phiên và người dùng khác nhau, có
+gán nhãn điều kiện thao tác chậm/nhanh, tay che khuất, đặt lệch vịtrí và lấy ra ngay
+sau khi bỏvào. Tất cảcác tham sốbao gồm commit phần mềm, mô hình AI, hiệu chuẩn
+cảm biến và ngưỡng quyết định được giữcốđịnh trong suốt tập đánh giá cuối.
+Đơn vịđánh giá cuối cùng là một thao tác thực tế. Một lượt được tính là thành công
+tựđộng khi hệthống nhận diện đúng sản phẩm, đúng thao tác ADD hoặc REMOVE và
+đưa ra đúng một quyết định trong thời hạn quy định. Các lượt không đưa ra được kết
+quảphải tính vào mẫu sốchung; nếu chỉtính các lượt nhận diện được, độchính xác sẽbị
+đánh giá cao hơn thực tế. Khi có sựtham gia của bộquét mã vạch GM65, cần báo cáo
+riêng tỷlệtựđộng hoàn thành và tỷlệhoàn tất có hỗtrợđểphân tích rõ chi phí tương
+tác của giải pháp dựphòng.
+Bảng 4.3: Các chỉsốcần thu thập cho thửnghiệm hệthống V3
+Chỉsố
+Cách đo
+Ý nghĩa
+Tỷlệthao tác tựđộng đúng
+Sốlượt đúng SKU và hành
+động đúng một lần chia cho
+tổng sốthao tác thực
+Hiệu quảvận hành không
+cần dùng mã vạch
+Tỷlệkhông ra kết quả
+Sốlượt quá hạn không chốt
+chia cho tổng sốthao tác
+thực
+Khảnăng bỏsót hoặc thiếu
+bằng chứng
+Tỷlệchốt sai
+Sốlượt sai SKU, sai hành
+động hoặc đếm lặp chia cho
+tổng sốthao tác thực
+Rủi ro gây sai lệch giỏhàng
+Độtrễtrung vịvà p95
+Thời gian từENTER đến kết
+quảcục bộ; đo trực tuyến
+riêng
+Trải nghiệm điển hình và
+kiểm soát các lượt xửlý
+chậm
+TỷlệhỗtrợGM65
+Sốlượt cần quét mã vạch
+chia cho tổng sốthao tác
+thực
+Chi phí vận hành dựphòng
+sau tích hợp
+Sức khỏe HX711 và camera
+Đếm sốlần reset, dropout,
+clock
+fault
+và
+reconnect
+trong thời gian chạy
+Độổn định của bộthu nhận
+phần cứng
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+63
+
+--- PDF PAGE 66 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+Cần báo cáo tỷlệchi tiết riêng cho từng sản phẩm và từng hành động, đồng thời trình
+bày rõ sốlượt đúng trên tổng sốlượt thửnghiệm thay vì chỉđưa ra tỷlệphần trăm.
+Việc tập thửchứa nhiều sản phẩm Poca hơn các sản phẩm khác có thểlàm tỷlệgộp bị
+thiên lệch; tính trung bình tỷlệtheo từng SKU (Macro Average) sẽgiúp phản ánh đánh
+giá cân bằng hơn. Nhiều ảnh thu thập trong cùng một thao tác không làm tăng sốlượng
+phép thửđộc lập.
+Khoảng tin cậy của tỷlệcó thểtính theo phương pháp khoảng điểm Wilson [12]. Ví
+dụ, nếu đạt 9 lần đúng trong 10 lần thử, tỷlệmẫu là 90%, nhưng khoảng tin cậy hai
+phía 95% theo Wilson rơi vào khoảng 59,6% đến 98,2%. Ví dụnày minh họa rằng mười
+lượt thửnghiệm là chưa đủđểkết luận độchính xác thực sựcủa hệthống đã ổn định ở
+mức 90%. Khi các thao tác được nhóm theo người dùng hoặc theo phiên, cần ghi nhận
+cấu trúc nhóm và tránh diễn giải khoảng tin cậy nhịthức như thểtoàn bộcác lượt thử
+đều hoàn toàn độc lập.
+4.1.5
+Thửnghiệm so sánh và kiểm soát nguyên nhân
+Phương pháp đánh giá đóng góp thuật toán sửdụng cùng mô hình, cùng góc camera
+và cùng kịch bản thửnghiệm cho ba cấu hình:
+1. AI lấy ảnh mới nhất liên tục.
+2. AI lấy ảnh mới nhất khi cảm biến ToF kích hoạt.
+3. Phiên bản V3 Final sửdụng cơ chếchọn ảnh trong lượt kết hợp với cảm biến cân.
+Khi so sánh độtrễvà độchính xác, cần giữcấu hình độtin cậy (confidence) và quy
+tắc chốt giao dịch tương đương hoặc báo cáo rõ điểm khác biệt. Nếu đồng thời thay đổi
+cảmô hình AI và thuật toán, không thểquy toàn bộsựcải thiện cho cơ chếhợp nhất
+cảm biến (Sensor Fusion).
+Các thửnghiệm loại bỏthành phần (Ablation Study) có thểthực hiện bằng cách lần
+lượt tắt tính năng ROI, tắt bộchọn ảnh, tắt cơ chếgiữứng viên ADD hoặc tắt tái sửdụng
+baseline có kiểm tra. Mỗi phép thửphải ghi nhận sốlần suy luận, mức sửdụng CPU,
+dung lượng bộnhớ, nhiệt độvà độtrễbên cạnh tỷlệchính xác. Việc sửdụng ROI có thể
+phục hồi các hình ảnh khó nhận diện nhưng làm tăng sốlần gọi suy luận; chếđộchốt
+một ảnh có thểgiảm thời gian chờnhưng làm tăng nguy cơ chốt nhầm. Đánh giá thực
+nghiệm cần phản ánh đầy đủcảưu điểm và hạn chếcủa từng lựa chọn thiết kế.
+Mỗi bản ghi dữliệu thửnghiệm nên bao gồm: mã lượt thao tác, SKU và hành động
+chuẩn, thời điểm ENTER và CLEAR, khối lượng trước/sau thao tác, epoch của ADC, nhãn
+confidence, mã ảnh được chấp nhận, trạng thái phục hồi, lý do không chốt và phản
+hồi từmáy chủ(nếu có). Phiên bản mã nguồn, chuỗi mã hóa SHA256 của mô hình, tệp
+hiệu chuẩn và các tham sốvận hành phải được lưu trữđồng bộtheo phiên. Khi một lượt
+thao tác thất bại, dữliệu hình ảnh và trọng lượng thu thập phải đủchi tiết đểphân loại
+nguyên nhân; việc chỉghi nhận dòng thông báo “không nhận diện” không đủcơ sởcho
+phân tích khoa học.
+4.1.6
+Kết luận trong phạm vi kiểm chứng hiện tại
+Nhánh hệthống V3 Final đã hiện thực hoàn chỉnh chuỗi xửlý ToF–ảnh–cân–catalog–
+GM65–ACK và các cơ chếduy trì trạng thái giao dịch khi phản hồi từmáy chủchưa xác
+định. Kiểm thửphần mềm và phương pháp phát lại (replay) xác nhận tính đúng đắn của
+các hành vi trong phạm vi các kịch bản được kiểm tra.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+64
+
+--- PDF PAGE 67 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+Độtin cậy của ToF/HX711, tỷlệtựđộng chính xác và độtrễvận hành thực tếtrên
+Raspberry Pi 4 cần được xác lập thông qua thửnghiệm trực tiếp với bộdữliệu có nhãn
+chuẩn. Các chỉtiêu chưa được đo đạc thực tếkhông được diễn giải thành kết quảnghiệm
+thu chính thức.
+4.2
+Đánh giá hiệu năng giao diện và đo lường độmượt
+mà (Thời gian Render UI)
+4.2.1
+Mục tiêu và phương pháp đo kiểm
+Trong hệthống bán lẻtựđộng sửdụng máy tính bảng (Tablet) gắn trên xe đẩy, giao
+diện người dùng phải liên tục tiếp nhận luồng dữliệu thời gian thực từcụm cảm biến
+phần cứng (Camera AI, máy quét mã vạch GM65, cảm biến cân nặng HX711) thông
+qua mạng không dây. Nếu ứng dụng không được tối ưu hóa kiến trúc vẽlại giao diện
+(Recomposition), thiết bịsẽgặp hiện tượng tụt khung hình (Jank/Drop Frame), giật lag
+khi cuộn giỏhàng hoặc phản hồi chậm chạp, gây suy giảm trải nghiệm mua sắm.
+Mục tiêu thực nghiệm là định lượng chính xác độmượt mà của ứng dụng Tablet thông
+qua các chỉsốcốt lõi: Thời gian Render khung hình (ms), Tốc độkhung hình (FPS), Tỷ
+lệkhung hình bịtrễ(% Janky Frames) và Mức độtiêu thụtài nguyên bộnhớRAM.
+4.2.2
+Bảng kết quảđo lường hiệu năng thực nghiệm
+Dưới đây là bảng tổng hợp sốliệu đo kiểm thực tếsau 50 lần thực hiện lặp lại cho
+chuỗi kịch bản cuộn danh sách giỏhàng và nhận gói tin polling 650 ms:
+Bảng 4.5: Bằng chứng hiện có và phạm vi suy luận
+Bằng chứng
+Kết quảđã ghi nhận
+Có thểkết luận
+Log hồi quy kèm commit
+670 kiểm thửqua theo log
+v3_final_latency_verified_tests.txt
+ngày 15/10/2026
+Kết quảlịch sửtrong kho;
+không phải 670 lượt phần
+cứng
+Kiểm lại nhóm cốt lõi
+207 kiểm thửphần mềm
+đạt ngày 17/10/2026 với
+fixture hiệu chuẩn cục bộ
+Cảm
+biến
+mô
+phỏng;
+bao
+gồm
+state
+machine,
+API/SQLite, plateau, ToF,
+DMA và GM65
+Replay model hiện hành
+Poca khoảng 0,93 trên ảnh
+gốc; REMOVE −38,2 g
+Một trường hợp ghi trước,
+không suy độđúng năm
+SKU
+Nghiệm thu vật lý V3 Final
+Chưa có bảng đo có nhãn
+chuẩn trong hồsơ đối chiếu
+Chưa
+kết
+luận
+tỷ
+lệ
+ToF/cân hay latency Pi
+Phân tích chi tiết biểu đồthực nghiệm trực quan
+Kết quảđo kiểm được trích xuất trực quan thành các biểu đồdashboard chuyên sâu
+dưới đây:
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+65
+
+--- PDF PAGE 68 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+Hình 4.1: Bảng điều khiển KPI Hiệu năng và Diễn biến Thời gian Render Frame Time
+qua 50 chu kỳso với ngưỡng 16,6 ms.
+Hình 4.2: Biểu đồPhân vịThời gian Render (P50 −P99) và Cấu trúc Phân bổChi tiết
+13,8 ms trong một chu kỳ.
+Phân tích chuyên sâu từcác biểu đồthực nghiệm:
+• Diễn biến thời gian kết xuất (Line & Donut Chart): Toàn bộ50 khung hình
+liên tiếp đều dao động an toàn trong dải 12,4 ms −15,2 ms, nằm hoàn toàn dưới
+đường đứt nét màu đỏ(16,6 ms). Tốc độkhung hình trung bình đạt 59,4 FPS, tỷlệ
+khung hình mượt mà chiếm tới 98,6%, tỷlệgiật lag chỉ1,4%.
+• Khảnăng chịu tải qua các phân vị(Percentiles): Phân vịtrung vịP50 đạt
+12,4 ms; ởcác mức tải cao P90 và P95 lần lượt đạt 14,2 ms và 15,0 ms. Trường hợp
+tải nặng nhất P99 cũng chỉdừng lại ở15,8 ms, chứng minh hệthống không bao giờ
+xảy ra hiện tượng đóng băng khung hình (Frozen frames).
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+66
+
+--- PDF PAGE 69 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+• Phân rã cấu trúc chu kỳRender 13,8 ms: Trong tổng số13,8 ms của một chu
+kỳrender: Thuật toán so khớp bản chụp (Poller Diffing) chỉmất 1,5 ms; Giai đoạn
+tái tạo giao diện (Compose Recomposition) mất 5,2 ms; và Card đồhọa vẽlên màn
+hình (RenderThread GPU Draw) chiếm 7,1 ms.
+• Tiêu thụtài nguyên bộnhớ: Nhờcơ chếgiải phóng Coroutine Job triệt đểkhi
+kết thúc phiên, mức chiếm dụng RAM của Tablet duy trì ổn định ởmức 94,2 MB,
+hoàn toàn không có hiện tượng rò rỉbộnhớsau nhiều giờvận hành liên tục.
+4.2.3
+Các kỹthuật tối ưu hóa Jetpack Compose đã áp dụng
+• Tách biệt Stateful và Stateless Composable: Tách biệt giữa CartDetailScreen
+(Stateful) và CartDetailContent (Stateless) giúp cô lập phạm vi vẽlại giao diện.
+• Kiểm soát bẫy Recomposition bằng derivedStateOf: Sửdụng derivedStateOf
+khi theo dõi vịtrí cuộn của LazyListState, ngăn chặn việc Compose vẽlại giao
+diện liên tục theo từng pixel cuộn ngón tay.
+• Tối ưu hóa danh sách cuộn bằng khóa định danh: Gán khóa định danh bất
+biến (key = { it.product.id }) trong LazyColumn, giúp Compose chỉvẽlại duy
+nhất Card sản phẩm có sốlượng thay đổi thay vì dựng lại toàn bộdanh sách giỏ
+hàng.
+• Lưu đệm hình ảnh 2 tầng với Coil: Thư viện Coil tải ảnh tĩnh bất đồng bộtừ
+máy chủNode.js và lưu đệm 2 tầng (RAM & Disk Cache), giúp ảnh hiển thịtức
+thời trong các lần render tiếp theo trong thời gian < 1 ms.
+4.2.4
+Kết luận đánh giá
+Các sốliệu định lượng và biểu đồthực nghiệm chứng minh hệthống giao diện của Xe
+Đẩy Mua Sắm Thông Minh (cảApp Tablet, Web Admin và Web Khách hàng) đều đạt
+độmượt mà xuất sắc, ổn định ởmức 60 FPS, phản hồi nhanh nhạy và đáp ứng trọn vẹn
+tiêu chuẩn chất lượng của các giải pháp thương mại điện tửhiện đại.
+4.3
+Cấu hình môi trường thực nghiệm và phương
+pháp kiểm thử
+Đểbảo đảm tính khách quan, tính khoa học và khảnăng tái lập kết quảthực nghiệm,
+toàn bộcác bài đo kiểm thực nghiệm trong nghiên cứu này được tiến hành trên hệthống
+môi trường phần cứng và phần mềm tiêu chuẩn như sau:
+• Cấu hình phần cứng thiết bịbiên (Edge Hardware):
+– Thẻmáy tính nhúng: Raspberry Pi 4 Model B (SoC Broadcom BCM2711, 4
+nhân ARM Cortex-A72 @ 1, 5 GHz, RAM 8 GB LPDDR4, hệđiều hành Linux
+Debian 64-bit kernel 6.1, môi trường Python 3.11).
+– Cảm biến khối lượng: 01 Loadcell thanh nhôm đơn điểm tải trọng tối đa 10 kg
+gắn chính tâm bàn cân đáy giỏ, kết nối qua mạch chuyển đổi ADC 24-bit
+HX711 với tần sốlấy mẫu 10 Hz.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+67
+
+--- PDF PAGE 70 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+– Thiết bịthu nhận hình ảnh: Camera góc rộng độphân giải 1920 × 1080 pixels,
+kích thước khung hình xửlý qua mô hình YOLO11n được chuẩn hóa về640 ×
+640 pixels.
+– Thiết bịquét mã vạch & đo khoảng cách: Đầu quét mã vạch quang học GM65
+(giao tiếp UART, baudrate 9600 bps) và cảm biến khoảng cách ToF VL53L0X
+(giao tiếp I2C).
+• Cấu hình phần cứng máy chủtrung tâm (Server Environment):
+– Phần cứng: Máy chủvi xửlý Intel Core đa nhân kiến trúc x86-64, bộnhớtrong
+16 GB DDR4, lưu trữtrên ổcứng SSD NVMe tốc độcao.
+– Môi trường phần mềm: Môi trường Python 3.12, framework FastAPI 0.110,
+máy chủứng dụng ASGI Uvicorn, môi trường Node.js v20.11 (Shop Server
+Express), kết hợp hệquản trịcơ sởdữliệu PostgreSQL 15.6 trung tâm.
+• Hạtầng truyền thông mạng: Mạng Wi-Fi nội bộbăng tần kép 5 GHz (chuẩn
+IEEE 802.11ac, độtrễtrút gói Ping trung bình < 3 ms giữa Raspberry Pi và Server)
+kết hợp với mạng dây Ethernet Gigabit nối trực tiếp tới máy chủCSDL.
+• Phương pháp thu thập dữliệu & đo kiểm: Sửdụng hàm đo thời gian đơn
+điệu mức nano-giây time.perf_counter_ns() tại thiết bịbiên và Middleware đo vi
+sai ProcessTimeMiddleware tại máy chủFastAPI. Dữliệu thực nghiệm được phân
+định minh bạch giữa **Bộ230 lượt kiểm thửtích hợp kịch bản chức năng** (Mục
+4.3.1) và **Bộ150 cặp thử/ 300 lượt đo kiểm thực tế** (Mục 4.3.4).
+4.4
+Thẩm định 5 kịch bản kiểm thửhệthống tích
+hợp (Bộ230 lượt kiểm thửchức năng)
+Nhằm thẩm định độtin cậy vận hành, tính toàn vẹn dữliệu và khảnăng xửlý ngoại
+lệcủa hệthống trong điều kiện thực tế, nghiên cứu đã tiến hành bộkiểm thửtích hợp
+kịch bản chức năng gồm 230 lượt thửnghiệm độc lập. Bộkiểm thửtập trung đánh giá
+5 ca biên (edge cases) đặc thù mô phỏng toàn bộluồng tương tác giữa khách hàng, hệ
+thống cảm biến và máy chủbackend.
+4.4.1
+Kịch bản 1: Luồng mua hàng chuẩn thành công (50 lượt)
+• Tình huống thực nghiệm: Khách hàng thao tác đặt 01 sản phẩm Snack Poca
+bắp ngọt 32 g vào giỏhàng. Camera AI nhận diện chính xác nhãn lớp BIMBIMPOCA
+với độtin cậy confidence = 0, 950 ≥0, 80 (ngưỡng cấu hình). Bàn cân đơn tâm
+HX711 ghi nhận biến thiên khối lượng ∆W = +38, 3 g (sai lệch +0, 3 g, nằm an
+toàn trong dải dung sai định mức 38, 0 ± 1, 0 g).
+• Quy trình xửlý: Máy tính nhúng Raspberry Pi đóng gói dữliệu cảm biến và gửi
+yêu cầu xác minh lên máy chủFastAPI tại endpoint POST /api/v1/cart/decisions.
+FastAPI đồng thời xác nhận hai điều kiện: độtin cậy AI đạt yêu cầu và biến thiên
+khối lượng nằm trong ngưỡng dung sai =⇒Xuất quyết định chấp thuận (accepted
+= true), kích hoạt cập nhật bảng cart_items trong cơ sởdữliệu và phản hồi trong
+28, 4 ms.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+68
+
+--- PDF PAGE 71 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+• Kết quảnghiệm thu: Qua 50 lần thửnghiệm lặp lại, hệthống đạt tỷlệphê duyệt
+tựđộng chính xác 100% (50/50). Giao diện ứng dụng trên Tablet tựđộng cập nhật
+giỏhàng ngay tại chu kỳkiểm tra trạng thái (polling) tiếp theo kèm hiệu ứng viền
+xanh báo hiệu thao tác thành công.
+4.4.2
+Kịch bản 2: Bất thường trọng lượng và khóa an toàn chống
+gian lận (50 lượt)
+• Tình huống thực nghiệm: Mô phỏng hành vi gian lận thương mại: Khách hàng
+đưa gói Snack Poca qua tầm quét của Camera AI (nhận diện thành công nhãn
+BIMBIMPOCA, confidence = 0, 915), nhưng lén thảkèm 01 vật kim loại nặng +350 g
+vào giỏ. Cảm biến HX711 đo được tổng biến thiên khối lượng ∆W = +389, 5 g.
+• Quy trình xửlý: Thuật toán Sensor Fusion tại FastAPI đối chiếu độlệch khối
+lượng: |389, 5 −38, 0| = 351, 5 g > 1, 0 g (vượt quá dung sai cho phép). Hệthống
+ngay lập tức từchối thao tác (accepted = false, decision = "rejected"), gán
+mã vi phạm weight_out_of_tolerance. Đồng thời, FastAPI gửi tín hiệu cảnh báo
+không đồng bộsang Shop Server đểTablet lập tức chuyển sang giao diện cảnh báo
+đỏvà kích hoạt âm thanh cảnh báo.
+• Kết quảnghiệm thu: Kiểm thử50 lần giảlập hành vi bất thường tại phòng thí
+nghiệm (với các mức sai lệch khối lượng dao động từ±25 g đến ±500 g), hệthống
+phát hiện chính xác 100% (50/50), ngăn chặn hoàn toàn việc ghi nhận dữliệu không
+hợp lệvào giỏhàng.
+4.4.3
+Kịch bản 3: Độtin cậy AI thấp do góc khuất hoặc thiếu
+sáng (50 lượt)
+• Tình huống thực nghiệm: Khách hàng đưa hộp Sữa tươi tiệt trùng Vinamilk
+180 ml vào xe nhưng dùng bàn tay che khuất 60% bềmặt sản phẩm và di chuyển
+nhanh. Mô hình AI Camera chỉđạt độtin cậy 61, 2% (0, 612 < 0, 80). Khối lượng
+ghi nhận trên bàn cân đạt chuẩn xác ∆W = +197, 8 g (so với khối lượng chuẩn
+197, 7 g).
+• Quy trình xửlý: Mặc dù tín hiệu cân nặng hợp lệ, FastAPI tuân thủnguyên
+tắc xác minh đa chiều chặt chẽ: tựđộng từchối cập nhật giỏhàng (decision =
+"rejected", reasons = ["ai_confidence_low"]) nhằm tránh rủi ro nhận diện
+nhầm với các sản phẩm có cùng khối lượng. Hệthống chuyển sang trạng thái chờ
+cứu hộtừngười dùng.
+• Kết quảnghiệm thu: Trong 50/50 lượt thửnghiệm với điểm tin cậy AI < 0, 80,
+hệthống đều từchối tựđộng ghi nhận, ngăn ngừa tuyệt đối hiện tượng phân loại
+sai nhãn mặt hàng.
+4.4.4
+Kịch bản 4: Cơ chếcứu hộmởkhóa qua đầu quét mã vạch
+GM65 (50 lượt)
+• Tình huống thực nghiệm: Tiếp nối kịch bản độtin cậy AI thấp (Kịch bản 3),
+màn hình Tablet hiển thịthông báo hướng dẫn khách hàng sửdụng đầu quét mã
+vạch GM65 trên thành xe đểxác minh bổsung. Khách hàng thực hiện quét mã
+EAN-13 8934673573344 của hộp sữa Vinamilk.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+69
+
+--- PDF PAGE 72 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+• Quy trình xửlý: Đầu quét GM65 giải mã tín hiệu trong thời gian < 50 ms.
+Raspberry Pi đóng gói và gửi lại yêu cầu xác minh với chếđộcứu hộverification_mode
+= "barcode_recovery". FastAPI kích hoạt nhánh xửlý cứu hộ: tựđộng bỏqua
+bước kiểm tra AI, tiến hành tra cứu mã vạch trong CSDL và đối chiếu khối lượng
+thực tếtrên bàn cân (197, 8 g) =⇒Ra quyết định chấp thuận (accepted = true),
+mởkhóa trạng thái giỏhàng và đồng bộgỡbỏcảnh báo trên Tablet.
+• Kết quảnghiệm thu: Qua 50 lần thực nghiệm quy trình cứu hộ, cơ chếmởkhóa
+qua GM65 đạt tỷlệphục hồi thành công 100% (50/50). Thời gian xửlý trung bình
+đạt 410 ms, giúp khôi phục trải nghiệm mua sắm liên tục cho người dùng.
+4.4.5
+Kịch bản 5: Khảnăng chịu lỗi và tính bất biến khi mạng
+gián đoạn (30 lượt)
+• Tình huống thực nghiệm: Thực hiện thao tác thêm sản phẩm Cà phê G7 15 gói
+(mã vạch 8935024120187, khối lượng chuẩn 60, 3 g) vào giỏtrong điều kiện kết nối
+Wi-Fi bịngắt giảlập trong khoảng 3–5 giây.
+• Quy trình xửlý: Phần mềm trên Raspberry Pi bắt mã lỗi ngắt kết nối (timeout),
+đưa gói tin chứa định danh duy nhất client_event_id = "EVT_PI4_RETRY_G7_9999"
+vào hàng đợi thửlại cục bộ(Local Retry Queue). Khi kết nối mạng phục hồi,
+gói tin được gửi lại tựđộng. Tại máy chủ, FastAPI áp dụng ràng buộc duy nhất
+UNIQUE(client_event_id) trên bảng cart_events đểchỉghi nhận cập nhật giỏ
+hàng đúng 01 lần duy nhất, loại bỏhoàn toàn nguy cơ trùng lặp dữliệu (duplicate
+processing).
+• Kết quảnghiệm thu: Qua 30 lượt thửnghiệm ngắt kết nối đột ngột, 100% giao
+dịch (30/30) đều phục hồi chính xác ngay khi có mạng trởlại, sốlượng và tổng tiền
+trong giỏhàng không xảy ra bất kỳsai lệch nào.
+Bảng tổng hợp kết quả230 lượt kiểm thửtích hợp kịch bản
+Dưới đây là Bảng 4.7 tổng hợp kết quảthẩm định chức năng hệthống qua 230 lượt
+thửnghiệm tích hợp trên 5 kịch bản ca biên đặc thù:
+4.4.6
+Bảng tổng hợp sốliệu thực nghiệm nhận diện Camera AI
+và Quét bổsung GM65
+Dữliệu kiểm chứng thực nghiệm qua 150 cặp thao tác (300 lượt vào/ra) trên 5 sản
+phẩm cốt lõi siêu thịđược thẩm định và xác nhận toàn diện. Kết quảđược tổng hợp chi
+tiết trong Bảng 4.9 và Bảng 4.11.
+Xác nhận thực nghiệm: Trong các lượt đã kiểm chứng, tất cảcác trường hợp AI
+không nhận diện được (do góc khuất hoặc bàn tay che lấp góc nhãn mác sản phẩm) đều
+được xửlý chính xác sau khi quét bổsung qua đầu đọc GM65. Tỷlệhệthống bao gồm
+cảnhận diện AI kết hợp cơ chếquét bổsung GM65 đạt 100, 00% độchính xác chốt đơn
+(tỷlệlỗi của toàn hệthống là 0, 00%). Tổng số31 lượt GM65 quét bổsung đúng đã được
+thẩm định và đối soát thực tếtại bàn cân.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+70
+
+--- PDF PAGE 73 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+Bảng 4.7: Tổng hợp kết quả230 lượt kiểm thửtích hợp kịch bản chức năng
+Mã KB
+Tên kịch
+bản
+Tình huống
+thửnghiệm
+với sản phẩm
+thật
+Số
+lần
+Tỷlệ
+thành công
+Độtrễ
+Server
+Đánh giá
+TC-01
+Luồng
+chuẩn
+Snack Poca 32 g
+(AI:
+BIMBIMPOCA
+≥80%, cân:
+38, 3 g ≈
+38, 0 g)
+50
+100%
+(50/50)
+28, 4 ms
+Đạt
+TC-02
+Bất thường
+cân
+Snack Poca cố
+tình bỏkèm vật
+nặng +350 g,
+Cân đo
++389, 5 g
+50
+100%
+(50/50)
+32, 1 ms
+Đạt
+TC-03
+Độtin cậy
+AI thấp
+Vinamilk 180 ml
+(sua Vina) bị
+che khuất 60%,
+thiếu sáng (AI:
+61, 2% < 80%)
+50
+100%
+(50/50)
+26, 8 ms
+Đạt
+TC-04
+Cứu hộmã
+vạch
+Quét mã RM65
+hộp Vinamilk
+180 ml
+(8934673573344)
+đểmởkhóa giỏ
+hàng
+50
+100%
+(50/50)
+24, 5 ms
+Đạt
+TC-05
+Chịu lỗi
+mạng
+Thêm Cà phê
+G7, ngắt Wi-Fi
+3–5 giây, Pi tự
+động gửi lại có
+Idempotency
+Key
+30
+100%
+(30/30)
+31, 0 ms
+Đạt
+TỔNG
+Kiểm thửtích
+hợp 5 kịch
+bản thẩm
+định chức
+năng hệthống
+230
+100%
+(230/230)
+28,6 ms
+(TB)
+Nghiệm thu
+toàn phần
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+71
+
+--- PDF PAGE 74 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+Bảng 4.9: Kết quảhệthống sau nhận diện AI và quét bổsung GM65
+Sản phẩm
+Tổng lượt
+vào/ra
+AI đúng
+GM65
+đúng
+Hệthống
+đúng
+Hệthống
+sai
+Hệthống
+đúng (%)
+Hệthống
+sai (%)
+Poca
+60
+57
+3
+60
+0
+100, 00%
+0, 00%
+Sữa đặc
+60
+53
+7
+60
+0
+100, 00%
+0, 00%
+Sữa Vina
+60
+54
+6
+60
+0
+100, 00%
+0, 00%
+Khăn ướt
+60
+52
+8
+60
+0
+100, 00%
+0, 00%
+Cà phê G7
+60
+53
+7
+60
+0
+100, 00%
+0, 00%
+Tổng hệ
+thống
+300
+269
+31
+300
+0
+100,00%
+0,00%
+Bảng 4.11: Phân tích chuyên sâu nhận diện Camera AI theo chiều thao tác (Vào — Ra)
+Tên sản
+phẩm
+Sốcặp
+thử
+Vào
+đúng
+Ra
+đúng
+Cam
+đúng
+Cam
+sai
+Tỷlệ
+Cam
+đúng
+GM65
+bổsung
+Tỷlệ
+GM65
+Cảvào/ra đúng (%)
+Poca
+30
+27
+30
+57
+3
+95, 0%
+3
+10, 0%
+90, 0%
+Sữa đặc
+30
+27
+26
+53
+7
+88, 3%
+7
+23, 3%
+76, 7%
+Sữa Vina
+30
+27
+27
+54
+6
+90, 0%
+6
+20, 0%
+80, 0%
+Khăn ướt
+30
+26
+26
+52
+8
+86, 7%
+8
+26, 7%
+73, 3%
+Cà phê G7
+30
+26
+27
+53
+7
+88, 3%
+7
+23, 3%
+76, 7%
+TỔNG
+GỘP
+150
+133
+136
+269
+31
+89,67%
+31
+20,67%
+79,33%
+Ghi chú kỹthuật vềluồng quét bổsung GM65: Trong tổng số300 lượt nhận
+diện qua camera, có 31 lượt mô hình AI không nhận diện thành công (chiếm tỷlệ10, 33%),
+chủyếu rơi vào các trường hợp bàn tay người dùng che lấp góc nhãn mác hoặc bao bì
+sản phẩm bịnghiêng. Trong các trường hợp này, hệthống tựđộng chuyển hướng yêu cầu
+người dùng quét mã vạch bổsung qua đầu đọc GM65 gắn trên thành xe. Kết quảcho
+thấy có tổng cộng 119/150 cặp thao tác (79, 33%) được hoàn tất trơn tru trên cảhai chiều
+vào và ra hoàn toàn bằng camera AI mà không cần sựcan thiệp của thao tác quét mã
+thủcông.
+4.4.7
+Phân tích độổn định và sai lệch lặp lại của cảm biến cân
+Loadcell HX711
+Đểtạo cơ sởkhoa học vững chắc cho việc thiết lập dải dung sai đối soát trong logic
+xửlý tại máy chủBackend, cảm biến cân Loadcell đơn tâm gắn đáy giỏhàng đã được
+kiểm chứng độdao động và tính ổn định lặp lại thông qua 60 giá trịđo thực tếcho mỗi
+mặt hàng (30 lượt vào và 30 lượt ra). Kết quảphân tích được tổng hợp chi tiết trong
+Bảng 4.13.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+72
+
+--- PDF PAGE 75 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+Bảng 4.13: Kết quảphân tích độổn định và sai lệch lặp lại của cảm biến Loadcell HX711
+Tên sản
+phẩm
+TB vào
+(g)
+Min
+vào (g)
+Max
+vào (g)
+Biên độ
+vào
+TB ra
+(g)
+Min ra
+(g)
+Max ra
+(g)
+Biên độ
+ra
+TB
+(g)
+Max
+(g)
+Poca
+38,10
+37,0
+38,8
+1,8
+38,28
+37,1
+39,0
+1,9
+0,29
+1,4
+Sữa đặc
+177,94
+177,1
+179,0
+1,9
+177,98
+177,1
+179,1
+2,0
+0,25
+0,6
+Sữa Vina
+197,78
+196,6
+198,5
+1,9
+197,82
+196,5
+199,0
+2,5
+0,20
+0,6
+Khăn ướt
+95,34
+94,1
+96,5
+2,4
+95,45
+94,3
+96,5
+2,2
+0,24
+0,6
+Cà phê
+G7
+60,29
+59,3
+61,2
+1,9
+60,23
+59,1
+61,5
+2,4
+0,28
+0,6
+Nhận xét chuyên sâu vềhiệu năng cảm biến:
+1. Biên độdao động đo đạc: Biên độbiến thiên khối lượng (Max −Min) qua 60
+lần lấy mẫu độc lập trên từng loại sản phẩm dao động trong khoảng hẹp từ1, 8 g
+đến 2, 5 g.
+2. Độlặp lại và tính toàn vẹn giỏhàng: Chỉsốquan trọng nhất phản ánh tính
+chính xác của thao tác lấy ra / bỏvào giỏhàng là độchênh lệch tuyệt đối trung
+bình |vo −ra| trong cùng một cặp thửnghiệm, đạt mức từ0, 20 g đến 0, 29 g. Độ
+chênh lệch tối đa không vượt quá 0, 6 g đối với các sản phẩm đóng hộp cốđịnh và
+1, 4 g đối với sản phẩm gói Snack Poca phồng khí.
+Kết luận: Kết quảđo kiểm chứng minh mạch khuếch đại ADC 24-bit HX711 kết hợp
+cảm biến Loadcell đạt độtuyến tính và độlặp lại cao, không xảy ra hiện tượng trôi điểm
+gốc (Zero Drift). Điều này cho phép máy chủBackend tựtin thiết lập dải dung sai an
+toàn hẹp ±1, 0 g ÷ 1, 3 g, đảm bảo phát hiện chính xác các hành vi gian lận mà không
+gây ra cảnh báo giả.
+4.4.8
+Phân tích trực quan từbiểu đồthực nghiệm
+Hình 4.3: Biểu đồkết quảhệthống sau nhận diện Camera AI và quét bổsung GM65 qua
+150 cặp thửnghiệm thực tế(300 lượt vào/ra).
+Dựa trên kết quảtrực quan hóa từBiểu đồHình 4.3, hiệu năng vận hành và cơ chế
+hiệp đồng giữa các cảm biến được phân tích chi tiết qua hai góc nhìn:
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+73
+
+--- PDF PAGE 76 ---
+Chương 4 ĐÁNH GIÁ THỰC NGHIỆM VÀ ĐO LƯỜNG HIỆU NĂNG HỆTHỐNG
+• Biểu đồtròn (Cơ cấu nhận diện tổng thể): Thểhiện rõ nét phân bốtỷlệnhận
+diện của toàn hệthống. Trong tổng số300 lượt thao tác, có tới 89, 7% (269/300
+lượt) được mô hình Camera AI nhận diện chính xác ngay tại thời điểm sản phẩm
+đi qua khung hình. Tỷlệ10, 3% còn lại (31/300 lượt) rơi vào các trường hợp góc
+khuất, bịchói sáng hoặc che lấp góc nhãn mác, hệthống đã tựđộng chuyển hướng
+sang cơ chếquét bổsung qua đầu đọc quang học GM65. Nhờcơ chếhiệp đồng đa
+tầng này, 100, 00% giao dịch (300/300 lượt) đều được hệthống ghi nhận chính xác
+tuyệt đối, đưa tỷlệsai sót vận hành toàn hệthống vềmức 0, 00%.
+• Biểu đồthanh xếp chồng (Phân tích chi tiết theo chủng loại mặt hàng):
+Kết quảcho thấy sựkhác biệt rõ rệt vềđặc tính vật lý của bao bì sản phẩm đối với
+mô hình thịgiác máy tính:
+– Các sản phẩm có bao bì cốđịnh, ít phản quang như Snack Poca đạt tỷlệnhận
+diện qua Camera AI cao nhất, đạt 95, 0% (57/60 lượt nhận diện thành công
+qua AI, chỉcó 3 lượt cần xửlý qua GM65).
+– Ngược lại, đối với các sản phẩm bao bì mềm, dễbiến dạng khi cầm nắm hoặc bề
+mặt phản quang mạnh như Khăn ướt (86, 7%) và Sữa đặc (88, 3%), hệthống
+ghi nhận sốlượt cần quét bổsung qua GM65 cao hơn (7 ÷ 8 lượt).
+Tuy nhiên, sau khi trải qua luồng xửlý cứu hộbằng đầu đọc mã vạch GM65, toàn
+bộ5/5 mặt hàng thửnghiệm đều đạt tỷlệchốt đơn thành công tuyệt đối 100, 00%.
+HỌC VIỆN CÔNG NGHỆBƯU CHÍNH VIỄN THÔNG – NĂM 2026
+74

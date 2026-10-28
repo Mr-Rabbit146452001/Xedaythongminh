@@ -161,10 +161,11 @@ export default function CustomerDeviceShell({ children }: CustomerDeviceShellPro
           <div className="h-4 w-px bg-slate-800 hidden sm:block" />
 
           <div className="flex items-center gap-2">
-            <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="w-7 h-7 object-contain" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/img_smart_cart_logo.png" alt="Smart Cart Logo" className="h-6 w-auto max-w-[45px] object-contain drop-shadow" onError={(e) => {(e.target as HTMLImageElement).src = '/logo.png';}} />
             <span className="text-xs font-black text-slate-100 tracking-tight flex items-center gap-1.5 uppercase">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              SMARTCART PWA
+              SMART CART PWA
             </span>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E3F2FD] text-[#0D47A1] font-bold border border-blue-400/30">
               Mobile Studio

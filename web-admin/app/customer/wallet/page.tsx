@@ -8,7 +8,6 @@ import {
   CheckCircle2, 
   AlertCircle, 
   Coins, 
-  ShieldCheck, 
   Sparkles,
   Lock,
   ArrowDownLeft,
@@ -141,9 +140,6 @@ export default function CustomerWalletPage() {
             Nạp Token Thử Nghiệm (Faucet Sandbox)
           </h3>
         </div>
-        <p className="text-xs text-[#666666] leading-relaxed">
-          Bơm tức thì <b className="text-[#0D47A1] font-bold">+50.000 Token</b> (tương đương 500.000 VNĐ) vào ví để thử nghiệm thanh toán đơn hàng siêu thị.
-        </p>
 
         <button
           onClick={handleFaucet}
@@ -153,19 +149,6 @@ export default function CustomerWalletPage() {
           <PlusCircle className="w-5 h-5 stroke-[2.5]" />
           <span>{isFauceting ? 'Đang bơm Token...' : '+50.000 Token (+500.000 đ)'}</span>
         </button>
-      </div>
-
-      {/* Thông tin bảo mật */}
-      <div className="bg-[#E3F2FD] border border-blue-200 rounded-3xl p-4 space-y-2.5">
-        <div className="flex items-center gap-2 text-[#0D47A1] text-xs font-black">
-          <ShieldCheck className="w-4 h-4 text-[#0D47A1]" />
-          <span>Bảo mật chuẩn FinTech 2026</span>
-        </div>
-        <ul className="text-xs text-[#1A1A1A] space-y-2 pl-4 list-disc font-medium">
-          <li>Mỗi giao dịch thanh toán đều yêu cầu nhập mã PIN 6 số bí mật.</li>
-          <li>Mã PIN chủ thử nghiệm thanh toán: <b className="text-[#0D47A1] font-mono font-black bg-white px-2 py-0.5 rounded border border-blue-300">652001</b></li>
-          <li>Hệ thống liên kết đồng bộ tức thời với cơ chế mở cổng tự động Exit Gate.</li>
-        </ul>
       </div>
     </div>
   );
