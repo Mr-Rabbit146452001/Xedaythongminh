@@ -64,7 +64,8 @@ data class RecentTxItem(
 @Composable
 fun BankHomeScreen(
     accountNumber: String = "ACC_CUSTOMER_01",
-    onScanQrClick: () -> Unit
+    onScanQrClick: () -> Unit,
+    onSwitchAccountClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()

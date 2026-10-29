@@ -741,32 +741,7 @@ fun CartSidebar(
                 Spacer(modifier = Modifier.width(6.dp))
                 Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Forward", modifier = Modifier.size(18.dp), tint = Color.White)
             }
-            // Nút Giả lập Cổng An Ninh RFID quét nhận diện xe đẩy (dành cho thử nghiệm/demo)
-            OutlinedButton(
-                onClick = { appViewModel.triggerSimulatedRfidGate("CART_RFID_8888", "GATE_01") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(42.dp),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.4f)),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color(0xFFF0F7FF)
-                )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.QrCodeScanner,
-                    contentDescription = null,
-                    tint = PrimaryBlue,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = "Giả lập qua cổng RFID",
-                    color = PrimaryBlue,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+
         }
     }
 }

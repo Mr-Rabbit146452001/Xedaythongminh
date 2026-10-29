@@ -33,6 +33,8 @@ async function init() {
     await client.query('ALTER TABLE bank_accounts ALTER COLUMN pin TYPE VARCHAR(255);').catch(() => {});
     await client.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS failed_attempts INT DEFAULT 0;').catch(() => {});
     await client.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS locked_until TIMESTAMP WITH TIME ZONE DEFAULT NULL;').catch(() => {});
+    await client.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20);').catch(() => {});
+    await client.query('ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS id_card_number VARCHAR(20);').catch(() => {});
 
     // 2. Tạo bảng giao dịch ngân hàng
     await client.query(

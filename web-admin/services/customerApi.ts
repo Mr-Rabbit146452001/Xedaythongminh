@@ -161,18 +161,35 @@ export const CustomerApiService = {
     }
   },
 
-  // 5. Thanh toan QR bang Token (Master PIN default: 652001)
-  async payQr(qrData: string, pin: string = '652001'): Promise<PayResult> {
+  // 5. Thanh toan QR bang Token (Master PIN default: 652001 cho bat ky tai khoan nao)
+  async payQr(qrData: string, pin: string = '652001', fromAccount?: string): Promise<PayResult> {
     try {
+      let parsed: any = {};
+      try {
+        parsed = typeof qrData === 'string' ? JSON.parse(qrData) : qrData;
+      } catch (_) {}
+
+      const resolvedFromAccount = fromAccount || parsed.fromAccount || 'ACC_CUSTOMER_01';
+      const resolvedOrderId = parsed.orderId || ('ORD_' + Date.now());
+      const resolvedToAccount = parsed.storeAccount || parsed.toAccount || 'ACC_STORE_MAIN';
+      const resolvedAmount = parsed.tokenAmount || parsed.amount || 0;
+
       const res = await fetch(getBaseUrl() + '/api/bank/pay-qr', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ qrData, pin })
+        body: JSON.stringify({
+          qrData,
+          pin: pin || '652001',
+          fromAccount: resolvedFromAccount,
+          toAccount: resolvedToAccount,
+          amount: resolvedAmount,
+          orderId: resolvedOrderId
+        })
       });
       const json = await res.json();
       return json;
     } catch (e: any) {
-      return { success: false, message: e.message || 'Loi mang khi ket noi cong thanh toan' };
+      return { success: false, message: e.message || 'Lỗi mạng khi kết nối cổng thanh toán' };
     }
   },
 

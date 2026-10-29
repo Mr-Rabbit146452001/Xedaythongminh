@@ -17,9 +17,30 @@ data class AccountResponse(
 data class AccountData(
     @SerializedName("accountNumber") val accountNumber: String,
     @SerializedName("ownerName") val ownerName: String,
-    @SerializedName("userRefId") val userRefId: String,
+    @SerializedName("userRefId") val userRefId: String? = null,
+    @SerializedName("phoneNumber") val phoneNumber: String? = null,
+    @SerializedName("idCardNumber") val idCardNumber: String? = null,
     @SerializedName("tokenBalance") val tokenBalance: Double,
-    @SerializedName("isActive") val isActive: Boolean
+    @SerializedName("vndBalance") val vndBalance: Double? = null,
+    @SerializedName("isActive") val isActive: Boolean = true
+)
+
+data class RegisterRequest(
+    @SerializedName("fullName") val fullName: String,
+    @SerializedName("idCardNumber") val idCardNumber: String,
+    @SerializedName("phoneNumber") val phoneNumber: String,
+    @SerializedName("pin") val pin: String
+)
+
+data class LoginRequest(
+    @SerializedName("phoneNumber") val phoneNumber: String,
+    @SerializedName("pin") val pin: String
+)
+
+data class AuthResponse(
+    @SerializedName("success") val success: Boolean,
+    @SerializedName("message") val message: String?,
+    @SerializedName("data") val data: AccountData?
 )
 
 data class FaucetRequest(
@@ -38,7 +59,7 @@ data class PayQrRequest(
     @SerializedName("toAccount") val toAccount: String,
     @SerializedName("amount") val amount: Double,
     @SerializedName("orderId") val orderId: String,
-    @SerializedName("pin") val pin: String = "123456"
+    @SerializedName("pin") val pin: String = "652001"
 )
 
 data class PayQrResponse(
@@ -66,6 +87,12 @@ interface BankApi {
     @GET("api/bank/accounts/{accountNumber}")
     suspend fun getAccount(@Path("accountNumber") accountNumber: String): Response<AccountResponse>
 
+    @POST("api/bank/auth/register")
+    suspend fun register(@Body req: RegisterRequest): Response<AuthResponse>
+
+    @POST("api/bank/auth/login")
+    suspend fun login(@Body req: LoginRequest): Response<AuthResponse>
+
     @POST("api/bank/faucet")
     suspend fun faucet(@Body req: FaucetRequest): Response<FaucetResponse>
 
@@ -78,6 +105,10 @@ object BankApiClient {
     const val DEFAULT_BASE_URL = "https://reflex-swipe-placidly.ngrok-free.dev/"
     private const val PREFS_NAME = "mock_bank_prefs"
     private const val KEY_BASE_URL = "base_url"
+    private const val KEY_AUTH_ACCOUNT = "auth_account_number"
+    private const val KEY_AUTH_NAME = "auth_owner_name"
+    private const val KEY_AUTH_PHONE = "auth_phone_number"
+    private const val KEY_AUTH_PIN = "auth_pin"
 
     var baseUrl: String = DEFAULT_BASE_URL
         private set
@@ -100,6 +131,46 @@ object BankApiClient {
 
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_BASE_URL, formatted).apply()
+    }
+
+    fun saveAuthSession(context: Context, account: AccountData, pin: String) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString(KEY_AUTH_ACCOUNT, account.accountNumber)
+            .putString(KEY_AUTH_NAME, account.ownerName)
+            .putString(KEY_AUTH_PHONE, account.phoneNumber ?: "")
+            .putString(KEY_AUTH_PIN, pin)
+            .apply()
+    }
+
+    fun getSavedAccount(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_AUTH_ACCOUNT, null)
+    }
+
+    fun getSavedOwnerName(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_AUTH_NAME, null)
+    }
+
+    fun getSavedPhone(context: Context): String? {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_AUTH_PHONE, null)
+    }
+
+    fun getSavedPin(context: Context): String {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return prefs.getString(KEY_AUTH_PIN, "652001") ?: "652001"
+    }
+
+    fun clearAuthSession(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .remove(KEY_AUTH_ACCOUNT)
+            .remove(KEY_AUTH_NAME)
+            .remove(KEY_AUTH_PHONE)
+            .remove(KEY_AUTH_PIN)
+            .apply()
     }
 
     fun getService(): BankApi {

@@ -1129,7 +1129,7 @@ app.post([
     try {
       await pool.query(
         'INSERT INTO bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (account_number) DO NOTHING',
-        [bankAccountNo, name.trim(), customerId, 50000, '123456', true]
+        [bankAccountNo, name.trim(), customerId, 50000, '652001', true]
       );
     } catch (_) {}
 

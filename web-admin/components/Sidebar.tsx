@@ -17,6 +17,7 @@ const NAV_ITEMS: NavItem[] = [
   { name: 'Kho hàng', href: '/inventory', icon: 'warehouse' },
   { name: 'Smart Cart', href: '/smart-cart', icon: 'shopping_basket', badge: 'IoT' },
   { name: 'Khách hàng', href: '/customers', icon: 'group', badge: 'DB' },
+  { name: 'Ngân hàng MockBank', href: '/mock-bank', icon: 'account_balance', badge: 'FinTech' },
   { name: 'Khách hàng (Mobile)', href: '/customer', icon: 'smartphone', badge: 'PWA' },
 ];
 

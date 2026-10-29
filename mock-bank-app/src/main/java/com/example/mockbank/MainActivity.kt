@@ -31,6 +31,10 @@ import com.example.mockbank.data.BankApiClient
 import com.example.mockbank.data.PayQrRequest
 import com.example.mockbank.data.QrPayload
 import com.example.mockbank.ui.BankHomeScreen
+import com.example.mockbank.ui.BankLoginScreen
+import com.example.mockbank.ui.BankRegisterScreen
+import com.example.mockbank.ui.PaymentPinDialog
+import androidx.compose.ui.platform.LocalContext
 import com.example.mockbank.ui.camera.QrScannerScreen
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -66,7 +70,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun BankAppNavigation() {
-    var currentScreen by remember { mutableStateOf("home") }
+    val context = LocalContext.current
+    var currentAccount by remember { mutableStateOf(BankApiClient.getSavedAccount(context) ?: "ACC_CUSTOMER_01") }
+    var currentPin by remember { mutableStateOf(BankApiClient.getSavedPin(context)) }
+    var currentScreen by remember { mutableStateOf(if (BankApiClient.getSavedAccount(context) != null) "home" else "login") }
     var activeQrPayload by remember { mutableStateOf<QrPayload?>(null) }
     var lastTxId by remember { mutableStateOf<String?>(null) }
     var lastAmountPaid by remember { mutableStateOf(13500.0) }
@@ -82,11 +89,39 @@ fun BankAppNavigation() {
         label = "screen_transition"
     ) { screen ->
         when (screen) {
+            "login" -> {
+                BankLoginScreen(
+                    onLoginSuccess = { acc, pin ->
+                        currentAccount = acc.accountNumber
+                        currentPin = pin
+                        currentScreen = "home"
+                    },
+                    onNavigateToRegister = {
+                        currentScreen = "register"
+                    }
+                )
+            }
+            "register" -> {
+                BankRegisterScreen(
+                    onRegisterSuccess = { acc, pin ->
+                        currentAccount = acc.accountNumber
+                        currentPin = pin
+                        currentScreen = "home"
+                    },
+                    onNavigateToLogin = {
+                        currentScreen = "login"
+                    }
+                )
+            }
             "home" -> {
                 BankHomeScreen(
+                    accountNumber = currentAccount,
                     onScanQrClick = {
                         // Mở màn hình Camera quét QR thật
                         currentScreen = "scanner"
+                    },
+                    onSwitchAccountClick = {
+                        currentScreen = "login"
                     }
                 )
             }
@@ -128,19 +163,20 @@ fun BankAppNavigation() {
 
                 PaymentConfirmationScreen(
                     payload = payload,
+                    defaultPin = currentPin,
                     onDismiss = { currentScreen = "home" },
-                    onConfirmPayment = { orderId, amount, toAccount, onError ->
+                    onConfirmPayment = { orderId, amount, toAccount, pinToUse, onError ->
                         coroutineScope.launch {
                             lastOrderId = orderId
                             lastAmountPaid = amount
                             try {
                                 val res = BankApiClient.getService().payQr(
                                     PayQrRequest(
-                                        fromAccount = "ACC_CUSTOMER_01",
+                                        fromAccount = currentAccount,
                                         toAccount = toAccount,
                                         amount = amount,
                                         orderId = orderId,
-                                        pin = "123456"
+                                        pin = pinToUse
                                     )
                                 )
                                 if (res.isSuccessful && res.body()?.success == true) {
@@ -285,11 +321,31 @@ private fun ManualOrderInputScreen(
 @Composable
 private fun PaymentConfirmationScreen(
     payload: QrPayload,
+    defaultPin: String = "652001",
     onDismiss: () -> Unit,
-    onConfirmPayment: (orderId: String, amount: Double, toAccount: String, onError: (String) -> Unit) -> Unit
+    onConfirmPayment: (orderId: String, amount: Double, toAccount: String, pin: String, onError: (String) -> Unit) -> Unit
 ) {
     var isProcessing by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showPinDialog by remember { mutableStateOf(false) }
+
+    if (showPinDialog) {
+        PaymentPinDialog(
+            amountTokens = payload.amount,
+            amountVnd = payload.amount * 10,
+            orderId = payload.orderId,
+            onConfirmPin = { enteredPin ->
+                showPinDialog = false
+                isProcessing = true
+                errorMessage = null
+                onConfirmPayment(payload.orderId, payload.amount, payload.toAccount, enteredPin) { err ->
+                    isProcessing = false
+                    errorMessage = err
+                }
+            },
+            onDismiss = { showPinDialog = false }
+        )
+    }
     val formatVnd = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
 
     Box(
@@ -440,12 +496,7 @@ private fun PaymentConfirmationScreen(
 
                 Button(
                     onClick = {
-                        isProcessing = true
-                        errorMessage = null
-                        onConfirmPayment(payload.orderId, payload.amount, payload.toAccount) { err ->
-                            isProcessing = false
-                            errorMessage = err
-                        }
+                        showPinDialog = true
                     },
                     enabled = !isProcessing,
                     modifier = Modifier

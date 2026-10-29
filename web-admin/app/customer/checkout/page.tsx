@@ -30,7 +30,7 @@ export default function CustomerCheckoutPage() {
     const load = async () => {
       const [cartData, accData] = await Promise.all([
         CustomerApiService.getCart(),
-        CustomerApiService.getAccount('ACC_CUSTOMER_01')
+        (CustomerApiService.getStoredCustomer()?.id ? CustomerApiService.getAccount('ACC_' + CustomerApiService.getStoredCustomer()!.id).catch(() => CustomerApiService.getAccount('ACC_CUSTOMER_01')) : CustomerApiService.getAccount('ACC_CUSTOMER_01'))
       ]);
       setCart(cartData);
       setAccount(accData);
@@ -60,7 +60,8 @@ export default function CustomerCheckoutPage() {
       });
 
       // 2. Gọi API thanh toán Mock Bank
-      const payRes = await CustomerApiService.payQr(qrData, pin);
+      const fromAcc = account ? account.accountNumber : 'ACC_CUSTOMER_01';
+      const payRes = await CustomerApiService.payQr(qrData, pin || '652001', fromAcc);
       if (!payRes.success) {
         throw new Error(payRes.message || payRes.errorCode || 'Thanh toán thất bại');
       }

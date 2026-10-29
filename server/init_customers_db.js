@@ -57,7 +57,7 @@ async function initCustomersDatabase() {
         owner_name VARCHAR(100) NOT NULL,
         user_ref_id VARCHAR(50),
         token_balance NUMERIC(12,2) DEFAULT 0,
-        pin VARCHAR(10) DEFAULT '123456',
+        pin VARCHAR(255) DEFAULT '652001',
         is_active BOOLEAN DEFAULT TRUE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -157,7 +157,7 @@ async function initCustomersDatabase() {
       // Khởi tạo tài khoản ví ngân hàng số dư Token
       await client.query(`
         INSERT INTO bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active)
-        VALUES ($1, $2, $3, $4, '123456', TRUE)
+        VALUES ($1, $2, $3, $4, '652001', TRUE)
         ON CONFLICT (account_number) DO UPDATE SET
           owner_name = EXCLUDED.owner_name,
           user_ref_id = EXCLUDED.user_ref_id,

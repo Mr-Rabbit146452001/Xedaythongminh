@@ -133,7 +133,7 @@ export default function PinModal({
         </div>
 
         <p className="text-[11px] text-[#666666] text-center font-medium">
-          Mã PIN chủ thử nghiệm thanh toán: <span className="text-[#0D47A1] font-mono font-black bg-[#E3F2FD] px-2 py-0.5 rounded border border-blue-200">652001</span>
+          Mã PIN thanh toán cho mọi tài khoản: <span className="text-[#0D47A1] font-mono font-black bg-[#E3F2FD] px-2 py-0.5 rounded border border-blue-200">652001</span>
         </p>
       </div>
     </div>
