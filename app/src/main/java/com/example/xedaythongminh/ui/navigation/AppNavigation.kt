@@ -97,7 +97,9 @@ fun AppNavigation(
     LaunchedEffect(rfidGateEvent) {
         val event = rfidGateEvent
         if (event != null) {
-            val currentRoute = navController.currentDestination?.route
+            val currentRoute = navController.currentBackStackEntry?.destination?.route 
+                ?: navController.currentDestination?.route
+            android.util.Log.d("SmartCart_RFID", "Phát hiện sự kiện RFID: ${event.rfidTag} tại ${event.gateId}, currentRoute=$currentRoute")
             // Kiểm tra trạng thái mua hàng (sau khi đăng nhập vào màn hình quét sản phẩm hoặc xem giỏ)
             if (currentRoute == "scan_product" || currentRoute == "cart_detail") {
                 android.util.Log.d("SmartCart_RFID", "Tự động chuyển sang màn hình Thanh toán do phát hiện qua cổng an ninh RFID: ${event.rfidTag} tại ${event.gateId}")
@@ -111,6 +113,8 @@ fun AppNavigation(
                     android.util.Log.d("SmartCart_RFID", "Khách vãng lai (chưa đăng nhập) -> Điều hướng sang Các phương thức thanh toán khác (payment_selection)")
                     navController.navigate("payment_selection")
                 }
+            } else {
+                android.util.Log.d("SmartCart_RFID", "Bỏ qua điều hướng vì không ở màn hình mua hàng (currentRoute: $currentRoute)")
             }
         }
     }
