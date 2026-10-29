@@ -178,3 +178,63 @@ def thingsboard_sync() -> dict[str, Any]:
         **thingsboard_worker.sync_once(limit=100),
         "outbox": database.outbox_status(),
     }
+
+# ========================================================
+# TÍCH HỢP CỔNG AN NINH RFID (RC522 / UHF RFID)
+# ========================================================
+class RfidGateIn(BaseModel):
+    detected: bool = False
+    tag: str | None = None
+    rfid_tag: str | None = None
+    gate_id: str | None = None
+    gateId: str | None = None
+
+
+rfid_gate_state: dict[str, Any] = {
+    "detected": False,
+    "tag": None,
+    "gate_id": None,
+}
+
+
+@app.post("/api/iot/rfid-gate")
+def set_rfid_gate(data: RfidGateIn) -> dict[str, Any]:
+    is_detected = data.detected is True
+    if is_detected:
+        rfid_gate_state["detected"] = True
+        rfid_gate_state["tag"] = data.tag or data.rfid_tag or "CART_RFID_DEFAULT"
+        rfid_gate_state["gate_id"] = data.gate_id or data.gateId or "GATE_01"
+    else:
+        rfid_gate_state["detected"] = False
+        rfid_gate_state["tag"] = None
+        rfid_gate_state["gate_id"] = None
+
+    return {
+        "status": "success",
+        "message": "Cập nhật sự kiện cổng RFID thành công" if is_detected else "Đã xóa trạng thái cổng RFID",
+        "data": {
+            "rfidGateDetected": rfid_gate_state["detected"],
+            "rfidTag": rfid_gate_state["tag"],
+            "gateId": rfid_gate_state["gate_id"],
+            "detected": rfid_gate_state["detected"],
+            "tag": rfid_gate_state["tag"],
+            "gate_id": rfid_gate_state["gate_id"],
+        },
+    }
+
+
+@app.get("/api/cart/status")
+def get_cart_status() -> dict[str, Any]:
+    return {
+        "status": "success",
+        "data": {
+            "hasUnscannedProduct": False,
+            "anomalyCode": None,
+            "anomalyReason": None,
+            "anomalyMessage": None,
+            "rfidGateDetected": rfid_gate_state["detected"],
+            "rfidTag": rfid_gate_state["tag"],
+            "gateId": rfid_gate_state["gate_id"],
+        },
+    }
+
