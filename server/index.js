@@ -51,18 +51,29 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
-// Phục vụ các tệp hình ảnh sản phẩm tĩnh từ thư mục public/images (hỗ trợ cả /images và /products)
+// Phục vụ các tệp hình ảnh sản phẩm tĩnh từ thư mục public/images
 const staticImageDir = path.join(__dirname, 'public/images');
 app.use('/images', express.static(staticImageDir));
-app.use('/products', express.static(staticImageDir));
 
-// Fallback: Nếu tệp ảnh không tìm thấy trên đĩa, tự động trả về ảnh sản phẩm mặc định (HTTP 200) thay vì 404
-app.use(['/images/:file', '/products/:file'], (req, res) => {
-  const fallback = path.join(staticImageDir, '8934673573344.jpg');
-  if (fs.existsSync(fallback)) {
-    return res.sendFile(fallback);
+// Chỉ phục vụ /products nếu request là tệp hình ảnh (có đuôi file), tránh xung đột với trang Web Admin /products
+app.use('/products', (req, res, next) => {
+  if (/\.(jpg|jpeg|png|webp|svg|gif|ico)$/i.test(req.path)) {
+    return express.static(staticImageDir)(req, res, next);
   }
-  res.status(404).end();
+  next();
+});
+
+// Fallback: Nếu tệp ảnh không tìm thấy trên đĩa, tự động trả về ảnh sản phẩm mặc định
+app.use(['/images/:file', '/products/:file'], (req, res, next) => {
+  const fileParam = req.params.file || '';
+  if (/\.(jpg|jpeg|png|webp|svg|gif|ico)$/i.test(fileParam)) {
+    const fallback = path.join(staticImageDir, '8934673573344.jpg');
+    if (fs.existsSync(fallback)) {
+      return res.sendFile(fallback);
+    }
+    return res.status(404).end();
+  }
+  next();
 });
 
 // Phục vụ tải tệp cài đặt Mock Bank App APK
@@ -2133,7 +2144,8 @@ const webAdminProxy = createProxyMiddleware({
 
 // Chuyển tiếp tất cả request không phải API hoặc file tĩnh của backend sang Web Admin
 app.use((req, res, next) => {
-  if (req.path.startsWith('/api') || req.path.startsWith('/images') || req.path.startsWith('/download') || req.path.startsWith('/product')) {
+  // Chỉ chặn 404 JSON cho các endpoint thực sự thuộc /api hoặc /download
+  if (req.path.startsWith('/api') || req.path.startsWith('/download')) {
     console.warn(`⚠️ [404 Not Found] ${req.method} ${req.originalUrl}`);
     return res.status(404).json({ 
       status: 'Lỗi', 
@@ -2142,6 +2154,7 @@ app.use((req, res, next) => {
       path: req.originalUrl
     });
   }
+  // Tất cả các trang giao diện Web Admin (bao gồm /, /products, /inventory, /orders, /customers, /smart-cart, /customer, v.v.) được chuyển tiếp sang Next.js
   return webAdminProxy(req, res, next);
 });
 
