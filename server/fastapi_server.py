@@ -912,6 +912,47 @@ def set_weight_anomaly(payload: WeightAnomalyIn):
         "weightAnomalyMessage": weight_anomaly_state["message"]
     }
 
+# Trạng thái sự kiện Cổng an ninh RFID
+rfid_gate_state = {
+    "detected": False,
+    "tag": None,
+    "gate_id": None
+}
+
+class RfidGateIn(BaseModel):
+    detected: bool = False
+    tag: Optional[str] = None
+    rfid_tag: Optional[str] = None
+    gate_id: Optional[str] = None
+    gateId: Optional[str] = None
+
+@app.post("/api/iot/rfid-gate")
+def set_rfid_gate(data: RfidGateIn):
+    is_detected = data.detected is True
+    if is_detected:
+        rfid_gate_state["detected"] = True
+        rfid_gate_state["tag"] = data.tag or data.rfid_tag or "CART_RFID_DEFAULT"
+        rfid_gate_state["gate_id"] = data.gate_id or data.gateId or "GATE_01"
+        print(f"[FASTAPI RFID GATE] Nhận diện thẻ: {rfid_gate_state['tag']} tại {rfid_gate_state['gate_id']}")
+    else:
+        rfid_gate_state["detected"] = False
+        rfid_gate_state["tag"] = None
+        rfid_gate_state["gate_id"] = None
+        print("[FASTAPI RFID GATE] Đã xóa/đặt lại trạng thái cổng RFID")
+
+    return {
+        "status": "success",
+        "message": "Cập nhật sự kiện cổng RFID thành công" if is_detected else "Đã xóa trạng thái cổng RFID",
+        "data": {
+            "rfidGateDetected": rfid_gate_state["detected"],
+            "rfidTag": rfid_gate_state["tag"],
+            "gateId": rfid_gate_state["gate_id"],
+            "detected": rfid_gate_state["detected"],
+            "tag": rfid_gate_state["tag"],
+            "gate_id": rfid_gate_state["gate_id"]
+        }
+    }
+
 @app.get("/api/cart/status")
 def get_cart_status():
     return {
@@ -920,7 +961,10 @@ def get_cart_status():
             "hasUnscannedProduct": weight_anomaly_state["detected"],
             "anomalyCode": weight_anomaly_state["code"],
             "anomalyReason": weight_anomaly_state["reason"],
-            "anomalyMessage": weight_anomaly_state["message"]
+            "anomalyMessage": weight_anomaly_state["message"],
+            "rfidGateDetected": rfid_gate_state["detected"],
+            "rfidTag": rfid_gate_state["tag"],
+            "gateId": rfid_gate_state["gate_id"]
         }
     }
 

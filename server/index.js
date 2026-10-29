@@ -424,7 +424,58 @@ app.post('/api/iot/command', (req, res) => {
   });
 });
 
-// 9. API Kiểm tra trạng thái an toàn giỏ hàng
+// 8.1 API tiếp nhận sự kiện Cổng An Ninh RFID quét nhận diện xe đẩy
+app.post('/api/iot/rfid-gate', (req, res) => {
+  const { detected, tag, rfid_tag, gate_id, gateId } = req.body || {};
+  const isDetected = detected === true || detected === 'true';
+
+  if (isDetected) {
+    rfidGateDetected = true;
+    rfidTag = tag || rfid_tag || 'CART_RFID_DEFAULT';
+    rfidGateId = gate_id || gateId || 'GATE_01';
+    console.log(`📡 [CỔNG AN NINH RFID] Phát hiện thẻ từ xe đẩy: ${rfidTag} tại cổng ${rfidGateId}`);
+  } else {
+    rfidGateDetected = false;
+    rfidTag = null;
+    rfidGateId = null;
+    console.log(`📡 [CỔNG AN NINH RFID] Đã xóa/đặt lại trạng thái cổng RFID (detected = false)`);
+  }
+
+  // Tự động đồng bộ sang FastAPI cổng 8000 nếu đang chạy
+  try {
+    const http = require('http');
+    const syncData = JSON.stringify({ detected: rfidGateDetected, tag: rfidTag, gate_id: rfidGateId });
+    const syncReq = http.request({
+      hostname: '127.0.0.1',
+      port: 8000,
+      path: '/api/iot/rfid-gate',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(syncData)
+      },
+      timeout: 200
+    });
+    syncReq.on('error', () => {});
+    syncReq.write(syncData);
+    syncReq.end();
+  } catch (_) {}
+
+  res.json({
+    status: 'success',
+    message: isDetected ? 'Cập nhật sự kiện cổng RFID thành công' : 'Đã xóa trạng thái cổng RFID',
+    data: {
+      rfidGateDetected: rfidGateDetected,
+      rfidTag: rfidTag,
+      gateId: rfidGateId,
+      detected: rfidGateDetected,
+      tag: rfidTag,
+      gate_id: rfidGateId
+    }
+  });
+});
+
+// 9. API Kiểm tra trạng thái an toàn giỏ hàng & Cổng An Ninh RFID
 app.get('/api/cart/status', (req, res) => {
   res.json({
     status: 'success',
@@ -432,7 +483,10 @@ app.get('/api/cart/status', (req, res) => {
       hasUnscannedProduct: weightAnomalyDetected,
       anomalyCode: weightAnomalyCode,
       anomalyReason: weightAnomalyReason,
-      anomalyMessage: weightAnomalyMessage
+      anomalyMessage: weightAnomalyMessage,
+      rfidGateDetected: rfidGateDetected,
+      rfidTag: rfidTag,
+      gateId: rfidGateId
     }
   });
 });
@@ -465,6 +519,9 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888') {
 
     await client.query('COMMIT');
     activeSessions.delete(targetSession);
+    rfidGateDetected = false;
+    rfidTag = null;
+    rfidGateId = null;
     console.log(`✅ [Session End] Kết thúc phiên ${targetSession} thành công. Tổng: ${totalAmount} VND, Điểm tích lũy: +${pointsEarned}.`);
 
     return {
