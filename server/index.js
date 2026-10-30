@@ -490,8 +490,19 @@ app.post('/api/iot/rfid-gate', (req, res) => {
   });
 });
 
-// 9. API Kiểm tra trạng thái an toàn giỏ hàng & Cổng An Ninh RFID
+// Biến lưu trạng thái thanh toán thời gian thực để đồng bộ lên App Tablet
+let lastPaymentStatus = {
+  isPaid: false,
+  paidAmount: 0,
+  paymentMethod: null,
+  transactionId: null,
+  sessionId: null,
+  timestamp: 0
+};
+
+// 9. API Kiểm tra trạng thái an toàn giỏ hàng, Cổng An Ninh RFID & Trạng thái thanh toán từ Web Customer
 app.get('/api/cart/status', (req, res) => {
+  const isRecentlyPaid = lastPaymentStatus.isPaid && (Date.now() - lastPaymentStatus.timestamp < 60000);
   res.json({
     status: 'success',
     data: {
@@ -501,14 +512,44 @@ app.get('/api/cart/status', (req, res) => {
       anomalyMessage: weightAnomalyMessage,
       rfidGateDetected: rfidGateDetected,
       rfidTag: rfidTag,
-      gateId: rfidGateId
+      gateId: rfidGateId,
+      isPaid: isRecentlyPaid,
+      paidAmount: isRecentlyPaid ? lastPaymentStatus.paidAmount : 0,
+      paymentMethod: isRecentlyPaid ? lastPaymentStatus.paymentMethod : null,
+      transactionId: isRecentlyPaid ? lastPaymentStatus.transactionId : null
     }
   });
 });
 
+// 9.1 API Đặt lại cờ thanh toán
+app.post('/api/cart/status/reset-payment', (req, res) => {
+  lastPaymentStatus = {
+    isPaid: false,
+    paidAmount: 0,
+    paymentMethod: null,
+    transactionId: null,
+    sessionId: null,
+    timestamp: 0
+  };
+  res.json({ status: 'success', message: 'Đã đặt lại trạng thái thanh toán' });
+});
+
 // Helper dùng chung để kết thúc phiên và dọn sạch giỏ hàng
-async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888') {
-  const targetSession = sessionId || 'SESSION_DEFAULT';
+async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888', paymentMethod = 'QR_TOKEN', transactionId = null) {
+  let targetSession = sessionId;
+  if (!targetSession) {
+    try {
+      const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
+      if (activeRes.rows.length > 0) {
+        targetSession = activeRes.rows[0].id;
+      } else {
+        const itemRes = await pool.query("SELECT session_id FROM cart_items ORDER BY updated_at_ms DESC LIMIT 1");
+        targetSession = itemRes.rows[0]?.session_id || 'SESSION_DEFAULT';
+      }
+    } catch (_) {
+      targetSession = 'SESSION_DEFAULT';
+    }
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -537,13 +578,25 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888') {
     rfidGateDetected = false;
     rfidTag = null;
     rfidGateId = null;
-    console.log(`✅ [Session End] Kết thúc phiên ${targetSession} thành công. Tổng: ${totalAmount} VND, Điểm tích lũy: +${pointsEarned}.`);
+
+    // Ghi nhận trạng thái thanh toán thành công để Tablet polling đồng bộ tức thì (<650ms)
+    lastPaymentStatus = {
+      isPaid: true,
+      sessionId: targetSession,
+      paidAmount: totalAmount,
+      paymentMethod: paymentMethod || 'QR_TOKEN',
+      transactionId: transactionId || ('TX_' + Date.now()),
+      timestamp: Date.now()
+    };
+
+    console.log(`✅ [Session End] Kết thúc phiên ${targetSession} thành công. Tổng: ${totalAmount} VND, Điểm tích lũy: +${pointsEarned}. Đã kích hoạt isPaid=true đồng bộ sang App Tablet.`);
 
     return {
       success: true,
       sessionId: targetSession,
       totalAmount,
       pointsEarned,
+      transactionId: lastPaymentStatus.transactionId,
       message: 'Phiên mua sắm đã kết thúc thành công'
     };
   } catch (err) {
@@ -557,14 +610,15 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888') {
 
 // 10. API Thanh toán (Checkout Transaction & Tích điểm)
 app.post('/api/cart/checkout', async (req, res) => {
-  const { sessionId, customerId } = req.body || {};
+  const { sessionId, customerId, paymentMethod, transactionId } = req.body || {};
   try {
-    const result = await endSessionHelper(sessionId, customerId);
+    const result = await endSessionHelper(sessionId, customerId, paymentMethod, transactionId);
     res.json({
       status: 'Thành công',
       data: {
         totalAmount: result.totalAmount,
         pointsEarned: result.pointsEarned,
+        transactionId: result.transactionId,
         message: 'Thanh toán hoàn tất thành công'
       }
     });

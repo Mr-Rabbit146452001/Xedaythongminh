@@ -947,6 +947,10 @@ def set_rfid_gate(data: RfidGateIn):
             "rfidGateDetected": rfid_gate_state["detected"],
             "rfidTag": rfid_gate_state["tag"],
             "gateId": rfid_gate_state["gate_id"],
+            "isPaid": False,
+            "paidAmount": 0,
+            "paymentMethod": None,
+            "transactionId": None,
             "detected": rfid_gate_state["detected"],
             "tag": rfid_gate_state["tag"],
             "gate_id": rfid_gate_state["gate_id"]

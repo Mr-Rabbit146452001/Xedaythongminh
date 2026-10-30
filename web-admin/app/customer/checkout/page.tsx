@@ -66,8 +66,11 @@ export default function CustomerCheckoutPage() {
         throw new Error(payRes.message || payRes.errorCode || 'Thanh toán thất bại');
       }
 
-      // 3. Hoàn tất đơn hàng trên Shop Server (xóa giỏ và lưu lịch sử)
-      await CustomerApiService.checkout('QR_TOKEN', 'CUST_001');
+      // 3. Hoàn tất đơn hàng trên Shop Server (xóa giỏ, kích hoạt isPaid=true đồng bộ lên Tablet)
+      const storedCust = CustomerApiService.getStoredCustomer();
+      const currentCustId = storedCust?.id || 'CUST_001';
+      const currentSessionId = (cart as any)?.sessionId || undefined;
+      await CustomerApiService.checkout('QR_TOKEN', currentCustId, currentSessionId, orderId);
 
       // 4. Lưu dữ liệu hóa đơn điện tử
       setReceiptData({

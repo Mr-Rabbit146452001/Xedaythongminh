@@ -59,6 +59,17 @@ fun AutoPaymentScreen(
     val userState by appViewModel.userState.collectAsState()
     val appCartItems by appViewModel.cartItemsState.collectAsState()
     val rfidGateEvent by appViewModel.rfidGateEvent.collectAsState()
+    val isPaymentCompleted by appViewModel.isPaymentCompleted.collectAsState()
+
+    // Tự động chuyển màn hình khi Web Customer thanh toán thành công
+    LaunchedEffect(isPaymentCompleted) {
+        if (isPaymentCompleted) {
+            android.util.Log.d("SmartCart_AutoPay", "Web Customer đã thanh toán thành công -> Tự động chuyển sang payment_success")
+            navController.navigate("payment_success") {
+                popUpTo("auto_payment") { inclusive = true }
+            }
+        }
+    }
 
     // Tự động đồng bộ giỏ hàng từ AppViewModel nếu AutoPaymentViewModel chưa có
     LaunchedEffect(appCartItems) {
@@ -423,34 +434,64 @@ fun AutoPaymentScreen(
                                 AutoPaymentStatus.IDLE -> {
                                     Column(
                                         horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                                        modifier = Modifier.padding(horizontal = 16.dp)
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(90.dp)
-                                                .background(LightBlueBg, CircleShape),
+                                                .size(92.dp)
+                                                .background(Color(0xFFE3F2FD), CircleShape),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Icon(
-                                                imageVector = Icons.Default.FlashOn,
-                                                contentDescription = "Ready",
+                                                imageVector = Icons.Default.PhoneAndroid,
+                                                contentDescription = "Thanh toán trên Web Customer",
                                                 tint = PrimaryBlue,
-                                                modifier = Modifier.size(50.dp)
+                                                modifier = Modifier.size(48.dp)
                                             )
                                         }
 
                                         Text(
-                                            text = "Sẵn sàng thanh toán",
-                                            fontSize = 20.sp,
+                                            text = "Chờ thanh toán trên Web Customer",
+                                            fontSize = 21.sp,
                                             fontWeight = FontWeight.Bold,
-                                            color = TextDark
-                                        )
-                                        Text(
-                                            text = "Phương thức: ${uiState.selectedMethod?.name ?: "Ví điện tử"}\nNhấn nút bên dưới để tiến hành thanh toán tự động.",
-                                            fontSize = 14.sp,
-                                            color = TextGray,
+                                            color = TextDark,
                                             textAlign = TextAlign.Center
                                         )
+
+                                        Text(
+                                            text = "Đơn hàng đã được khóa an toàn tại cổng an ninh.\nVui lòng mở điện thoại, xác nhận và nhập mã PIN để thanh toán trừ Token.",
+                                            fontSize = 14.sp,
+                                            color = TextGray,
+                                            textAlign = TextAlign.Center,
+                                            lineHeight = 22.sp
+                                        )
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Surface(
+                                            shape = RoundedCornerShape(14.dp),
+                                            color = Color(0xFFF0F7FF),
+                                            border = BorderStroke(1.dp, PrimaryBlue.copy(alpha = 0.3f))
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                            ) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(20.dp),
+                                                    strokeWidth = 2.5.dp,
+                                                    color = PrimaryBlue
+                                                )
+                                                Text(
+                                                    text = "Đang chờ quý khách nhập mã PIN trên điện thoại...",
+                                                    fontSize = 13.sp,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    color = PrimaryBlue
+                                                )
+                                            }
+                                        }
                                     }
                                 }
 
@@ -577,43 +618,34 @@ fun AutoPaymentScreen(
                         ) {
                             when (uiState.status) {
                                 AutoPaymentStatus.IDLE -> {
-                                    GlassButton(
-                                        onClick = {
-                                            autoPaymentViewModel.onEvent(
-                                                AutoPaymentUiEvent.StartAutoPayment(
-                                                    customerId = customerId,
-                                                    sessionId = "SESSION_DEFAULT"
-                                                )
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = RoundedCornerShape(14.dp),
+                                        color = Color(0xFFF8F9FA),
+                                        border = BorderStroke(1.dp, BorderGray.copy(alpha = 0.8f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 14.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Lock,
+                                                contentDescription = null,
+                                                tint = Color(0xFF2E7D32),
+                                                modifier = Modifier.size(18.dp)
                                             )
-                                        },
-                                        modifier = Modifier.fillMaxWidth().height(52.dp),
-                                        shape = RoundedCornerShape(14.dp),
-                                        variant = GlassButtonVariant.Primary,
-                                        enabled = (displayCartItems.isNotEmpty() || uiState.cartItems.isNotEmpty()) && uiState.selectedMethod != null
-                                    ) {
-                                        Icon(Icons.Default.Bolt, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(20.dp))
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text(
-                                            text = "Xác nhận & Thanh toán tự động",
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = Color.White
-                                        )
-                                    }
-
-                                    GlassButton(
-                                        onClick = {
-                                            appViewModel.unlockCart()
-                                            appViewModel.clearRfidGateEvent()
-                                            navController.popBackStack()
-                                        },
-                                        modifier = Modifier.fillMaxWidth().height(48.dp),
-                                        shape = RoundedCornerShape(14.dp),
-                                        variant = GlassButtonVariant.Secondary
-                                    ) {
-                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                                        Spacer(modifier = Modifier.width(6.dp))
-                                        Text("Quay lại", color = PrimaryBlue, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Giỏ hàng đã chốt • Màn hình sẽ tự động cập nhật khi thanh toán xong",
+                                                fontSize = 13.sp,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = TextDark,
+                                                textAlign = TextAlign.Center
+                                            )
+                                        }
                                     }
                                 }
 

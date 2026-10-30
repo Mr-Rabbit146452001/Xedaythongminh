@@ -999,6 +999,21 @@ class AppViewModel constructor(
                                         _invalidScannedProduct.value = null
                                     }
                                 }
+
+                                // 5. Đồng bộ trạng thái thanh toán từ Web Customer (Token / PIN)
+                                val isPaid = data?.isPaid == true
+                                if (isPaid && !_isPaymentCompleted.value) {
+                                    android.util.Log.d("SmartCart_Payment", "Web Customer đã hoàn tất thanh toán thành công (isPaid=true)! Đồng bộ sang App Tablet...")
+                                    if (_cartItemsState.value.isNotEmpty()) {
+                                        _lastCompletedCartItems.value = _cartItemsState.value
+                                    }
+                                    _isPaymentCompleted.value = true
+                                    cartRepository.clearCart()
+                                    _cartItemsState.value = emptyList()
+                                    _isCartLocked.value = false
+                                    _rfidGateEvent.value = null
+                                    com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
+                                }
                             }
                         } catch (ignoredStatus: Exception) {}
                     } finally {

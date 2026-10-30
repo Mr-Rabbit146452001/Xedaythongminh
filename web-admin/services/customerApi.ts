@@ -212,12 +212,18 @@ export const CustomerApiService = {
   },
 
   // 7. Hoan tat phien / Checkout
-  async checkout(paymentMethod: string = 'QR_TOKEN', customerId: string = 'CUST_001'): Promise<any> {
+  async checkout(paymentMethod: string = 'QR_TOKEN', customerId: string = 'CUST_001', sessionId?: string, transactionId?: string): Promise<any> {
     try {
       const res = await fetch(getBaseUrl() + '/api/cart/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paymentMethod, customerId, notes: 'Thanh toan qua Web App Khach Hang' })
+        body: JSON.stringify({
+          paymentMethod,
+          customerId,
+          sessionId,
+          transactionId,
+          notes: 'Thanh toan qua Web App Khach Hang'
+        })
       });
       return await res.json();
     } catch (e: any) {
