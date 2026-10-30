@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.xedaythongminh.ui.components.OrganicGlassBackground
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
@@ -94,15 +95,24 @@ fun AppNavigation(
 
     // Tự động chuyển sang màn hình Thanh toán khi phát hiện xe qua Cổng an ninh RFID
     val rfidGateEvent by appViewModel.rfidGateEvent.collectAsState()
-    LaunchedEffect(rfidGateEvent) {
+    // Theo dõi route hiện tại để phát hiện khi user vào màn hình hợp lệ mà rfidGateEvent đã tồn tại
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+
+    // Các route cho phép RFID tự động chuyển sang thanh toán
+    val rfidAllowedRoutes = setOf("scan_product", "cart_detail", "customer_info")
+
+    // Trigger khi rfidGateEvent thay đổi HOẶC khi route thay đổi (nếu rfidGateEvent đã tồn tại)
+    LaunchedEffect(rfidGateEvent, currentRoute) {
         val event = rfidGateEvent
-        if (event != null) {
-            val currentRoute = navController.currentBackStackEntry?.destination?.route 
-                ?: navController.currentDestination?.route
-            android.util.Log.d("SmartCart_RFID", "Phát hiện sự kiện RFID: ${event.rfidTag} tại ${event.gateId}, currentRoute=$currentRoute")
-            // Kiểm tra trạng thái mua hàng (sau khi đăng nhập vào màn hình quét sản phẩm hoặc xem giỏ)
-            if (currentRoute == "scan_product" || currentRoute == "cart_detail") {
+        if (event != null && currentRoute != null) {
+            android.util.Log.d("SmartCart_RFID", "Kiểm tra RFID navigation: tag=${event.rfidTag}, gate=${event.gateId}, currentRoute=$currentRoute")
+            if (currentRoute in rfidAllowedRoutes) {
                 android.util.Log.d("SmartCart_RFID", "Tự động chuyển sang màn hình Thanh toán do phát hiện qua cổng an ninh RFID: ${event.rfidTag} tại ${event.gateId}")
+                // Đảm bảo phiên mua sắm đã được tạo trước khi chuyển sang thanh toán
+                if (currentRoute == "customer_info") {
+                    appViewModel.createShoppingSession(forceNew = false)
+                }
                 com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
                 appViewModel.lockCart()
                 val isLoggedIn = appViewModel.userState.value != null
