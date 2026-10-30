@@ -1,23 +1,47 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import KpiCard from '@/components/KpiCard';
-import { INITIAL_ORDERS, Order } from '@/data/mockData';
+import { Order } from '@/data/mockData';
 import { ApiService } from '@/services/api';
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>(INITIAL_ORDERS);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    ApiService.getOrders().then((data) => {
-      if (data && data.length > 0) setOrders(data);
-    });
+  const loadOrders = useCallback(async () => {
+    try {
+      const data = await ApiService.getOrders();
+      if (Array.isArray(data)) {
+        setOrders(data);
+      }
+    } catch (err) {
+      console.warn('Lỗi tải danh sách đơn hàng từ server:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    loadOrders();
+
+    const unsubscribe = ApiService.subscribeToRealtimeEvents((event) => {
+      if (event === 'order_change' || event === 'product_change') {
+        loadOrders();
+      }
+    });
+
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 10000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [loadOrders]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -87,7 +111,7 @@ export default function OrdersPage() {
         <div>
           <h2 className="text-2xl font-bold text-on-surface tracking-tight">Quản lý đơn hàng</h2>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Theo dõi dòng tiền, phiên giỏ hàng và lịch sử thanh toán qua Smart Cart & Mock Bank.
+            Theo dõi dòng tiền, phiên giỏ hàng và lịch sử thanh toán thực tế từ Smart Cart & Mock Bank.
           </p>
         </div>
 
@@ -181,15 +205,18 @@ export default function OrdersPage() {
               <option value="cancelled">Đã hủy</option>
             </select>
 
-            {/* Date range picker button */}
-            <div className="flex items-center bg-surface-container-low rounded-xl px-3 py-2 border border-outline-variant/40 text-xs font-semibold text-on-surface cursor-pointer hover:bg-surface-container-high transition-colors">
-              <span className="material-symbols-outlined text-sm mr-2 text-primary">calendar_today</span>
-              <span>Hôm nay (07 Thg 09, 2026)</span>
-            </div>
+            {/* Refresh button */}
+            <button
+              onClick={loadOrders}
+              className="flex items-center bg-surface-container-low rounded-xl px-3 py-2 border border-outline-variant/40 text-xs font-semibold text-on-surface cursor-pointer hover:bg-surface-container-high transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm mr-1.5 text-primary">refresh</span>
+              <span>Làm mới từ Server</span>
+            </button>
           </div>
 
           <div className="text-xs font-semibold text-on-surface-variant">
-            Hiển thị <span className="text-primary font-bold">{filteredOrders.length}</span> đơn hàng
+            Hiển thị <span className="text-primary font-bold">{filteredOrders.length}</span> đơn hàng thực tế
           </div>
         </div>
 
@@ -215,7 +242,7 @@ export default function OrdersPage() {
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-12 text-center text-on-surface-variant font-medium">
-                    Không tìm thấy đơn hàng nào phù hợp với bộ lọc.
+                    Chưa có đơn hàng nào phát sinh trên hệ thống máy chủ.
                   </td>
                 </tr>
               ) : (
@@ -253,7 +280,7 @@ export default function OrdersPage() {
                       )}
                       {order.status === 'shipping' && (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-chart-blue/10 text-chart-blue border border-chart-blue/20">
-                          Đang giao
+                          Đang mua sắm
                         </span>
                       )}
                       {order.status === 'cancelled' && (

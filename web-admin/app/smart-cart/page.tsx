@@ -1,49 +1,78 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import KpiCard from '@/components/KpiCard';
-import { INITIAL_SMART_CARTS, SmartCart } from '@/data/mockData';
+import { SmartCart } from '@/data/mockData';
 import { ApiService } from '@/services/api';
 
 export default function SmartCartPage() {
-  const [carts, setCarts] = useState<SmartCart[]>(INITIAL_SMART_CARTS);
-  const [selectedCart, setSelectedCart] = useState<SmartCart | null>(carts[0]);
+  const [carts, setCarts] = useState<SmartCart[]>([]);
+  const [selectedCart, setSelectedCart] = useState<SmartCart | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [newCartId, setNewCartId] = useState(`SC-0${INITIAL_SMART_CARTS.length + 1}`);
-  const [newCartName, setNewCartName] = useState(`Smart Cart #${INITIAL_SMART_CARTS.length + 1}`);
+  const [newCartId, setNewCartId] = useState('SC-001');
+  const [newCartName, setNewCartName] = useState('Smart Cart #01');
   const [newCartLocation, setNewCartLocation] = useState('Lối vào Cửa Đông');
   const [toastMsg, setToastMsg] = useState<string | null>(null);
 
-  useEffect(() => {
-    ApiService.getSmartCarts().then((data) => {
-      if (data && data.length > 0) {
+  const loadSmartCarts = useCallback(async () => {
+    try {
+      const data = await ApiService.getSmartCarts();
+      if (Array.isArray(data)) {
         setCarts(data);
-        setSelectedCart(data[0]);
+        setSelectedCart((prev) => {
+          if (prev) {
+            const matched = data.find((c) => c.id === prev.id);
+            if (matched) return matched;
+          }
+          return data[0] || null;
+        });
+      }
+    } catch (err) {
+      console.warn('Lỗi tải danh sách xe đẩy từ server:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSmartCarts();
+
+    const unsubscribe = ApiService.subscribeToRealtimeEvents((event) => {
+      if (event === 'stroller_change' || event === 'order_change') {
+        loadSmartCarts();
       }
     });
-  }, []);
+
+    const interval = setInterval(() => {
+      loadSmartCarts();
+    }, 10000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [loadSmartCarts]);
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 2500);
   };
 
+  const handleOpenAddModal = () => {
+    const nextIdx = carts.length + 1;
+    setNewCartId(`SC-${nextIdx.toString().padStart(3, '0')}`);
+    setNewCartName(`Smart Cart #${nextIdx}`);
+    setShowAddModal(true);
+  };
+
   const handleAddCart = async (e: React.FormEvent) => {
     e.preventDefault();
-    await ApiService.createSmartCart(newCartId);
-    const newCart: SmartCart = {
-      id: newCartId,
-      name: newCartName,
-      battery: 100,
-      status: 'online',
-      location: newCartLocation,
-      coordinates: { x: 50 + (Math.random() * 20 - 10), y: 50 + (Math.random() * 20 - 10) },
-      lastPing: 'Vừa xong',
-    };
-
-    setCarts([...carts, newCart]);
-    setShowAddModal(false);
-    showToast(`Đã thêm thiết bị ${newCart.id} vào hệ thống Smart Cart IoT`);
+    const ok = await ApiService.createSmartCart(newCartId);
+    if (ok) {
+      await loadSmartCarts();
+      setShowAddModal(false);
+      showToast(`Đã thêm thiết bị ${newCartId} vào hệ thống Smart Cart PostgreSQL`);
+    } else {
+      showToast(`Lỗi: Không thể thêm xe đẩy ${newCartId} trên máy chủ!`);
+    }
   };
 
   return (
@@ -61,12 +90,12 @@ export default function SmartCartPage() {
         <div>
           <h2 className="text-2xl font-bold text-on-surface tracking-tight">Quản lý Smart Cart</h2>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Giám sát thời gian thực vị trí di chuyển, thời lượng pin và trạng thái kết nối mạng IoT của đội xe.
+            Giám sát thời gian thực vị trí di chuyển, thời lượng pin và trạng thái kết nối mạng IoT của đội xe từ PostgreSQL.
           </p>
         </div>
 
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={handleOpenAddModal}
           className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:bg-primary-container transition-all shadow-sm active:scale-95 self-start md:self-auto"
         >
           <span className="material-symbols-outlined text-lg">add</span>
@@ -138,7 +167,7 @@ export default function SmartCartPage() {
           <div className="relative bg-surface-container-low/50 min-h-[440px] flex items-center justify-center p-6 select-none overflow-hidden">
             {/* Supermarket Schematic Floor Background */}
             <div className="w-full h-[400px] border-2 border-dashed border-outline-variant/50 rounded-2xl relative bg-white shadow-inner p-4 overflow-hidden">
-              {/* Floor Layout Aisles Mockup */}
+              {/* Floor Layout Aisles */}
               <div className="absolute inset-0 opacity-15 pointer-events-none grid grid-cols-4 grid-rows-3 gap-4 p-6">
                 <div className="border border-primary rounded-xl flex items-center justify-center text-xs font-bold text-primary">
                   KHU A: ĐỒ UỐNG
@@ -279,75 +308,83 @@ export default function SmartCartPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 text-sm">
-                {carts.map((cart) => {
-                  const isSelected = selectedCart?.id === cart.id;
-                  return (
-                    <tr
-                      key={cart.id}
-                      onClick={() => setSelectedCart(cart)}
-                      className={`cursor-pointer transition-colors ${
-                        isSelected
-                          ? 'bg-primary-fixed/40 font-semibold'
-                          : 'hover:bg-surface-container-low/40'
-                      }`}
-                    >
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`w-2 h-2 rounded-full ${
-                              cart.status === 'online'
-                                ? 'bg-success'
-                                : cart.status === 'charging'
-                                ? 'bg-warning'
-                                : 'bg-danger'
-                            }`}
-                          ></span>
-                          <span className="font-mono font-bold text-on-surface">{cart.id}</span>
-                        </div>
-                        <div className="text-[11px] text-on-surface-variant pl-4">{cart.location}</div>
-                      </td>
+                {carts.length === 0 ? (
+                  <tr>
+                    <td colSpan={3} className="py-12 px-4 text-center text-on-surface-variant font-medium">
+                      Chưa có xe đẩy nào đăng ký trên máy chủ.
+                    </td>
+                  </tr>
+                ) : (
+                  carts.map((cart) => {
+                    const isSelected = selectedCart?.id === cart.id;
+                    return (
+                      <tr
+                        key={cart.id}
+                        onClick={() => setSelectedCart(cart)}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-primary-fixed/40 font-semibold'
+                            : 'hover:bg-surface-container-low/40'
+                        }`}
+                      >
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                cart.status === 'online'
+                                  ? 'bg-success'
+                                  : cart.status === 'charging'
+                                  ? 'bg-warning'
+                                  : 'bg-danger'
+                              }`}
+                            ></span>
+                            <span className="font-mono font-bold text-on-surface">{cart.id}</span>
+                          </div>
+                          <div className="text-[11px] text-on-surface-variant pl-4">{cart.location}</div>
+                        </td>
 
-                      <td className="py-3 px-4 text-center">
-                        <div className="inline-flex items-center gap-1 font-semibold text-xs">
-                          <span
-                            className={`material-symbols-outlined text-[16px] ${
-                              cart.battery > 50
-                                ? 'text-success'
+                        <td className="py-3 px-4 text-center">
+                          <div className="inline-flex items-center gap-1 font-semibold text-xs">
+                            <span
+                              className={`material-symbols-outlined text-[16px] ${
+                                cart.battery > 50
+                                  ? 'text-success'
+                                  : cart.battery > 20
+                                  ? 'text-warning'
+                                  : 'text-danger'
+                              }`}
+                            >
+                              {cart.battery > 80
+                                ? 'battery_full'
                                 : cart.battery > 20
-                                ? 'text-warning'
-                                : 'text-danger'
-                            }`}
-                          >
-                            {cart.battery > 80
-                              ? 'battery_full'
-                              : cart.battery > 20
-                              ? 'battery_5_bar'
-                              : 'battery_1_bar'}
-                          </span>
-                          <span>{cart.battery}%</span>
-                        </div>
-                      </td>
+                                ? 'battery_5_bar'
+                                : 'battery_1_bar'}
+                            </span>
+                            <span>{cart.battery}%</span>
+                          </div>
+                        </td>
 
-                      <td className="py-3 px-4 text-right">
-                        {cart.status === 'online' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success/10 text-success">
-                            Online
-                          </span>
-                        )}
-                        {cart.status === 'charging' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-warning/10 text-warning">
-                            Đang sạc
-                          </span>
-                        )}
-                        {cart.status === 'offline' && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-danger/10 text-danger">
-                            Offline
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        <td className="py-3 px-4 text-right">
+                          {cart.status === 'online' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-success/10 text-success">
+                              Online
+                            </span>
+                          )}
+                          {cart.status === 'charging' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-warning/10 text-warning">
+                              Đang sạc
+                            </span>
+                          )}
+                          {cart.status === 'offline' && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-danger/10 text-danger">
+                              Offline
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>

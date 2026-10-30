@@ -1,4 +1,4 @@
-import { Product, Order, SmartCart, INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_SMART_CARTS } from '../data/mockData';
+import { Product, Order, SmartCart, InventoryMovement } from '../data/mockData';
 
 const getApiBaseUrl = () => {
   if (typeof window !== 'undefined') {
@@ -11,7 +11,7 @@ const getApiBaseUrl = () => {
 const API_BASE_URL = getApiBaseUrl();
 
 export const ApiService = {
-  // Lấy dữ liệu tổng quan Dashboard
+  // Lấy dữ liệu tổng quan Dashboard (100% từ PostgreSQL Server)
   async getOverview() {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/overview`, { cache: 'no-store' });
@@ -19,25 +19,19 @@ export const ApiService = {
       const json = await res.json();
       if (json.data) return json.data;
     } catch (err) {
-      console.warn('⚠️ [API Service] Sử dụng fallback overview cục bộ:', err);
+      console.warn('⚠️ [API Service] Lỗi kết nối /api/admin/overview:', err);
     }
     return {
       todayRevenue: 0,
       todayOrders: 0,
-      totalProducts: 10,
+      totalProducts: 0,
       lowStock: 0,
       outStock: 0,
-      totalStockUnits: 1000,
-      totalInventoryValue: 24850000,
-      totalStrollers: 8,
+      totalStockUnits: 0,
+      totalInventoryValue: 0,
+      totalStrollers: 0,
       activeStrollers: 0,
-      topProducts: [
-        { rank: 1, id: 9, name: 'Sữa tươi tiệt trùng Vinamilk 100% Có đường 180ml', price: 9500, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/8934673573344.jpg' },
-        { rank: 2, id: 5, name: 'Nước ngọt Coca Cola lon 330ml', price: 10900, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/coke_sleek_lon.jpg' },
-        { rank: 3, id: 8, name: 'Snack Poca bắp ngọt xóc bơ gói 32g', price: 6000, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/snack_poca_bap.jpg' },
-        { rank: 4, id: 10, name: 'Sữa tươi tiệt trùng TH true MILK Socola 180ml', price: 9500, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/8935217400454.jpg' },
-        { rank: 5, id: 7, name: 'Sữa đặc Ông Thọ đỏ tuýp 165g', price: 20000, soldCount: 0, revenue: 0, trend: 'neutral', imageUrl: '/products/ong_tho_do.jpg' },
-      ],
+      topProducts: [],
       stockAlerts: [],
       revenueTrend7Days: [0, 0, 0, 0, 0, 0, 0],
       orderStatusDistribution: {
@@ -58,45 +52,67 @@ export const ApiService = {
         if (json.data) return json.data;
       }
     } catch (err) {
-      console.warn('⚠️ [API Service] Sử dụng fallback inventory:', err);
+      console.warn('⚠️ [API Service] Lỗi kết nối /api/admin/inventory:', err);
     }
     return {
-      totalItems: 8,
-      totalUnits: 800,
-      totalValue: 24850000,
+      totalItems: 0,
+      totalUnits: 0,
+      totalValue: 0,
       lowStock: 0,
       outStock: 0,
-      categories: [
-        { category: 'Đồ uống', productCount: 4, stockUnits: 400, categoryValue: 5600000, percentage: 23 },
-        { category: 'Thực phẩm tươi', productCount: 2, stockUnits: 200, categoryValue: 17000000, percentage: 68 },
-        { category: 'Bánh kẹo', productCount: 2, stockUnits: 200, categoryValue: 2250000, percentage: 9 },
-      ]
+      categories: [],
+      movements: []
     };
   },
 
-  // Lấy danh sách sản phẩm (Ưu tiên /api/admin/products từ PostgreSQL)
+  // Tạo phiếu nhập / xuất kho trên Server PostgreSQL
+  async createInventoryMovement(movement: Partial<InventoryMovement>): Promise<InventoryMovement | null> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/admin/inventory/movements`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(movement),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        return json.data || null;
+      }
+    } catch (err) {
+      console.error('❌ [API Service] Lỗi tạo phiếu nhập/xuất kho trên server:', err);
+    }
+    return null;
+  },
+
+  // Lấy danh sách sản phẩm (100% từ PostgreSQL Server)
   async getProducts(): Promise<Product[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/products`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
-      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
-        return json.data.map((item: any, index: number) => ({
-          id: item.id || item.Id || index + 1,
-          barcode: item.barcode || item.Barcode || '',
-          sku: item.sku || `SKU-${(item.id || item.Id || index + 1).toString().padStart(3, '0')}`,
-          name: item.name || item.Name,
-          category: item.category || item.Category || 'Đồ uống',
-          price: parseFloat(item.price || item.Price || 0),
-          stock: parseInt(item.stock || item.Stock || 100),
-          status: (item.stock || item.Stock || 100) <= 0 ? 'out' : (item.stock || item.Stock || 100) < 20 ? 'low' : 'active',
-          imageUrl: (() => {
-            const rawImg = item.imageUrl || item.imageurl || item.ImageUrl;
-            if (!rawImg) return '/products/8934673573344.jpg';
-            if (rawImg.startsWith('http') || rawImg.startsWith('/')) return rawImg;
-            return `/products/${rawImg}`;
-          })(),
-        }));
+      if (json.data && Array.isArray(json.data)) {
+        return json.data.map((item: any, index: number) => {
+          const stockVal = item.stock !== undefined && item.stock !== null
+            ? parseInt(String(item.stock), 10)
+            : item.Stock !== undefined && item.Stock !== null
+            ? parseInt(String(item.Stock), 10)
+            : 0;
+          return {
+            id: item.id || item.Id || index + 1,
+            barcode: item.barcode || item.Barcode || '',
+            sku: item.sku || `SKU-${(item.id || item.Id || index + 1).toString().padStart(3, '0')}`,
+            name: item.name || item.Name,
+            category: item.category || item.Category || 'Đồ uống',
+            price: parseFloat(item.price ?? item.Price ?? 0),
+            stock: isNaN(stockVal) ? 0 : stockVal,
+            status: stockVal <= 0 ? 'out' : stockVal < 20 ? 'low' : 'active',
+            imageUrl: (() => {
+              const rawImg = item.imageUrl || item.imageurl || item.ImageUrl;
+              if (!rawImg) return '/products/8934673573344.jpg';
+              if (rawImg.startsWith('http') || rawImg.startsWith('/')) return rawImg;
+              return `/products/${rawImg}`;
+            })(),
+          };
+        });
       }
     } catch (err) {
       console.warn('⚠️ [API Service] Không kết nối được /api/admin/products, thử /api/products:', err);
@@ -104,34 +120,41 @@ export const ApiService = {
         const res2 = await fetch(`${API_BASE_URL}/products`, { cache: 'no-store' });
         if (res2.ok) {
           const json2 = await res2.json();
-          if (json2.data && Array.isArray(json2.data) && json2.data.length > 0) {
-            return json2.data.map((item: any, index: number) => ({
-              id: item.Id || item.id || index + 1,
-              barcode: item.Barcode || item.barcode || '',
-              sku: `SKU-${(item.Id || index + 1).toString().padStart(3, '0')}`,
-              name: item.Name || item.name,
-              category: item.Category || item.category || 'Đồ uống',
-              price: parseFloat(item.Price || item.price || 0),
-              stock: parseInt(item.Stock || item.stock || 80),
-              status: (item.stock || 80) <= 0 ? 'out' : (item.stock || 80) < 20 ? 'low' : 'active',
-              imageUrl: (() => {
-                const rawImg = item.ImageUrl || item.imageurl;
-                if (!rawImg) return INITIAL_PRODUCTS[0].imageUrl;
-                if (rawImg.startsWith('http') || rawImg.startsWith('/')) return rawImg;
-                return `/products/${rawImg}`;
-              })(),
-            }));
+          if (json2.data && Array.isArray(json2.data)) {
+            return json2.data.map((item: any, index: number) => {
+              const stockVal = item.Stock !== undefined && item.Stock !== null
+                ? parseInt(String(item.Stock), 10)
+                : item.stock !== undefined && item.stock !== null
+                ? parseInt(String(item.stock), 10)
+                : 0;
+              return {
+                id: item.Id || item.id || index + 1,
+                barcode: item.Barcode || item.barcode || '',
+                sku: `SKU-${(item.Id || item.id || index + 1).toString().padStart(3, '0')}`,
+                name: item.Name || item.name,
+                category: item.Category || item.category || 'Đồ uống',
+                price: parseFloat(item.Price ?? item.price ?? 0),
+                stock: isNaN(stockVal) ? 0 : stockVal,
+                status: stockVal <= 0 ? 'out' : stockVal < 20 ? 'low' : 'active',
+                imageUrl: (() => {
+                  const rawImg = item.ImageUrl || item.imageurl;
+                  if (!rawImg) return '/products/8934673573344.jpg';
+                  if (rawImg.startsWith('http') || rawImg.startsWith('/')) return rawImg;
+                  return `/products/${rawImg}`;
+                })(),
+              };
+            });
           }
         }
       } catch (err2) {
-        console.warn('⚠️ [API Service] Sử dụng dữ liệu sản phẩm cục bộ:', err2);
+        console.warn('⚠️ [API Service] Lỗi kết nối /api/products:', err2);
       }
     }
-    return INITIAL_PRODUCTS;
+    return [];
   },
 
   // Thêm sản phẩm mới vào PostgreSQL qua Backend
-  async createProduct(product: Partial<Product>): Promise<Product> {
+  async createProduct(product: Partial<Product>): Promise<Product | null> {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/products`, {
         method: 'POST',
@@ -141,6 +164,7 @@ export const ApiService = {
       if (res.ok) {
         const json = await res.json();
         if (json.data) {
+          const stockVal = parseInt(String(json.data.stock ?? 0), 10);
           return {
             id: json.data.id,
             barcode: json.data.barcode,
@@ -148,8 +172,8 @@ export const ApiService = {
             name: json.data.name,
             category: json.data.category || 'Đồ uống',
             price: parseFloat(json.data.price),
-            stock: parseInt(json.data.stock || 100),
-            status: json.data.stock <= 0 ? 'out' : json.data.stock < 20 ? 'low' : 'active',
+            stock: isNaN(stockVal) ? 0 : stockVal,
+            status: stockVal <= 0 ? 'out' : stockVal < 20 ? 'low' : 'active',
             imageUrl: json.data.imageurl ? `/products/${json.data.imageurl}` : '/products/8934673573344.jpg',
           };
         }
@@ -157,18 +181,7 @@ export const ApiService = {
     } catch (err) {
       console.error('❌ [API Service] Lỗi tạo sản phẩm trên server:', err);
     }
-    // Fallback nếu server offline
-    return {
-      id: Date.now(),
-      barcode: product.barcode || '',
-      sku: product.sku || `SKU-${Date.now().toString().slice(-3)}`,
-      name: product.name || '',
-      category: product.category || 'Đồ uống',
-      price: Number(product.price) || 0,
-      stock: Number(product.stock) || 0,
-      status: Number(product.stock) <= 0 ? 'out' : Number(product.stock) < 20 ? 'low' : 'active',
-      imageUrl: product.imageUrl || '/products/8934673573344.jpg',
-    };
+    return null;
   },
 
   // Sửa sản phẩm trên PostgreSQL
@@ -199,20 +212,20 @@ export const ApiService = {
     }
   },
 
-  // Lấy danh sách đơn hàng thực tế
+  // Lấy danh sách đơn hàng thực tế từ Server
   async getOrders(): Promise<Order[]> {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/orders`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.data && Array.isArray(json.data)) {
           return json.data;
         }
       }
     } catch (err) {
-      console.warn('⚠️ [API Service] Sử dụng fallback đơn hàng cục bộ:', err);
+      console.warn('⚠️ [API Service] Lỗi kết nối /api/admin/orders:', err);
     }
-    return INITIAL_ORDERS;
+    return [];
   },
 
   // Lấy danh sách Smart Carts từ DB Strollers
@@ -221,14 +234,14 @@ export const ApiService = {
       const res = await fetch(`${API_BASE_URL}/admin/strollers`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
-        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+        if (json.data && Array.isArray(json.data)) {
           return json.data;
         }
       }
     } catch (err) {
-      console.warn('⚠️ [API Service] Sử dụng fallback xe đẩy cục bộ:', err);
+      console.warn('⚠️ [API Service] Lỗi kết nối /api/admin/strollers:', err);
     }
-    return INITIAL_SMART_CARTS;
+    return [];
   },
 
   // Thêm xe đẩy vào PostgreSQL
@@ -357,13 +370,16 @@ export const ApiService = {
         } catch (_) {}
       });
 
-      eventSource.addEventListener('product_change', (e: any) => {
-        try {
-          const parsed = JSON.parse(e.data);
-          onEvent('product_change', parsed);
-        } catch (err) {
-          console.error('Lỗi parse realtime event:', err);
-        }
+      const events = ['product_change', 'order_change', 'inventory_change', 'stroller_change'];
+      events.forEach((evtName) => {
+        eventSource?.addEventListener(evtName, (e: any) => {
+          try {
+            const parsed = JSON.parse(e.data);
+            onEvent(evtName, parsed);
+          } catch (err) {
+            console.error(`Lỗi parse realtime event (${evtName}):`, err);
+          }
+        });
       });
 
       eventSource.onerror = () => {

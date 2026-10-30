@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { INITIAL_PRODUCTS, Product } from '@/data/mockData';
+import { Product } from '@/data/mockData';
 import { ApiService } from '@/services/api';
 
 /**
@@ -20,7 +20,7 @@ function buildImageUrl(rawUrl: string | undefined | null): string {
 }
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -34,7 +34,7 @@ export default function ProductsPage() {
     if (!silent) setLoading(true);
     try {
       const data = await ApiService.getProducts();
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setProducts(data);
         setLastSyncTime(new Date().toLocaleTimeString('vi-VN'));
       }
@@ -95,7 +95,7 @@ export default function ProductsPage() {
     price: 10000,
     stock: 50,
     status: 'active',
-    imageUrl: INITIAL_PRODUCTS[0].imageUrl,
+    imageUrl: '/products/8934673573344.jpg',
   });
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -162,8 +162,12 @@ export default function ProductsPage() {
 
     if (modalMode === 'create') {
       const saved = await ApiService.createProduct(currentProduct);
-      setProducts((prev) => [saved, ...prev]);
-      showToast(`Đã thêm sản phẩm mới vào CSDL: ${saved.name}`);
+      if (saved) {
+        setProducts((prev) => [saved, ...prev]);
+        showToast(`Đã thêm sản phẩm mới vào CSDL: ${saved.name}`);
+      } else {
+        showToast('Lỗi: Không thể tạo sản phẩm trên máy chủ!');
+      }
     } else if (modalMode === 'edit' && currentProduct.id) {
       await ApiService.updateProduct(currentProduct.id, currentProduct);
       setProducts((prev) =>

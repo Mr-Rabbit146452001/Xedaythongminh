@@ -957,7 +957,7 @@ class AppViewModel constructor(
                                 }
                                 _hasUnscannedProduct.value = hasUnscanned
 
-                                if (hasUnscanned) {
+                                if (hasUnscanned && !_isPaymentCompleted.value) {
                                     val anomalyType = AnomalyType.fromCode(data?.anomalyCode)
                                     _activeAnomaly.value = SensorAnomaly(
                                         type = anomalyType,
@@ -1011,7 +1011,12 @@ class AppViewModel constructor(
                                     cartRepository.clearCart()
                                     _cartItemsState.value = emptyList()
                                     _isCartLocked.value = false
+                                    _lockedCartSnapshot.value = null
                                     _rfidGateEvent.value = null
+                                    _invalidScannedProduct.value = null
+                                    _hasUnscannedProduct.value = false
+                                    _activeAnomaly.value = null
+                                    _hasLeftoverCartItemsOnStart.value = false
                                     com.example.xedaythongminh.utils.SoundEffectManager.playScanSuccess()
                                 }
                             }
@@ -1037,8 +1042,15 @@ class AppViewModel constructor(
                 )
                 val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.checkoutCart(req)
                 if (response.isSuccessful) {
+                    _isPaymentCompleted.value = true
                     cartRepository.clearCart()
                     _cartItemsState.value = emptyList()
+                    _isCartLocked.value = false
+                    _lockedCartSnapshot.value = null
+                    _invalidScannedProduct.value = null
+                    _hasUnscannedProduct.value = false
+                    _activeAnomaly.value = null
+                    _hasLeftoverCartItemsOnStart.value = false
                     onSuccess()
                 }
             } catch (e: Exception) {

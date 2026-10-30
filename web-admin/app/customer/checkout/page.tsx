@@ -106,7 +106,7 @@ export default function CustomerCheckoutPage() {
             <CheckCircle2 className="w-10 h-10 text-[#0D47A1] stroke-[2.5]" />
           </div>
           <h2 className="text-2xl font-black text-[#0D47A1] tracking-tight uppercase">Thanh Toán Thành Công!</h2>
-          <p className="text-xs font-semibold text-[#666666] mt-1">Hóa đơn điện tử & vé thông hành cổng ra</p>
+          <p className="text-xs font-semibold text-[#666666] mt-1">Hóa đơn điện tử</p>
         </div>
 
         {/* Khung Hóa Đơn E-Receipt Phong Cách Vé Điện Tử */}
@@ -151,23 +151,7 @@ export default function CustomerCheckoutPage() {
             </div>
           </div>
 
-          {/* MÃ VẠCH QUA CỔNG KIỂM SOÁT RA VỀ */}
-          <div className="mt-4 pt-4 border-t border-gray-200 bg-[#E3F2FD] rounded-2xl p-4 text-center space-y-2.5 border border-blue-200">
-            <div className="flex items-center justify-center gap-1 text-[11px] uppercase tracking-wider text-[#0D47A1] font-black">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Mã vạch qua cửa kiểm soát (Exit Gate)</span>
-            </div>
-            <div className="w-full h-16 bg-white rounded-xl p-2.5 flex items-center justify-center shadow-inner border border-blue-200">
-              {/* Giả lập Barcode bằng CSS stripes */}
-              <div className="w-full h-full bg-[repeating-linear-gradient(90deg,#000,#000_2px,#fff_2px,#fff_4px,#000_4px,#000_8px,#fff_8px,#fff_10px)] rounded" />
-            </div>
-            <span className="text-sm font-mono font-black tracking-widest text-[#0D47A1] block">
-              {receiptData.gateBarcode}
-            </span>
-            <p className="text-[11px] text-[#666666] font-medium">
-              Đưa mã vạch này lên máy quét tại cổng ra để mở cửa tự động không cần thu ngân.
-            </p>
-          </div>
+
         </div>
 
         <button

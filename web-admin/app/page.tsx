@@ -61,12 +61,12 @@ export default function DashboardOverview() {
   const [overview, setOverview] = useState<OverviewData>({
     todayRevenue: 0,
     todayOrders: 0,
-    totalProducts: 10,
+    totalProducts: 0,
     lowStock: 0,
     outStock: 0,
-    totalStockUnits: 1000,
+    totalStockUnits: 0,
     totalInventoryValue: 0,
-    totalStrollers: 8,
+    totalStrollers: 0,
     activeStrollers: 0,
     topProducts: [],
     stockAlerts: [],
@@ -95,9 +95,9 @@ export default function DashboardOverview() {
   const loadProductList = useCallback(async () => {
     try {
       const prods = await ApiService.getProducts();
-      if (prods && prods.length > 0) {
+      if (Array.isArray(prods)) {
         setAvailableProducts(prods);
-        if (!selectedRestockProduct) {
+        if (!selectedRestockProduct && prods.length > 0) {
           setSelectedRestockProduct(prods[0].name);
         }
       }
@@ -139,7 +139,7 @@ export default function DashboardOverview() {
     };
   }, [fetchOverviewData, loadProductList]);
 
-  // Xử lý tạo phiếu nhập kho
+  // Xử lý tạo phiếu nhập kho thực tế lên Server
   const handleRestockSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const targetProduct = availableProducts.find(p => p.name === selectedRestockProduct);
@@ -147,6 +147,14 @@ export default function DashboardOverview() {
       try {
         await ApiService.updateProduct(targetProduct.id, {
           stock: targetProduct.stock + Number(restockQty)
+        });
+        await ApiService.createInventoryMovement({
+          type: 'import',
+          code: `PN-${Date.now().toString().slice(-6)}`,
+          supplier: supplierName || 'Tổng kho Phân phối Bán lẻ',
+          itemsCount: Number(restockQty),
+          totalValue: Number(restockQty) * (targetProduct.price || 0),
+          status: 'completed'
         });
       } catch (err) {
         console.warn('Không thể gửi lệnh update stock lên server:', err);
@@ -307,7 +315,7 @@ export default function DashboardOverview() {
         />
         <KpiCard
           title="Sản phẩm đang bán"
-          value={isLoading ? '...' : ApiService.formatNumber(overview.totalProducts || 10)}
+          value={isLoading ? '...' : ApiService.formatNumber(overview.totalProducts || 0)}
           icon="inventory"
           iconBgColor="bg-chart-indigo/10"
           iconTextColor="text-chart-indigo"
@@ -330,7 +338,7 @@ export default function DashboardOverview() {
           value={
             isLoading ? '...' : (
               <span>
-                {overview.activeStrollers || 0}<span className="text-base font-normal text-on-surface-variant">/{overview.totalStrollers || 8}</span>
+                {overview.activeStrollers || 0}<span className="text-base font-normal text-on-surface-variant">/{overview.totalStrollers || 0}</span>
               </span>
             )
           }
@@ -703,7 +711,7 @@ export default function DashboardOverview() {
                   </div>
                   <h4 className="font-bold text-on-surface text-sm">Kho hàng an toàn tuyệt đối</h4>
                   <p className="text-xs text-on-surface-variant max-w-xs">
-                    Tất cả {overview.totalProducts || 10} sản phẩm dự án đều đạt định mức lưu kho ổn định trên hệ thống PostgreSQL.
+                    Tất cả {overview.totalProducts || 0} sản phẩm dự án đều đạt định mức lưu kho ổn định trên hệ thống PostgreSQL.
                   </p>
                 </div>
               )}

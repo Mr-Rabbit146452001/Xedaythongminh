@@ -1,30 +1,75 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import KpiCard from '@/components/KpiCard';
-import { INVENTORY_MOVEMENTS, InventoryMovement } from '@/data/mockData';
+import { InventoryMovement } from '@/data/mockData';
 import { ApiService } from '@/services/api';
 
+interface CategoryStat {
+  category: string;
+  productCount: number;
+  stockUnits: number;
+  categoryValue: number;
+  percentage: number;
+}
+
 export default function InventoryPage() {
-  const [movements, setMovements] = useState<InventoryMovement[]>(INVENTORY_MOVEMENTS);
-  const [inventory, setInventory] = useState({
-    totalItems: 8,
-    totalUnits: 800,
-    totalValue: 24850000,
+  const [movements, setMovements] = useState<InventoryMovement[]>([]);
+  const [inventory, setInventory] = useState<{
+    totalItems: number;
+    totalUnits: number;
+    totalValue: number;
+    lowStock: number;
+    outStock: number;
+    categories: CategoryStat[];
+  }>({
+    totalItems: 0,
+    totalUnits: 0,
+    totalValue: 0,
     lowStock: 0,
     outStock: 0,
-    categories: [
-      { category: 'Đồ uống', productCount: 4, stockUnits: 400, categoryValue: 5600000, percentage: 23 },
-      { category: 'Thực phẩm tươi', productCount: 2, stockUnits: 200, categoryValue: 17000000, percentage: 68 },
-      { category: 'Bánh kẹo', productCount: 2, stockUnits: 200, categoryValue: 2250000, percentage: 9 },
-    ]
+    categories: []
   });
 
-  useEffect(() => {
-    ApiService.getInventory().then((data) => {
-      if (data) setInventory(data);
-    });
+  const loadInventory = useCallback(async () => {
+    try {
+      const data = await ApiService.getInventory();
+      if (data) {
+        setInventory({
+          totalItems: data.totalItems || 0,
+          totalUnits: data.totalUnits || 0,
+          totalValue: data.totalValue || 0,
+          lowStock: data.lowStock || 0,
+          outStock: data.outStock || 0,
+          categories: Array.isArray(data.categories) ? data.categories : []
+        });
+        if (Array.isArray(data.movements)) {
+          setMovements(data.movements);
+        }
+      }
+    } catch (err) {
+      console.warn('Lỗi tải dữ liệu kho hàng từ server:', err);
+    }
   }, []);
+
+  useEffect(() => {
+    loadInventory();
+
+    const unsubscribe = ApiService.subscribeToRealtimeEvents((event) => {
+      if (event === 'product_change' || event === 'inventory_change' || event === 'order_change') {
+        loadInventory();
+      }
+    });
+
+    const interval = setInterval(() => {
+      loadInventory();
+    }, 10000);
+
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
+  }, [loadInventory]);
 
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState<'import' | 'export'>('import');
@@ -41,24 +86,44 @@ export default function InventoryPage() {
     setShowModal(true);
   };
 
-  const handleCreateMovement = (e: React.FormEvent) => {
+  const handleCreateMovement = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newMovement: InventoryMovement = {
-      id: `${modalType === 'import' ? 'NK' : 'XK'}-2026-${Date.now().toString().slice(-3)}`,
+    const saved = await ApiService.createInventoryMovement({
       type: modalType,
       code: formCode,
       supplier: formSupplier,
-      date: 'Vừa xong',
       itemsCount: Number(formItemsCount),
       totalValue: Number(formTotalValue),
       status: 'completed',
-    };
+    });
 
-    setMovements([newMovement, ...movements]);
+    if (saved) {
+      setMovements((prev) => [saved, ...prev]);
+    } else {
+      await loadInventory();
+    }
     setShowModal(false);
-    setToastMsg(`Đã tạo thành công phiếu ${modalType === 'import' ? 'nhập' : 'xuất'} kho: ${formCode}`);
+    setToastMsg(`Đã lưu phiếu ${modalType === 'import' ? 'nhập' : 'xuất'} kho lên máy chủ: ${formCode}`);
     setTimeout(() => setToastMsg(null), 2500);
   };
+
+  const conicGradientStyle = useMemo(() => {
+    if (!inventory.categories || inventory.categories.length === 0) {
+      return 'conic-gradient(#e2e8f0 0% 100%)';
+    }
+    const hexColors = ['#14B8A6', '#0040a1', '#F59E0B', '#64748B', '#8B5CF6'];
+    let currentPct = 0;
+    const stops: string[] = [];
+    inventory.categories.forEach((cat, idx) => {
+      const color = hexColors[idx % hexColors.length];
+      const nextPct = idx === inventory.categories.length - 1
+        ? 100
+        : Math.min(100, currentPct + (cat.percentage || 0));
+      stops.push(`${color} ${currentPct}% ${nextPct}%`);
+      currentPct = nextPct;
+    });
+    return `conic-gradient(${stops.join(', ')})`;
+  }, [inventory.categories]);
 
   return (
     <div className="space-y-6">
@@ -75,7 +140,7 @@ export default function InventoryPage() {
         <div>
           <h2 className="text-2xl font-bold text-on-surface tracking-tight">Quản lý kho hàng</h2>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Giám sát lượng hàng dự trữ, giá trị luân chuyển và cảnh báo an toàn chuỗi cung ứng.
+            Giám sát lượng hàng dự trữ, giá trị luân chuyển và cảnh báo an toàn chuỗi cung ứng trực tiếp từ PostgreSQL.
           </p>
         </div>
 
@@ -105,8 +170,8 @@ export default function InventoryPage() {
           icon="inventory_2"
           iconBgColor="bg-primary-fixed"
           iconTextColor="text-primary"
-          trend="8 mặt hàng"
-          trendText="mỗi món 100 SP"
+          trend={`${inventory.totalItems || 0} mặt hàng`}
+          trendText="từ CSDL PostgreSQL"
           trendType="up"
         />
         <KpiCard
@@ -146,8 +211,8 @@ export default function InventoryPage() {
           <div>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-on-surface">Giá trị tồn kho theo ngành</h3>
-              <button className="text-on-surface-variant hover:text-primary">
-                <span className="material-symbols-outlined text-lg">more_vert</span>
+              <button onClick={loadInventory} className="text-on-surface-variant hover:text-primary" title="Làm mới">
+                <span className="material-symbols-outlined text-lg">refresh</span>
               </button>
             </div>
 
@@ -156,8 +221,7 @@ export default function InventoryPage() {
               <div
                 className="w-48 h-48 rounded-full relative flex items-center justify-center shadow-md transition-transform hover:scale-105"
                 style={{
-                  background:
-                    'conic-gradient(#14B8A6 0% 68%, #0040a1 68% 91%, #F59E0B 91% 100%)',
+                  background: conicGradientStyle,
                 }}
               >
                 <div className="w-32 h-32 bg-surface-container-lowest rounded-full absolute flex flex-col items-center justify-center shadow-inner">
@@ -171,21 +235,27 @@ export default function InventoryPage() {
 
             {/* Category breakdown legend from DB */}
             <div className="mt-6 space-y-2.5 text-sm font-semibold">
-              {inventory.categories.map((cat, idx) => {
-                const colors = ['bg-chart-teal', 'bg-primary', 'bg-warning', 'bg-chart-gray'];
-                const color = colors[idx % colors.length];
-                return (
-                  <div key={cat.category} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <span className={`w-3 h-3 rounded-full ${color}`}></span>
-                      <span className="text-on-surface">{cat.category}</span>
+              {inventory.categories.length === 0 ? (
+                <p className="text-center text-xs text-on-surface-variant italic py-2">
+                  Chưa có dữ liệu danh mục từ máy chủ
+                </p>
+              ) : (
+                inventory.categories.map((cat, idx) => {
+                  const colors = ['bg-chart-teal', 'bg-primary', 'bg-warning', 'bg-chart-gray'];
+                  const color = colors[idx % colors.length];
+                  return (
+                    <div key={cat.category} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-3 h-3 rounded-full ${color}`}></span>
+                        <span className="text-on-surface">{cat.category}</span>
+                      </div>
+                      <span className="font-bold text-on-surface">
+                        {cat.percentage}% ({ApiService.formatVND(cat.categoryValue)})
+                      </span>
                     </div>
-                    <span className="font-bold text-on-surface">
-                      {cat.percentage}% ({ApiService.formatVND(cat.categoryValue)})
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -195,7 +265,7 @@ export default function InventoryPage() {
           <div className="p-5 border-b border-outline-variant/30 flex justify-between items-center">
             <div>
               <h3 className="text-lg font-bold text-on-surface">Nhật ký nhập / xuất kho gần đây</h3>
-              <p className="text-xs text-on-surface-variant mt-0.5">Theo dõi lịch sử chứng từ lưu chuyển hàng hóa.</p>
+              <p className="text-xs text-on-surface-variant mt-0.5">Theo dõi lịch sử chứng từ lưu chuyển hàng hóa từ CSDL PostgreSQL.</p>
             </div>
             <span className="text-xs font-bold text-primary px-3 py-1 bg-primary/10 rounded-full">
               {movements.length} Phiếu ghi nhận
@@ -216,35 +286,43 @@ export default function InventoryPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/20 text-sm">
-                {movements.map((item) => (
-                  <tr key={item.id} className="hover:bg-surface-container-low/40 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-on-surface">{item.code}</td>
-                    <td className="px-6 py-4">
-                      {item.type === 'import' ? (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary-fixed/40 px-2.5 py-1 rounded-lg">
-                          <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
-                          Nhập kho
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1 text-xs font-bold text-chart-teal bg-chart-teal/10 px-2.5 py-1 rounded-lg">
-                          <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-                          Xuất kho
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 font-medium text-on-surface">{item.supplier}</td>
-                    <td className="px-6 py-4 text-xs text-on-surface-variant">{item.date}</td>
-                    <td className="px-6 py-4 text-right font-semibold">{ApiService.formatNumber(item.itemsCount)}</td>
-                    <td className="px-6 py-4 text-right font-bold text-primary">
-                      {ApiService.formatVND(item.totalValue)}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
-                        Hoàn tất
-                      </span>
+                {movements.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-on-surface-variant font-medium">
+                      Chưa có nhật ký nhập / xuất kho nào được ghi nhận trên máy chủ.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  movements.map((item) => (
+                    <tr key={item.id} className="hover:bg-surface-container-low/40 transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-on-surface">{item.code}</td>
+                      <td className="px-6 py-4">
+                        {item.type === 'import' ? (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-primary bg-primary-fixed/40 px-2.5 py-1 rounded-lg">
+                            <span className="material-symbols-outlined text-[14px]">arrow_downward</span>
+                            Nhập kho
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-xs font-bold text-chart-teal bg-chart-teal/10 px-2.5 py-1 rounded-lg">
+                            <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
+                            Xuất kho
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 font-medium text-on-surface">{item.supplier}</td>
+                      <td className="px-6 py-4 text-xs text-on-surface-variant">{item.date}</td>
+                      <td className="px-6 py-4 text-right font-semibold">{ApiService.formatNumber(item.itemsCount)}</td>
+                      <td className="px-6 py-4 text-right font-bold text-primary">
+                        {ApiService.formatVND(item.totalValue)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
+                          Hoàn tất
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

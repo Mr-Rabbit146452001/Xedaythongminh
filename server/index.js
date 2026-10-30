@@ -503,6 +503,26 @@ app.post('/api/iot/rfid-gate', (req, res) => {
     rfidGateDetected = false;
     rfidTag = null;
     rfidGateId = null;
+    weightAnomalyDetected = false;
+    weightAnomalyCode = null;
+    weightAnomalyReason = null;
+    weightAnomalyMessage = null;
+
+    // Giải phóng hoàn toàn trạng thái cảm biến trên FastAPI nếu đang kết nối
+    try {
+      const http = require('http');
+      const syncReq = http.request({
+        hostname: '127.0.0.1',
+        port: 8000,
+        path: '/api/iot/set-weight-anomaly',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 200
+      });
+      syncReq.on('error', () => {});
+      syncReq.write(JSON.stringify({ detected: false }));
+      syncReq.end();
+    } catch (_) {}
     console.log(`📡 [CỔNG AN NINH RFID] Đã xóa/đặt lại trạng thái cổng RFID (detected = false)`);
   }
 
@@ -622,13 +642,15 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888', paymentM
     await client.query('BEGIN');
 
     const totalQuery = `
-      SELECT SUM(COALESCE(c.unit_price_vnd, p.price) * c.quantity) as total
+      SELECT SUM(COALESCE(c.unit_price_vnd, p.price) * c.quantity) as total,
+             COALESCE(SUM(c.quantity), 0) as item_count
       FROM cart_items c
       JOIN products p ON c.product_id = p.id
       WHERE c.session_id = $1
     `;
     const totalRes = await client.query(totalQuery, [targetSession]);
     const totalAmount = parseFloat(totalRes.rows[0]?.total || 0);
+    const itemCount = parseInt(totalRes.rows[0]?.item_count || 0);
 
     const pointsEarned = Math.floor(totalAmount / 1000);
     const nowMs = Date.now();
@@ -645,17 +667,42 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888', paymentM
     rfidGateDetected = false;
     rfidTag = null;
     rfidGateId = null;
+    weightAnomalyDetected = false;
+    weightAnomalyCode = null;
+    weightAnomalyReason = null;
+    weightAnomalyMessage = null;
+
+    // Giải phóng hoàn toàn trạng thái cảm biến trên FastAPI nếu đang kết nối
+    try {
+      const http = require('http');
+      const syncReq = http.request({
+        hostname: '127.0.0.1',
+        port: 8000,
+        path: '/api/iot/set-weight-anomaly',
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 200
+      });
+      syncReq.on('error', () => {});
+      syncReq.write(JSON.stringify({ detected: false }));
+      syncReq.end();
+    } catch (_) {}
 
     // Ghi nhận trạng thái thanh toán thành công theo đúng targetSession để Tablet polling nhận diện
     const payData = {
       isPaid: true,
       sessionId: targetSession,
+      customerId: customerId || 'CUSTOMER_888',
+      itemCount: itemCount,
       paidAmount: totalAmount,
       paymentMethod: paymentMethod || 'QR_TOKEN',
       transactionId: transactionId || ('TX_' + Date.now()),
       timestamp: Date.now()
     };
     sessionPaymentMap.set(targetSession, payData);
+    if (typeof broadcastRealtimeEvent === 'function') {
+      broadcastRealtimeEvent('order_change', { sessionId: targetSession, totalAmount, itemCount, customerId });
+    }
 
     // Dọn dẹp cả targetSession và các auth session liên quan trong RAM
     activeSessions.delete(targetSession);
@@ -1886,12 +1933,12 @@ app.get('/api/admin/overview', async (req, res) => {
     const todayRevenue = paidQrAmount + bankRevenue;
 
     // Trạng thái xe đẩy Smart Cart thực tế
-    let totalStrollers = 8;
+    let totalStrollers = 0;
     let inUseStrollers = 0;
     try {
       const sRes = await pool.query('SELECT COUNT(*) as total, SUM(CASE WHEN status = \'in_use\' THEN 1 ELSE 0 END) as in_use FROM Strollers');
-      if (sRes.rows.length > 0 && sRes.rows[0]?.total) {
-        totalStrollers = parseInt(sRes.rows[0]?.total || 8);
+      if (sRes.rows.length > 0 && sRes.rows[0]?.total !== undefined) {
+        totalStrollers = parseInt(sRes.rows[0]?.total || 0);
         inUseStrollers = parseInt(sRes.rows[0]?.in_use || 0);
       }
     } catch (e) {}
@@ -1992,6 +2039,37 @@ app.get('/api/admin/inventory', async (req, res) => {
       };
     });
 
+    // Lấy lịch sử phiếu nhập / xuất kho thực tế từ bảng inventory_movements
+    let movements = [];
+    try {
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS inventory_movements (
+          id VARCHAR(64) PRIMARY KEY,
+          type VARCHAR(16) NOT NULL,
+          code VARCHAR(64) NOT NULL,
+          supplier VARCHAR(255) NOT NULL,
+          date_str VARCHAR(64) NOT NULL,
+          items_count INTEGER DEFAULT 0,
+          total_value NUMERIC DEFAULT 0,
+          status VARCHAR(32) DEFAULT 'completed',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+      const movRes = await pool.query('SELECT * FROM inventory_movements ORDER BY created_at DESC LIMIT 30');
+      movements = movRes.rows.map(r => ({
+        id: r.id,
+        type: r.type,
+        code: r.code,
+        supplier: r.supplier,
+        date: r.date_str,
+        itemsCount: parseInt(r.items_count || 0),
+        totalValue: parseFloat(r.total_value || 0),
+        status: r.status || 'completed'
+      }));
+    } catch (movErr) {
+      console.warn('Không thể truy vấn inventory_movements:', movErr.message);
+    }
+
     res.json({
       status: 'Thành công',
       data: {
@@ -2000,11 +2078,62 @@ app.get('/api/admin/inventory', async (req, res) => {
         totalValue,
         lowStock,
         outStock,
-        categories
+        categories,
+        movements
       }
     });
   } catch (err) {
     console.error('Lỗi API /api/admin/inventory:', err);
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 13.1c. API Tạo phiếu nhập / xuất kho thực tế lưu vào PostgreSQL
+app.post('/api/admin/inventory/movements', async (req, res) => {
+  const { type = 'import', code, supplier, itemsCount = 0, totalValue = 0, status = 'completed' } = req.body || {};
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS inventory_movements (
+        id VARCHAR(64) PRIMARY KEY,
+        type VARCHAR(16) NOT NULL,
+        code VARCHAR(64) NOT NULL,
+        supplier VARCHAR(255) NOT NULL,
+        date_str VARCHAR(64) NOT NULL,
+        items_count INTEGER DEFAULT 0,
+        total_value NUMERIC DEFAULT 0,
+        status VARCHAR(32) DEFAULT 'completed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    const id = `${type === 'import' ? 'NK' : 'XK'}-${Date.now()}`;
+    const finalCode = code || `${type === 'import' ? 'PN' : 'PX'}-${Date.now().toString().slice(-6)}`;
+    const finalSupplier = supplier || (type === 'import' ? 'Nhà cung cấp' : 'Xuất kho');
+    const dateStr = new Date().toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    await pool.query(
+      `INSERT INTO inventory_movements (id, type, code, supplier, date_str, items_count, total_value, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, type, finalCode, finalSupplier, dateStr, parseInt(itemsCount || 0), parseFloat(totalValue || 0), status]
+    );
+
+    const created = {
+      id,
+      type,
+      code: finalCode,
+      supplier: finalSupplier,
+      date: dateStr,
+      itemsCount: parseInt(itemsCount || 0),
+      totalValue: parseFloat(totalValue || 0),
+      status
+    };
+
+    if (typeof broadcastRealtimeEvent === 'function') {
+      broadcastRealtimeEvent('inventory_change', { action: 'create_movement', movement: created });
+    }
+
+    res.json({ status: 'Thành công', data: created });
+  } catch (err) {
+    console.error('Lỗi POST /api/admin/inventory/movements:', err);
     res.status(500).json({ status: 'Lỗi', message: err.message });
   }
 });
@@ -2182,66 +2311,133 @@ app.delete('/api/admin/products/:id', async (req, res) => {
   }
 });
 
-// 13.6. API Lấy danh sách Đơn hàng thực tế
+// 13.6. API Lấy danh sách Đơn hàng thực tế từ CSDL PostgreSQL & RAM
 app.get('/api/admin/orders', async (req, res) => {
   try {
     const orders = [];
+
+    // 1. Lấy các đơn thanh toán QR trong phiên hiện tại
     for (const [orderId, order] of qrPaymentOrders.entries()) {
       orders.push({
         id: orderId,
-        customerName: order.customerId === 'CUSTOMER_888' ? 'Nguyễn Văn A' : order.customerId,
-        customerPhone: '0987***321',
-        createdAt: new Date(order.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' Hôm nay',
-        itemCount: 4,
-        totalAmount: order.amountVnd || 150000,
+        customerName: order.customerName || order.customerId || 'Khách hàng',
+        customerPhone: order.customerPhone || '---',
+        createdAt: new Date(order.createdAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }),
+        itemCount: order.itemCount || 1,
+        totalAmount: parseFloat(order.amountVnd || 0),
         paymentMethod: 'Quét mã QR MockBank',
         status: order.status === 'PAID' ? 'completed' : order.status === 'CANCELLED' ? 'cancelled' : 'pending'
       });
     }
 
-    const sResult = await pool.query(`
-      SELECT s.id, s.customerid, s.starttime, s.status, c.name, c.phonenumber
-      FROM ShoppingSessions s
-      LEFT JOIN Customers c ON s.customerid = c.id
-      ORDER BY s.starttime DESC
-      LIMIT 20
-    `);
+    // 2. Lấy các giao dịch thanh toán thực tế từ bảng bank_transactions (PostgreSQL)
+    try {
+      const bankTxRes = await pool.query(`
+        SELECT 
+          bt.tx_id,
+          bt.order_id,
+          bt.amount,
+          bt.status,
+          bt.created_at,
+          ba.owner_name,
+          c.name as cust_name,
+          c.phonenumber
+        FROM bank_transactions bt
+        LEFT JOIN bank_accounts ba ON bt.from_account = ba.account_number
+        LEFT JOIN Customers c ON ba.user_ref_id = c.id
+        ORDER BY bt.created_at DESC
+        LIMIT 30
+      `);
+      bankTxRes.rows.forEach((tx) => {
+        const ordId = tx.order_id || tx.tx_id;
+        if (ordId && !orders.find(o => o.id === ordId)) {
+          const rawAmount = parseFloat(tx.amount || 0);
+          // Nếu amount lưu theo Token (< 100000), quy đổi 1 Token = 10 VNĐ hoặc giữ nguyên nếu đã là VNĐ
+          const vndAmount = rawAmount > 0 && rawAmount < 50000 ? rawAmount * 10 : rawAmount;
+          orders.push({
+            id: ordId,
+            customerName: tx.cust_name || tx.owner_name || 'Khách hàng MockBank',
+            customerPhone: tx.phonenumber || '---',
+            createdAt: tx.created_at ? new Date(tx.created_at).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '---',
+            itemCount: 1,
+            totalAmount: vndAmount,
+            paymentMethod: 'Ví Token MockBank',
+            status: tx.status === 'SUCCESS' ? 'completed' : tx.status === 'FAILED' ? 'cancelled' : 'pending'
+          });
+        }
+      });
+    } catch (_) {}
 
-    sResult.rows.forEach((s) => {
-      if (!orders.find(o => o.id === s.id)) {
-        orders.push({
-          id: s.id,
-          customerName: s.name || 'Khách hàng',
-          customerPhone: s.phonenumber ? s.phonenumber.replace(/(\d{4})\d{3}(\d{3})/, '$1***$2') : '0987***321',
-          createdAt: new Date(s.starttime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' Hôm nay',
-          itemCount: 5,
-          totalAmount: 450000,
-          paymentMethod: 'Ví điện tử SmartPay',
-          status: s.status === 'completed' ? 'completed' : 'shipping'
-        });
-      }
-    });
+    // 3. Lấy các phiên mua sắm từ bảng ShoppingSessions kèm tổng tiền thực tế từ cart_items hoặc sessionPaymentMap
+    try {
+      const sResult = await pool.query(`
+        SELECT 
+          s.id, s.customerid, s.starttime, s.status, c.name, c.phonenumber,
+          COALESCE(SUM(ci.quantity), 0)::integer as live_items,
+          COALESCE(SUM(COALESCE(ci.unit_price_vnd, p.price, 0) * ci.quantity), 0)::numeric as live_total
+        FROM ShoppingSessions s
+        LEFT JOIN Customers c ON s.customerid = c.id
+        LEFT JOIN cart_items ci ON ci.session_id = s.id
+        LEFT JOIN Products p ON p.id = ci.product_id
+        GROUP BY s.id, s.customerid, s.starttime, s.status, c.name, c.phonenumber
+        ORDER BY s.starttime DESC
+        LIMIT 25
+      `);
 
+      sResult.rows.forEach((s) => {
+        if (!orders.find(o => o.id === s.id)) {
+          const paidMem = sessionPaymentMap.get(s.id);
+          const itemCount = paidMem?.itemCount || parseInt(s.live_items || 0);
+          const totalAmount = paidMem?.paidAmount !== undefined ? parseFloat(paidMem.paidAmount) : parseFloat(s.live_total || 0);
+          // Chỉ hiển thị phiên có phát sinh sản phẩm hoặc đã thanh toán
+          if (itemCount > 0 || totalAmount > 0 || s.status === 'completed') {
+            orders.push({
+              id: s.id,
+              customerName: s.name || s.customerid || 'Khách hàng',
+              customerPhone: s.phonenumber || '---',
+              createdAt: s.starttime ? new Date(s.starttime).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }) : '---',
+              itemCount: itemCount,
+              totalAmount: totalAmount,
+              paymentMethod: paidMem?.paymentMethod || 'Smart Cart Pay',
+              status: s.status === 'completed' ? 'completed' : 'shipping'
+            });
+          }
+        }
+      });
+    } catch (_) {}
+
+    // 4. Lấy các phiên IoT từ bảng shopping_sessions kèm tổng tiền thực tế từ cart_items hoặc sessionPaymentMap
     try {
       const iotSessions = await pool.query(`
-        SELECT id, status, started_at_ms, ended_at_ms
-        FROM shopping_sessions
-        ORDER BY started_at_ms DESC
-        LIMIT 20
+        SELECT 
+          s.id, s.status, s.started_at_ms, s.ended_at_ms,
+          COALESCE(SUM(ci.quantity), 0)::integer as live_items,
+          COALESCE(SUM(COALESCE(ci.unit_price_vnd, p.price, 0) * ci.quantity), 0)::numeric as live_total
+        FROM shopping_sessions s
+        LEFT JOIN cart_items ci ON ci.session_id = s.id
+        LEFT JOIN Products p ON p.id = ci.product_id
+        GROUP BY s.id, s.status, s.started_at_ms, s.ended_at_ms
+        ORDER BY s.started_at_ms DESC
+        LIMIT 25
       `);
       iotSessions.rows.forEach(s => {
         if (!orders.find(o => o.id === s.id)) {
-          const timeStr = new Date(parseInt(s.started_at_ms || Date.now())).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' Hôm nay';
-          orders.push({
-            id: s.id,
-            customerName: 'Phiên Xe Đẩy (IoT)',
-            customerPhone: '0987***321',
-            createdAt: timeStr,
-            itemCount: 2,
-            totalAmount: 68000,
-            paymentMethod: 'Smart Cart Auto',
-            status: s.status === 'completed' ? 'completed' : 'shipping'
-          });
+          const paidMem = sessionPaymentMap.get(s.id);
+          const itemCount = paidMem?.itemCount || parseInt(s.live_items || 0);
+          const totalAmount = paidMem?.paidAmount !== undefined ? parseFloat(paidMem.paidAmount) : parseFloat(s.live_total || 0);
+          if (itemCount > 0 || totalAmount > 0) {
+            const timeStr = new Date(parseInt(s.started_at_ms || Date.now())).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' });
+            orders.push({
+              id: s.id,
+              customerName: paidMem?.customerId || 'Phiên Xe Đẩy (IoT)',
+              customerPhone: '---',
+              createdAt: timeStr,
+              itemCount: itemCount,
+              totalAmount: totalAmount,
+              paymentMethod: paidMem?.paymentMethod || 'Smart Cart Auto',
+              status: s.status === 'completed' ? 'completed' : 'shipping'
+            });
+          }
         }
       });
     } catch (iotErr) {
@@ -2284,6 +2480,9 @@ app.post('/api/admin/strollers', async (req, res) => {
       : 'INSERT INTO Strollers (Status) VALUES (\'in_use\') RETURNING id, status';
     const params = numId ? [numId] : [];
     const result = await pool.query(q, params);
+    if (typeof broadcastRealtimeEvent === 'function') {
+      broadcastRealtimeEvent('stroller_change', { action: 'create', stroller: result.rows[0] });
+    }
     res.json({ status: 'Thành công', data: result.rows[0] });
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });

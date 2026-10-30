@@ -175,9 +175,14 @@ fun AppNavigation(
             }
         }
 
-        // 1. Overlay bảo mật toàn màn hình: Khóa khi phát hiện quét sản phẩm không hợp lệ sau khi đã chốt giỏ
+        // Chỉ hiển thị các overlay cảnh báo bảo mật khi CHƯA thanh toán và không ở màn hình kết thúc/thành công
         val invalidViolation by appViewModel.invalidScannedProduct.collectAsState()
-        if (invalidViolation != null) {
+        val isPaymentDone by appViewModel.isPaymentCompleted.collectAsState()
+        val isPostPaymentRoute = currentRoute in setOf("payment_success", "session_ended", "welcome")
+        val canShowSecurityOverlays = !isPaymentDone && !isPostPaymentRoute
+
+        // 1. Overlay bảo mật toàn màn hình: Khóa khi phát hiện quét sản phẩm không hợp lệ sau khi đã chốt giỏ
+        if (invalidViolation != null && canShowSecurityOverlays) {
             InvalidProductLockOverlay(
                 violation = invalidViolation!!,
                 onResolveViolation = {
@@ -188,7 +193,7 @@ fun AppNavigation(
 
         // 2. Overlay bảo mật toàn màn hình: Khóa khi phát hiện trong giỏ còn hàng lúc bắt đầu phiên mua sắm mới
         val hasLeftoverCartOnStart by appViewModel.hasLeftoverCartItemsOnStart.collectAsState()
-        if (hasLeftoverCartOnStart) {
+        if (hasLeftoverCartOnStart && canShowSecurityOverlays) {
             val leftoverItems by appViewModel.cartItemsState.collectAsState()
             LeftoverCartWarningOverlay(
                 items = leftoverItems,
@@ -201,7 +206,7 @@ fun AppNavigation(
         // 3. Popup bảo mật toàn màn hình: Yêu cầu quét mã vạch cho sản phẩm mà hệ thống cảm biến Raspberry Pi chưa nhận diện được
         val hasUnscannedProduct by appViewModel.hasUnscannedProduct.collectAsState()
         val activeAnomaly by appViewModel.activeAnomaly.collectAsState()
-        if (hasUnscannedProduct) {
+        if (hasUnscannedProduct && canShowSecurityOverlays) {
             val anomaly = activeAnomaly ?: SensorAnomaly(
                 type = AnomalyType.PI_UNRECOGNIZED_ITEM
             )
