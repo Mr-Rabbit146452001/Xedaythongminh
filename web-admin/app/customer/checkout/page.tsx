@@ -28,8 +28,9 @@ export default function CustomerCheckoutPage() {
 
   useEffect(() => {
     const load = async () => {
+      const storedCartSession = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined;
       const [cartData, accData] = await Promise.all([
-        CustomerApiService.getCart(),
+        CustomerApiService.getCart(storedCartSession),
         (CustomerApiService.getStoredCustomer()?.id ? CustomerApiService.getAccount('ACC_' + CustomerApiService.getStoredCustomer()!.id).catch(() => CustomerApiService.getAccount('ACC_CUSTOMER_01')) : CustomerApiService.getAccount('ACC_CUSTOMER_01'))
       ]);
       setCart(cartData);
@@ -69,8 +70,14 @@ export default function CustomerCheckoutPage() {
       // 3. Hoàn tất đơn hàng trên Shop Server (xóa giỏ, kích hoạt isPaid=true đồng bộ lên Tablet)
       const storedCust = CustomerApiService.getStoredCustomer();
       const currentCustId = storedCust?.id || 'CUST_001';
-      const currentSessionId = (cart as any)?.sessionId || undefined;
+      const storedCartSession = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined;
+      const currentSessionId = cart?.sessionId || storedCartSession || undefined;
       await CustomerApiService.checkout('QR_TOKEN', currentCustId, currentSessionId, orderId);
+
+      // Dọn dẹp session giỏ hàng đã thanh toán khỏi LocalStorage để tránh rò rỉ phiên
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('smartcart_cart_session');
+      }
 
       // 4. Lưu dữ liệu hóa đơn điện tử
       setReceiptData({

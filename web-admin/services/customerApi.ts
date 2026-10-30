@@ -23,6 +23,7 @@ export interface CustomerCartSummary {
   items: CustomerCartItem[];
   totalQuantity: number;
   totalAmount: number;
+  sessionId?: string;
   anomalyDetected?: boolean;
 }
 
@@ -84,11 +85,12 @@ export const CustomerApiService = {
     }
   },
 
-  // 2. Lay gio hang thoi gian thuc
+  // 2. Lay gio hang thoi gian thuc (uu tien truyen dung sessionId cua xe day)
   async getCart(sessionId?: string): Promise<CustomerCartSummary> {
     try {
-      const url = sessionId 
-        ? `${getBaseUrl()}/api/cart?sessionId=${encodeURIComponent(sessionId)}`
+      const activeSession = sessionId || (typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined);
+      const url = activeSession 
+        ? `${getBaseUrl()}/api/cart?sessionId=${encodeURIComponent(activeSession)}`
         : `${getBaseUrl()}/api/cart`;
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -106,7 +108,8 @@ export const CustomerApiService = {
       const totalAmount = json.totalAmount || json.data?.totalAmount || items.reduce((sum, item) => sum + item.TotalPrice, 0);
       const totalQuantity = json.totalQuantity || json.data?.totalItems || items.reduce((sum, item) => sum + item.Quantity, 0);
       const anomalyDetected = json.anomalyDetected || false;
-      return { items, totalQuantity, totalAmount, anomalyDetected };
+      const returnedSession = json.sessionId || json.data?.sessionId || activeSession;
+      return { items, totalQuantity, totalAmount, sessionId: returnedSession, anomalyDetected };
     } catch (e) {
       console.warn('Loi getCart, thu fallback /api/cart/items:', e);
       try {
@@ -421,6 +424,16 @@ export const CustomerApiService = {
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem('smartcart_customer_user');
+      window.dispatchEvent(new Event('customer_auth_changed'));
+    } catch (_) {}
+  },
+
+  clearAllCustomerSession(): void {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.removeItem('smartcart_customer_user');
+      localStorage.removeItem('smartcart_session_id');
+      localStorage.removeItem('smartcart_cart_session');
       window.dispatchEvent(new Event('customer_auth_changed'));
     } catch (_) {}
   }

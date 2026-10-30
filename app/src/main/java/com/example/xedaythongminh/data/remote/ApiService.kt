@@ -9,7 +9,10 @@ interface ApiService {
     suspend fun getProducts(): Response<ApiResponse>
 
     @GET("api/auth/session")
-    suspend fun getAuthSession(): Response<SessionResponse>
+    suspend fun getAuthSession(
+        @Query("shoppingSessionId") shoppingSessionId: String? = null,
+        @Query("strollerId") strollerId: String? = "STR_001"
+    ): Response<SessionResponse>
 
     @GET("api/auth/status")
     suspend fun checkAuthStatus(@Query("sessionId") sessionId: String): Response<SessionStatusResponse>
@@ -21,7 +24,7 @@ interface ApiService {
     suspend fun getCustomer(@Query("id") id: String): Response<CustomerResponse>
 
     @GET("api/cart/status")
-    suspend fun getCartStatus(): Response<CartStatusResponse>
+    suspend fun getCartStatus(@Query("sessionId") sessionId: String? = null): Response<CartStatusResponse>
 
     @POST("api/iot/set-weight-anomaly")
     suspend fun setWeightAnomaly(@Body request: Map<String, @JvmSuppressWildcards Any>): Response<Map<String, Any>>

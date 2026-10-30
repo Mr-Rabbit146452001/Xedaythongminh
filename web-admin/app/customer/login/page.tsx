@@ -68,14 +68,18 @@ export default function CustomerLoginPage() {
       const params = new URLSearchParams(window.location.search);
       const sId = params.get('session');
       const strId = params.get('stroller');
+      const cartSId = params.get('cartSession');
 
       if (sId) {
         // Quét QR phiên mới từ xe đẩy -> Luôn xóa sạch phiên cũ, bắt buộc đăng nhập mới
-        CustomerApiService.clearStoredCustomer();
+        CustomerApiService.clearAllCustomerSession();
         setCurrentUser(null);
         setMode('login');
         setSessionId(sId);
         localStorage.setItem('smartcart_session_id', sId);
+        if (cartSId) {
+          localStorage.setItem('smartcart_cart_session', cartSId);
+        }
       } else {
         const stored = CustomerApiService.getStoredCustomer();
         if (stored) {
@@ -83,6 +87,10 @@ export default function CustomerLoginPage() {
           if (stored.phoneNumber) setLinkPhone(stored.phoneNumber);
           if (stored.cccd) setLinkCccd(stored.cccd);
         }
+      }
+
+      if (cartSId) {
+        localStorage.setItem('smartcart_cart_session', cartSId);
       }
 
       if (strId) {

@@ -176,7 +176,7 @@ app.get('/api/products/search', async (req, res) => {
 
 // 4. API Lấy chi tiết Giỏ hàng kèm Hình ảnh từ PostgreSQL (Hỗ trợ cả /api/cart và /api/cart/items)
 app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
-  let sessionId = req.query.sessionId || req.headers['x-session-id'];
+  let sessionId = req.query.sessionId || req.headers['x-session-id'] || req.query.cartSession;
 
   // Nếu không truyền sessionId, tự động lấy phiên active mới nhất hoặc STR_001
   if (!sessionId) {
@@ -490,19 +490,38 @@ app.post('/api/iot/rfid-gate', (req, res) => {
   });
 });
 
-// Biến lưu trạng thái thanh toán thời gian thực để đồng bộ lên App Tablet
-let lastPaymentStatus = {
-  isPaid: false,
-  paidAmount: 0,
-  paymentMethod: null,
-  transactionId: null,
-  sessionId: null,
-  timestamp: 0
-};
+// Map lưu trạng thái thanh toán theo từng Session độc lập để chống chồng chéo phiên
+const sessionPaymentMap = new Map();
 
 // 9. API Kiểm tra trạng thái an toàn giỏ hàng, Cổng An Ninh RFID & Trạng thái thanh toán từ Web Customer
 app.get('/api/cart/status', (req, res) => {
-  const isRecentlyPaid = lastPaymentStatus.isPaid && (Date.now() - lastPaymentStatus.timestamp < 60000);
+  const querySessionId = req.query.sessionId || req.headers['x-session-id'];
+  let isPaid = false;
+  let paidAmount = 0;
+  let paymentMethod = null;
+  let transactionId = null;
+
+  if (querySessionId && sessionPaymentMap.has(querySessionId)) {
+    const payInfo = sessionPaymentMap.get(querySessionId);
+    if (payInfo && payInfo.isPaid && (Date.now() - payInfo.timestamp < 60000)) {
+      isPaid = true;
+      paidAmount = payInfo.paidAmount || 0;
+      paymentMethod = payInfo.paymentMethod || null;
+      transactionId = payInfo.transactionId || null;
+    }
+  } else if (!querySessionId) {
+    // Fallback nếu client không truyền sessionId: chỉ lấy phiên thanh toán trong 5s gần nhất
+    for (const [sId, payInfo] of sessionPaymentMap.entries()) {
+      if (payInfo && payInfo.isPaid && (Date.now() - payInfo.timestamp < 5000)) {
+        isPaid = true;
+        paidAmount = payInfo.paidAmount || 0;
+        paymentMethod = payInfo.paymentMethod || null;
+        transactionId = payInfo.transactionId || null;
+        break;
+      }
+    }
+  }
+
   res.json({
     status: 'success',
     data: {
@@ -513,24 +532,22 @@ app.get('/api/cart/status', (req, res) => {
       rfidGateDetected: rfidGateDetected,
       rfidTag: rfidTag,
       gateId: rfidGateId,
-      isPaid: isRecentlyPaid,
-      paidAmount: isRecentlyPaid ? lastPaymentStatus.paidAmount : 0,
-      paymentMethod: isRecentlyPaid ? lastPaymentStatus.paymentMethod : null,
-      transactionId: isRecentlyPaid ? lastPaymentStatus.transactionId : null
+      isPaid: isPaid,
+      paidAmount: paidAmount,
+      paymentMethod: paymentMethod,
+      transactionId: transactionId
     }
   });
 });
 
 // 9.1 API Đặt lại cờ thanh toán
 app.post('/api/cart/status/reset-payment', (req, res) => {
-  lastPaymentStatus = {
-    isPaid: false,
-    paidAmount: 0,
-    paymentMethod: null,
-    transactionId: null,
-    sessionId: null,
-    timestamp: 0
-  };
+  const { sessionId } = req.body || req.query || {};
+  if (sessionId) {
+    sessionPaymentMap.delete(sessionId);
+  } else {
+    sessionPaymentMap.clear();
+  }
   res.json({ status: 'success', message: 'Đã đặt lại trạng thái thanh toán' });
 });
 
@@ -579,8 +596,8 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888', paymentM
     rfidTag = null;
     rfidGateId = null;
 
-    // Ghi nhận trạng thái thanh toán thành công để Tablet polling đồng bộ tức thì (<650ms)
-    lastPaymentStatus = {
+    // Ghi nhận trạng thái thanh toán thành công theo đúng targetSession để Tablet polling nhận diện
+    const payData = {
       isPaid: true,
       sessionId: targetSession,
       paidAmount: totalAmount,
@@ -588,15 +605,24 @@ async function endSessionHelper(sessionId, customerId = 'CUSTOMER_888', paymentM
       transactionId: transactionId || ('TX_' + Date.now()),
       timestamp: Date.now()
     };
+    sessionPaymentMap.set(targetSession, payData);
 
-    console.log(`✅ [Session End] Kết thúc phiên ${targetSession} thành công. Tổng: ${totalAmount} VND, Điểm tích lũy: +${pointsEarned}. Đã kích hoạt isPaid=true đồng bộ sang App Tablet.`);
+    // Dọn dẹp cả targetSession và các auth session liên quan trong RAM
+    activeSessions.delete(targetSession);
+    for (const [authSId, sessionObj] of activeSessions.entries()) {
+      if (sessionObj && (sessionObj.shoppingSessionId === targetSession || sessionObj.strollerId === targetSession)) {
+        activeSessions.delete(authSId);
+      }
+    }
+
+    console.log(`✅ [Session End] Kết thúc phiên ${targetSession} thành công. Tổng: ${totalAmount} VND, Điểm tích lũy: +${pointsEarned}. Đã kích hoạt isPaid=true cho session ${targetSession}.`);
 
     return {
       success: true,
       sessionId: targetSession,
       totalAmount,
       pointsEarned,
-      transactionId: lastPaymentStatus.transactionId,
+      transactionId: payData.transactionId,
       message: 'Phiên mua sắm đã kết thúc thành công'
     };
   } catch (err) {
@@ -1046,19 +1072,32 @@ app.get('/api/customer', async (req, res) => {
 });
 
 app.get('/api/auth/session', (req, res) => {
+  const { shoppingSessionId, strollerId = 'STR_001' } = req.query || {};
   const sessionId = 'SESS_' + Date.now();
-  activeSessions.set(sessionId, { authStatus: 'pending', customer: null });
+  activeSessions.set(sessionId, { 
+    authStatus: 'pending', 
+    customer: null,
+    shoppingSessionId: shoppingSessionId || null,
+    strollerId: strollerId,
+    createdAt: Date.now()
+  });
 
   // Xác định domain thực tế (Ngrok hoặc LAN host) để dẫn trực tiếp vào Web App Khách Hàng
   let host = process.env.PUBLIC_URL ? (new URL(process.env.PUBLIC_URL)).host : (req.get('x-forwarded-host') || req.get('host') || '127.0.0.1:3000');
   let proto = process.env.PUBLIC_URL ? (new URL(process.env.PUBLIC_URL)).protocol.replace(':', '') : (req.get('x-forwarded-proto') || (host.includes('ngrok') ? 'https' : (req.secure ? 'https' : 'http')));
   const baseUrl = `${proto}://${host}`;
-  const loginUrl = `${baseUrl}/customer/login?session=${sessionId}&stroller=STR_001&ngrok-skip-browser-warning=true`;
+  
+  let loginUrl = `${baseUrl}/customer/login?session=${sessionId}&stroller=${encodeURIComponent(strollerId)}&ngrok-skip-browser-warning=true`;
+  if (shoppingSessionId) {
+    loginUrl += `&cartSession=${encodeURIComponent(shoppingSessionId)}`;
+  }
 
   res.json({ 
     status: 'Thành công', 
     data: { 
-      sessionId: sessionId, 
+      sessionId: sessionId,
+      shoppingSessionId: shoppingSessionId || null,
+      strollerId: strollerId,
       loginUrl: loginUrl 
     } 
   });

@@ -33,7 +33,8 @@ export default function CustomerHomePage() {
   const fetchCart = useCallback(async (showIndicator = false) => {
     if (showIndicator) setIsRefreshing(true);
     try {
-      const data = await CustomerApiService.getCart();
+      const storedCartSession = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined;
+      const data = await CustomerApiService.getCart(storedCartSession);
       setCart(data);
     } catch (err) {
       console.warn('Lỗi fetchCart:', err);
@@ -66,6 +67,7 @@ export default function CustomerHomePage() {
       const params = new URLSearchParams(window.location.search);
       const sessionParam = params.get('session');
       const strollerParam = params.get('stroller');
+      const cartSessionParam = params.get('cartSession');
 
       if (strollerParam) {
         setStrollerId(strollerParam);
@@ -73,6 +75,10 @@ export default function CustomerHomePage() {
       } else {
         const savedStroller = localStorage.getItem('smartcart_stroller_id') || 'STR_001';
         setStrollerId(savedStroller);
+      }
+
+      if (cartSessionParam) {
+        localStorage.setItem('smartcart_cart_session', cartSessionParam);
       }
 
       if (sessionParam) {

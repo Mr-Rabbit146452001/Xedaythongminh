@@ -944,7 +944,7 @@ class AppViewModel constructor(
 
                         // 3. Đồng bộ trạng thái cảm biến bất thường / scan_required (Yêu cầu quét GM65 khóa hệ thống)
                         try {
-                            val statusResponse = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartStatus()
+                            val statusResponse = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getCartStatus(currentSession)
                             if (statusResponse.isSuccessful) {
                                 val data = statusResponse.body()?.data
                                 val hasUnscanned = data?.hasUnscannedProduct ?: false
@@ -1056,7 +1056,11 @@ class AppViewModel constructor(
         
         viewModelScope.launch {
             try {
-                val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getAuthSession()
+                val currentShoppingSession = _activeSessionId.value
+                val response = com.example.xedaythongminh.data.remote.RetrofitClient.apiService.getAuthSession(
+                    shoppingSessionId = currentShoppingSession,
+                    strollerId = "STR_001"
+                )
                 if (response.isSuccessful && response.body()?.status == "Thành công") {
                     val sessionData = response.body()?.data
                     if (sessionData != null) {
