@@ -74,9 +74,10 @@ export default function CustomerCheckoutPage() {
       const currentSessionId = cart?.sessionId || storedCartSession || undefined;
       await CustomerApiService.checkout('QR_TOKEN', currentCustId, currentSessionId, orderId);
 
-      // Dọn dẹp session giỏ hàng đã thanh toán khỏi LocalStorage để tránh rò rỉ phiên
+      // Dọn dẹp triệt để session giỏ hàng đã thanh toán khỏi LocalStorage để tránh rò rỉ phiên
       if (typeof window !== 'undefined') {
         localStorage.removeItem('smartcart_cart_session');
+        localStorage.removeItem('smartcart_session_id');
       }
 
       // 4. Lưu dữ liệu hóa đơn điện tử

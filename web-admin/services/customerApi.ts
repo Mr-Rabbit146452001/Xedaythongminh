@@ -86,12 +86,21 @@ export const CustomerApiService = {
   },
 
   // 2. Lay gio hang thoi gian thuc (uu tien truyen dung sessionId cua xe day)
+  // Tự động đồng bộ sessionId mới nhất từ server khi phiên cũ hết hạn (không chồng lấn phiên)
   async getCart(sessionId?: string): Promise<CustomerCartSummary> {
     try {
       const activeSession = sessionId || (typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined);
-      const url = activeSession 
-        ? `${getBaseUrl()}/api/cart?sessionId=${encodeURIComponent(activeSession)}`
-        : `${getBaseUrl()}/api/cart`;
+      const strollerId = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_stroller_id') || undefined) : undefined;
+      
+      // Xây dựng URL với cả sessionId, strollerId và customerId để server phân lập phiên an toàn
+      const params = new URLSearchParams();
+      if (activeSession) params.set('sessionId', activeSession);
+      if (strollerId) params.set('strollerId', strollerId);
+      const storedCustomer = typeof window !== 'undefined' ? this.getStoredCustomer() : null;
+      if (storedCustomer?.id) params.set('customerId', storedCustomer.id);
+      const queryStr = params.toString();
+      const url = queryStr ? `${getBaseUrl()}/api/cart?${queryStr}` : `${getBaseUrl()}/api/cart`;
+      
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const json = await res.json();
@@ -109,6 +118,13 @@ export const CustomerApiService = {
       const totalQuantity = json.totalQuantity || json.data?.totalItems || items.reduce((sum, item) => sum + item.Quantity, 0);
       const anomalyDetected = json.anomalyDetected || false;
       const returnedSession = json.sessionId || json.data?.sessionId || activeSession;
+      
+      // AUTO-SYNC: Nếu server trả về sessionId mới (phiên cũ hết hạn) → cập nhật localStorage
+      if (json.sessionSwitched && returnedSession && typeof window !== 'undefined') {
+        console.log(`🔄 [Cart Sync] Server đã chuyển sang session mới: ${returnedSession}`);
+        localStorage.setItem('smartcart_cart_session', returnedSession);
+      }
+      
       return { items, totalQuantity, totalAmount, sessionId: returnedSession, anomalyDetected };
     } catch (e) {
       console.warn('Loi getCart, thu fallback /api/cart/items:', e);

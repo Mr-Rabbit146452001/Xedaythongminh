@@ -177,8 +177,11 @@ app.get('/api/products/search', async (req, res) => {
 // 4. API Lấy chi tiết Giỏ hàng kèm Hình ảnh từ PostgreSQL (Hỗ trợ cả /api/cart và /api/cart/items)
 app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
   let sessionId = req.query.sessionId || req.headers['x-session-id'] || req.query.cartSession;
+  const requestedStrollerId = req.query.strollerId;
+  const requestedCustomerId = req.query.customerId;
+  let sessionSwitched = false;
 
-  // Nếu không truyền sessionId, tự động lấy phiên active mới nhất hoặc STR_001
+  // Nếu không truyền sessionId, tự động lấy phiên active mới nhất
   if (!sessionId) {
     try {
       const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
@@ -193,14 +196,69 @@ app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
   }
 
   try {
-    const query = `
+    const cartQuery = `
       SELECT c.product_id as productid, c.quantity, p.barcode, p.name, COALESCE(c.unit_price_vnd, p.price) as price, p.imageurl
       FROM cart_items c
       JOIN products p ON c.product_id = p.id
       WHERE c.session_id = $1
       ORDER BY c.updated_at_ms ASC
     `;
-    const result = await pool.query(query, [sessionId]);
+    let result = await pool.query(cartQuery, [sessionId]);
+
+    // SMART SESSION SYNC: Nếu sessionId cũ không có items, tìm session active đúng stroller
+    if (result.rows.length === 0 && sessionId !== 'SESSION_DEFAULT') {
+      // Kiểm tra session hiện tại còn active không
+      let isStale = false;
+      try {
+        const statusCheck = await pool.query("SELECT status FROM shopping_sessions WHERE id = $1", [sessionId]);
+        if (statusCheck.rows.length === 0 || statusCheck.rows[0].status !== 'active') {
+          isStale = true;
+        }
+      } catch (_) { isStale = true; }
+
+      if (isStale) {
+        // Tìm session active mới nhưng CHỈ qua strollerId (an toàn, không chồng lấn)
+        let newSessionId = null;
+
+        // Ưu tiên 1: Tìm qua activeSessions map dựa trên strollerId
+        if (requestedStrollerId) {
+          for (const [sKey, sVal] of activeSessions.entries()) {
+            if (sVal.strollerId === requestedStrollerId && sVal.authStatus !== undefined) {
+              // BẢO VỆ CHỐNG RÒ RỈ: Nếu client có gửi customerId, chỉ chấp nhận session nếu đúng customer hoặc phiên chưa gắn user
+              if (requestedCustomerId && sVal.customer && sVal.customer.id && sVal.customer.id !== requestedCustomerId) {
+                // Phiên này thuộc về khách hàng KHÁC -> TUYỆT ĐỐI KHÔNG gán session
+                continue;
+              }
+              // Tìm shopping session gắn với auth session này
+              if (sVal.shoppingSessionId) {
+                const checkActive = await pool.query("SELECT id FROM shopping_sessions WHERE id = $1 AND status = 'active'", [sVal.shoppingSessionId]);
+                if (checkActive.rows.length > 0) {
+                  newSessionId = sVal.shoppingSessionId;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        // Ưu tiên 2: Fallback lấy session active mới nhất CHỈ KHI không có chỉ định customerId (tránh rò rỉ khi mở web ở nhà)
+        if (!newSessionId && !requestedCustomerId) {
+          try {
+            const fallbackRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
+            if (fallbackRes.rows.length > 0) {
+              newSessionId = fallbackRes.rows[0].id;
+            }
+          } catch (_) {}
+        }
+
+        if (newSessionId && newSessionId !== sessionId) {
+          console.log(`🔄 [Cart Sync] Session cũ ${sessionId} đã hết hạn → Chuyển sang session active: ${newSessionId} (stroller: ${requestedStrollerId || 'N/A'})`);
+          sessionId = newSessionId;
+          sessionSwitched = true;
+          result = await pool.query(cartQuery, [sessionId]);
+        }
+      }
+    }
 
     let totalAmount = 0;
     let totalQuantity = 0;
@@ -247,6 +305,7 @@ app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
     res.json({
       status: 'Thành công',
       sessionId: sessionId,
+      sessionSwitched: sessionSwitched,
       items: formattedItems,
       totalQuantity: totalQuantity,
       totalAmount: totalAmount,
@@ -1011,12 +1070,13 @@ app.post('/api/customers/:id/sync-cart', async (req, res) => {
       promotions: promotions
     };
 
-    activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
-    for (const [sKey, sVal] of activeSessions.entries()) {
-      if (sVal.authStatus === 'pending') {
-        activeSessions.set(sKey, { authStatus: 'success', customer: customerDto });
-      }
-    }
+    const existingSync = activeSessions.get(sessionId) || {};
+    activeSessions.set(sessionId, { 
+      ...existingSync, 
+      authStatus: 'success', 
+      customer: customerDto, 
+      updatedAt: Date.now() 
+    });
 
     res.json({
       status: 'Thành công',
@@ -1126,7 +1186,13 @@ app.post(['/api/auth/confirm-login', '/api/auth/session/scan', '/api/auth/pair']
     };
 
     if (sessionId) {
-      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+      const existing = activeSessions.get(sessionId) || {};
+      activeSessions.set(sessionId, { 
+        ...existing, 
+        authStatus: 'success', 
+        customer: customerDto, 
+        updatedAt: Date.now() 
+      });
     }
     res.json({ status: 'Thành công', message: 'Đã xác nhận đăng nhập thành công!', customer: customerDto });
   } catch (err) {
@@ -1186,7 +1252,13 @@ app.post([
     };
 
     if (sessionId) {
-      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+      const existing = activeSessions.get(sessionId) || {};
+      activeSessions.set(sessionId, { 
+        ...existing, 
+        authStatus: 'success', 
+        customer: customerDto, 
+        updatedAt: Date.now() 
+      });
     }
 
     res.json({
@@ -1246,7 +1318,13 @@ app.post([
     };
 
     if (sessionId) {
-      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+      const existing = activeSessions.get(sessionId) || {};
+      activeSessions.set(sessionId, { 
+        ...existing, 
+        authStatus: 'success', 
+        customer: customerDto, 
+        updatedAt: Date.now() 
+      });
     }
 
     res.json({
@@ -1311,10 +1389,20 @@ app.get('/api/auth/simulate-scan', async (req, res) => {
     };
 
     if (sessionId && activeSessions.has(sessionId)) {
-      activeSessions.set(sessionId, { authStatus: 'success', customer: customerDto });
+      const existing = activeSessions.get(sessionId) || {};
+      activeSessions.set(sessionId, { ...existing, authStatus: 'success', customer: customerDto, updatedAt: Date.now() });
     } else {
+      let latestPendingKey = null;
+      let latestPendingTime = 0;
       for (const [key, value] of activeSessions.entries()) {
-        activeSessions.set(key, { authStatus: 'success', customer: customerDto });
+        if (value.authStatus === 'pending' && (value.createdAt || 0) > latestPendingTime) {
+          latestPendingKey = key;
+          latestPendingTime = value.createdAt || 0;
+        }
+      }
+      if (latestPendingKey) {
+        const existing = activeSessions.get(latestPendingKey) || {};
+        activeSessions.set(latestPendingKey, { ...existing, authStatus: 'success', customer: customerDto, updatedAt: Date.now() });
       }
     }
     res.json({ status: 'Thành công', message: 'Đã quét QR thành công!', customer: customerDto });
@@ -1364,8 +1452,7 @@ app.post('/api/auth/logout', (req, res) => {
   const { sessionId } = req.body || {};
   if (sessionId && activeSessions.has(sessionId)) {
     activeSessions.delete(sessionId);
-  } else {
-    activeSessions.clear();
+    console.log(`🔒 [Auth Logout] Đã đăng xuất session: ${sessionId}`);
   }
   res.json({ status: 'Thành công', message: 'Đã đăng xuất và xóa thông tin phiên khách hàng' });
 });
