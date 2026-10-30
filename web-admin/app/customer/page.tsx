@@ -36,6 +36,9 @@ export default function CustomerHomePage() {
       const storedCartSession = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined;
       const data = await CustomerApiService.getCart(storedCartSession);
       setCart(data);
+      if (data.sessionId && typeof window !== 'undefined' && localStorage.getItem('smartcart_cart_session') !== data.sessionId) {
+        localStorage.setItem('smartcart_cart_session', data.sessionId);
+      }
     } catch (err) {
       console.warn('Lỗi fetchCart:', err);
     } finally {

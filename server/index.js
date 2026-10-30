@@ -176,17 +176,41 @@ app.get('/api/products/search', async (req, res) => {
 
 // 4. API Lấy chi tiết Giỏ hàng kèm Hình ảnh từ PostgreSQL (Hỗ trợ cả /api/cart và /api/cart/items)
 app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
-  let sessionId = req.query.sessionId || req.headers['x-session-id'] || req.query.cartSession;
+  let rawSessionId = req.query.sessionId || req.headers['x-session-id'] || req.query.cartSession;
   const requestedStrollerId = req.query.strollerId;
   const requestedCustomerId = req.query.customerId;
+  let sessionId = rawSessionId;
   let sessionSwitched = false;
 
-  // Nếu không truyền sessionId, tự động lấy phiên active mới nhất
+  // BƯỚC 1: Phân giải Auth Session ID (SESS_...) sang Shopping Session ID thực tế
+  if (sessionId && sessionId.startsWith('SESS_')) {
+    const authSession = activeSessions.get(sessionId);
+    if (authSession && authSession.shoppingSessionId) {
+      sessionId = authSession.shoppingSessionId;
+      sessionSwitched = true;
+    } else {
+      // Phiên Auth chưa được gắn shoppingSessionId: Tự động tìm shopping session active từ CSDL
+      try {
+        const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
+        if (activeRes.rows.length > 0) {
+          sessionId = activeRes.rows[0].id;
+          if (authSession) {
+            authSession.shoppingSessionId = sessionId;
+          }
+          sessionSwitched = true;
+          console.log(`🔗 [Auth Bridge] Đã liên kết Auth ${rawSessionId} -> Shopping Session: ${sessionId}`);
+        }
+      } catch (_) {}
+    }
+  }
+
+  // BƯỚC 2: Nếu không truyền sessionId hoặc không tìm thấy, lấy session active mới nhất
   if (!sessionId) {
     try {
       const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
       if (activeRes.rows.length > 0) {
         sessionId = activeRes.rows[0].id;
+        sessionSwitched = true;
       } else {
         sessionId = 'SESSION_DEFAULT';
       }
@@ -205,59 +229,26 @@ app.get(['/api/cart', '/api/cart/items'], async (req, res) => {
     `;
     let result = await pool.query(cartQuery, [sessionId]);
 
-    // SMART SESSION SYNC: Nếu sessionId cũ không có items, tìm session active đúng stroller
-    if (result.rows.length === 0 && sessionId !== 'SESSION_DEFAULT') {
-      // Kiểm tra session hiện tại còn active không
-      let isStale = false;
+    // BƯỚC 3: Nếu sessionId hiện tại trả về 0 sản phẩm, tự động kiểm tra xem có session active nào đang chứa hàng không
+    if (result.rows.length === 0) {
       try {
-        const statusCheck = await pool.query("SELECT status FROM shopping_sessions WHERE id = $1", [sessionId]);
-        if (statusCheck.rows.length === 0 || statusCheck.rows[0].status !== 'active') {
-          isStale = true;
-        }
-      } catch (_) { isStale = true; }
+        const activeRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
+        if (activeRes.rows.length > 0 && activeRes.rows[0].id !== sessionId) {
+          const activeShoppingId = activeRes.rows[0].id;
+          const activeCheckResult = await pool.query(cartQuery, [activeShoppingId]);
+          if (activeCheckResult.rows.length > 0) {
+            console.log(`🔄 [Cart Auto-Bridge] Tìm thấy giỏ hàng trong session active: ${activeShoppingId} (cũ: ${sessionId})`);
+            sessionId = activeShoppingId;
+            sessionSwitched = true;
+            result = activeCheckResult;
 
-      if (isStale) {
-        // Tìm session active mới nhưng CHỈ qua strollerId (an toàn, không chồng lấn)
-        let newSessionId = null;
-
-        // Ưu tiên 1: Tìm qua activeSessions map dựa trên strollerId
-        if (requestedStrollerId) {
-          for (const [sKey, sVal] of activeSessions.entries()) {
-            if (sVal.strollerId === requestedStrollerId && sVal.authStatus !== undefined) {
-              // BẢO VỆ CHỐNG RÒ RỈ: Nếu client có gửi customerId, chỉ chấp nhận session nếu đúng customer hoặc phiên chưa gắn user
-              if (requestedCustomerId && sVal.customer && sVal.customer.id && sVal.customer.id !== requestedCustomerId) {
-                // Phiên này thuộc về khách hàng KHÁC -> TUYỆT ĐỐI KHÔNG gán session
-                continue;
-              }
-              // Tìm shopping session gắn với auth session này
-              if (sVal.shoppingSessionId) {
-                const checkActive = await pool.query("SELECT id FROM shopping_sessions WHERE id = $1 AND status = 'active'", [sVal.shoppingSessionId]);
-                if (checkActive.rows.length > 0) {
-                  newSessionId = sVal.shoppingSessionId;
-                  break;
-                }
-              }
+            // Đồng bộ ngược lại vào Map activeSessions nếu có
+            if (rawSessionId && activeSessions.has(rawSessionId)) {
+              activeSessions.get(rawSessionId).shoppingSessionId = activeShoppingId;
             }
           }
         }
-
-        // Ưu tiên 2: Fallback lấy session active mới nhất CHỈ KHI không có chỉ định customerId (tránh rò rỉ khi mở web ở nhà)
-        if (!newSessionId && !requestedCustomerId) {
-          try {
-            const fallbackRes = await pool.query("SELECT id FROM shopping_sessions WHERE status = 'active' ORDER BY started_at_ms DESC LIMIT 1");
-            if (fallbackRes.rows.length > 0) {
-              newSessionId = fallbackRes.rows[0].id;
-            }
-          } catch (_) {}
-        }
-
-        if (newSessionId && newSessionId !== sessionId) {
-          console.log(`🔄 [Cart Sync] Session cũ ${sessionId} đã hết hạn → Chuyển sang session active: ${newSessionId} (stroller: ${requestedStrollerId || 'N/A'})`);
-          sessionId = newSessionId;
-          sessionSwitched = true;
-          result = await pool.query(cartQuery, [sessionId]);
-        }
-      }
+      } catch (_) {}
     }
 
     let totalAmount = 0;
