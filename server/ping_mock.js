@@ -159,6 +159,8 @@ function printHelpMenu() {
   console.log(`   📊 Sai lệch số lượng giỏ & CSDL:    node ping_mock.js anomaly mismatch`);
   console.log(`   🚨 Bỏ hàng KHÔNG quét barcode:      node ping_mock.js unscanned [số_gram]`);
   console.log(`   ✅ Giải tỏa cảnh báo (Mở khóa xe):  node ping_mock.js resolve`);
+  console.log(`   📡 Quét xe qua Cổng an ninh RFID:  node ping_mock.js rfid`);
+  console.log(`   📴 Tắt / Reset trạng thái RFID:    node ping_mock.js rfid off`);
   console.log(`   🛒 Xem chi tiết giỏ hàng hiện tại:  node ping_mock.js status`);
   console.log(`   🧹 Xóa sạch toàn bộ giỏ hàng:       node ping_mock.js clear`);
   console.log(`========================================================================================\n`);
@@ -432,6 +434,62 @@ async function sendDecision(sessionId, action, barcode, sku, weight, silent = fa
   });
 }
 
+async function handleRfidGate(detected = true, tag = 'CART_RFID_8888', gateId = 'GATE_01') {
+  return new Promise((resolve) => {
+    const payload = JSON.stringify({
+      detected: Boolean(detected),
+      tag: tag,
+      gate_id: gateId
+    });
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: 3000,
+      path: '/api/iot/rfid-gate',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload)
+      }
+    }, (res) => {
+      let body = '';
+      res.on('data', chunk => body += chunk);
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(body);
+          console.log(`\n======================================================`);
+          if (detected) {
+            console.log(`📡 PING GIẢ LẬP: CỔNG AN NINH RFID QUÉT THẺ XE ĐẨY`);
+            console.log(`======================================================`);
+            console.log(`🏷️  Thẻ từ RFID xe đẩy: ${tag}`);
+            console.log(`🚪 Mã cổng an ninh:      ${gateId}`);
+            console.log(`⚡ Trạng thái:           BẬT [rfidGateDetected = true]`);
+            console.log(`------------------------------------------------------`);
+            console.log(`📱 PHẢN HỒI TRÊN TABLET / APP:`);
+            console.log(`   👉 Âm thanh "Tít" thành công sẽ vang lên!`);
+            console.log(`   👉 Màn hình sẽ TỰ ĐỘNG CHUYỂN SANG THANH TOÁN:`);
+            console.log(`      + Khách đã đăng nhập: Chuyển sang "Thanh toán tự động" (auto_payment)`);
+            console.log(`      + Khách vãng lai:    Chuyển sang "Chọn phương thức" (payment_selection)`);
+          } else {
+            console.log(`📡 ĐÃ TẮT / RESET TRẠNG THÁI CỔNG RFID (rfidGateDetected = false)`);
+          }
+          console.log(`======================================================\n`);
+          resolve(json);
+        } catch (e) {
+          resolve(null);
+        }
+      });
+    });
+
+    req.on('error', (e) => {
+      console.error(`❌ Lỗi kết nối tới máy chủ (port 3000):`, e.message);
+      resolve(null);
+    });
+
+    req.write(payload);
+    req.end();
+  });
+}
+
 async function handleUnscannedAnomaly(typeKey = 'unscanned', customWeight = null) {
   const sessionId = await getActiveSession();
   const anomalyInfo = ANOMALY_TYPES[typeKey] || ANOMALY_TYPES['unscanned'];
@@ -511,6 +569,14 @@ async function main() {
   if (['resolve', 'normal', 'layra', 'ok', 'clear-anomaly'].includes(args[0])) {
     const customWeight = parseInt(args[1], 10) || 500;
     await handleResolveAnomaly(customWeight);
+    return;
+  }
+
+  if (['rfid', 'gate', 'rfid-gate', 'conganh', 'cong'].includes(args[0])) {
+    const isOff = args[1] === 'off' || args[1] === 'false' || args[1] === 'reset' || args[1] === '0';
+    const tag = (!isOff && args[1]) ? args[1] : 'CART_RFID_8888';
+    const gateId = args[2] || 'GATE_01';
+    await handleRfidGate(!isOff, tag, gateId);
     return;
   }
 
