@@ -412,14 +412,6 @@ fun OrderSummarySection(
 
             // Billing Rows
             BillingRow(label = "Tạm tính", value = formatVnd(summary.subtotal), valueColor = TextDark)
-            if (userState != null && summary.memberDiscount > 0L) {
-                Spacer(modifier = Modifier.height(12.dp))
-                BillingRow(
-                    label = summary.appliedVoucherName ?: "Voucher giảm giá (${(summary.memberDiscountPercentage * 100).toInt()}%)",
-                    value = "-${formatVnd(summary.memberDiscount)}",
-                    valueColor = Color(0xFF2ECC71)
-                )
-            }
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -750,8 +742,8 @@ private val mockVipUser = User(
     membershipLevel = "Hội Viên Kim Cương",
     points = 1850,
     phoneNumber = "0987.654.321",
-    vouchers = listOf("Voucher VIP Giảm 20% Toàn Đơn Hàng", "Miễn phí giao xe tận nhà"),
-    promotions = listOf("Tặng 1 bình nước giữ nhiệt khi mua 2 hộp sữa")
+    vouchers = emptyList(),
+    promotions = emptyList()
 )
 
 // ==========================================

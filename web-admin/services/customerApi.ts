@@ -153,7 +153,8 @@ export const CustomerApiService = {
   },
 
   // 3. Thong tin tai khoan ngan hang ao
-  async getAccount(accountNumber: string = 'ACC_CUSTOMER_01'): Promise<BankAccount | null> {
+  async getAccount(accountNumber?: string): Promise<BankAccount | null> {
+    if (!accountNumber) return null;
     try {
       const res = await fetch(getBaseUrl() + '/api/bank/accounts/' + encodeURIComponent(accountNumber), { cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -414,6 +415,47 @@ export const CustomerApiService = {
       return data;
     } catch (e: any) {
       return { success: false, message: 'Lỗi kết nối khi rút Token: ' + e.message };
+    }
+  },
+
+  // 15. Huy lien ket ngan hang MockBank
+  async unlinkBank(customerId?: string, phoneNumber?: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/customer/unlink-bank', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customerId, phoneNumber })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        const stored = this.getStoredCustomer();
+        if (stored) {
+          delete stored.linkedBankAccount;
+          delete stored.cccd;
+          stored.hasPaymentPin = false;
+          delete stored.paymentPin;
+          this.setStoredCustomer(stored);
+        }
+        return { success: true, message: data.message || 'Đã hủy liên kết thành công' };
+      }
+      return { success: false, message: data.message || 'Hủy liên kết thất bại' };
+    } catch (e: any) {
+      return { success: false, message: 'Lỗi kết nối: ' + e.message };
+    }
+  },
+
+  // 16. Mo tai khoan MockBank moi truc tiep
+  async registerMockBankAccount(fullName: string, idCardNumber: string, phoneNumber: string, pin: string): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/bank/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName, idCardNumber, phoneNumber, pin })
+      });
+      const data = await res.json();
+      return data;
+    } catch (e: any) {
+      return { success: false, message: 'Lỗi kết nối MockBank: ' + e.message };
     }
   },
 

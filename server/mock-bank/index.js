@@ -254,7 +254,8 @@ app.post('/api/bank/auth/check-link', async (req, res) => {
        FROM bank_accounts
        WHERE (id_card_number = $1 AND (phone_number = $2 OR phone_number = $3))
           OR (account_number = $1 AND phone_number = $2)
-          OR (id_card_number = $1)
+          OR (phone_number = $2 AND (id_card_number IS NULL OR id_card_number = '' OR id_card_number = $1))
+          OR (id_card_number = $1 AND (phone_number IS NULL OR phone_number = '' OR phone_number = $2))
        ORDER BY (phone_number = $2) DESC, created_at DESC
        LIMIT 1`,
       [cleanCccd, cleanPhone, cleanPhone.replace(/^0/, '')]
@@ -294,7 +295,7 @@ app.post('/api/bank/auth/check-link', async (req, res) => {
 
 // 2.2c. Xác minh mã PIN và xác nhận liên kết MockBank
 app.post('/api/bank/auth/confirm-link', async (req, res) => {
-  const { accountNumber, pin } = req.body || {};
+  const { accountNumber, pin, idCardNumber, phoneNumber } = req.body || {};
 
   if (!accountNumber || !pin) {
     return res.status(400).json({ success: false, message: 'Vui lòng cung cấp số tài khoản và mã PIN ngân hàng' });
@@ -343,8 +344,18 @@ app.post('/api/bank/auth/confirm-link', async (req, res) => {
       });
     }
 
-    // Reset failed attempts
-    await pool.query('UPDATE bank_accounts SET failed_attempts = 0, locked_until = NULL WHERE account_number = $1', [acc.account_number]);
+    // Reset failed attempts & cập nhật định danh CCCD / SĐT nếu chưa có
+    const updateCccd = idCardNumber ? String(idCardNumber).trim() : null;
+    const updatePhone = phoneNumber ? String(phoneNumber).trim().replace(/^(?:\+84|84)/, '0') : null;
+    await pool.query(
+      `UPDATE bank_accounts 
+       SET failed_attempts = 0, 
+           locked_until = NULL,
+           id_card_number = COALESCE(id_card_number, $2),
+           phone_number = COALESCE(phone_number, $3)
+       WHERE account_number = $1`, 
+      [acc.account_number, updateCccd, updatePhone]
+    );
 
     res.json({
       success: true,

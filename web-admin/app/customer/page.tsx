@@ -5,16 +5,10 @@ import Link from 'next/link';
 import { 
   ShoppingBag, 
   ArrowRight, 
-  QrCode, 
   Sparkles, 
-  CheckCircle2, 
   Coins, 
   ShieldAlert,
-  PackageSearch,
-  ExternalLink,
-  Tag,
-  Layers,
-  Check
+  PackageSearch
 } from 'lucide-react';
 import MobileHeader from '@/components/customer/MobileHeader';
 import { CustomerApiService, CustomerCartSummary } from '@/services/customerApi';
@@ -51,11 +45,11 @@ export default function CustomerHomePage() {
   const [loginStatus, setLoginStatus] = useState<'idle' | 'logging_in' | 'success'>('idle');
 
   const confirmLoginOnCart = async (sessionId: string) => {
+    const storedUser = CustomerApiService.getStoredCustomer();
+    if (!storedUser?.id) return;
     setLoginStatus('logging_in');
     try {
-      const storedUser = CustomerApiService.getStoredCustomer();
-      const customerId = storedUser ? storedUser.id : 'CUSTOMER_888';
-      const res = await CustomerApiService.confirmLogin(sessionId, customerId);
+      const res = await CustomerApiService.confirmLogin(sessionId, storedUser.id);
       if (res.status === 'Thành công') {
         setLoginStatus('success');
       }
@@ -87,7 +81,7 @@ export default function CustomerHomePage() {
       if (sessionParam) {
         setPendingSession(sessionParam);
         localStorage.setItem('smartcart_session_id', sessionParam);
-        // Tự động kích hoạt đăng nhập xe đẩy
+        // Tự động kích hoạt đăng nhập xe đẩy nếu khách đã đăng nhập tài khoản
         confirmLoginOnCart(sessionParam);
       }
     }
@@ -131,12 +125,12 @@ export default function CustomerHomePage() {
               </div>
             </div>
             {loginStatus !== 'success' && (
-              <button
-                onClick={() => confirmLoginOnCart(pendingSession)}
+              <Link
+                href="/customer/login"
                 className="px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold shadow-md active:scale-95 transition-all"
               >
                 Đăng nhập
-              </button>
+              </Link>
             )}
           </div>
         )}
@@ -294,13 +288,6 @@ export default function CustomerHomePage() {
               <div className="flex justify-between">
                 <span>Tổng tiền hàng:</span>
                 <span className="font-bold text-[#1A1A1A] font-mono">{cart.totalAmount.toLocaleString('vi-VN')} VNĐ</span>
-              </div>
-              <div className="flex justify-between text-emerald-700 font-bold">
-                <span className="flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-emerald-600" />
-                  <span>Ưu đãi thành viên:</span>
-                </span>
-                <span>Miễn phí dịch vụ IoT</span>
               </div>
             </div>
 

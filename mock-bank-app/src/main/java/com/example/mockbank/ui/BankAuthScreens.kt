@@ -30,6 +30,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.mockbank.data.AccountData
 import com.example.mockbank.data.BankApiClient
@@ -60,7 +61,7 @@ fun BankLoginScreen(
     val focusManager = LocalFocusManager.current
 
     var phoneNumber by remember { mutableStateOf(BankApiClient.getSavedPhone(context) ?: "0987654321") }
-    var pin by remember { mutableStateOf(BankApiClient.getSavedPin(context)) }
+    var pin by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -167,18 +168,13 @@ fun BankLoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "MOCKBANK FINTECH",
+                text = "MOCKBANK",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 color = ColorTextPrimary,
                 letterSpacing = 1.sp
             )
-            Text(
-                text = "Cổng Thanh Toán Số Cho Xe Đẩy Thông Minh",
-                fontSize = 12.sp,
-                color = ColorTextSecondary,
-                fontWeight = FontWeight.Medium
-            )
+
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -275,28 +271,6 @@ fun BankLoginScreen(
                         }
                     }
 
-                    // Quick Demo Login Pill
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFF1B2430))
-                            .clickable {
-                                phoneNumber = "0987654321"
-                                pin = "652001"
-                                doLogin("0987654321", "652001")
-                            }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.FlashOn, contentDescription = null, tint = Color(0xFFFFD54F), modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Thử ngay tài khoản Demo", fontSize = 12.sp, color = ColorTextPrimary, fontWeight = FontWeight.Bold)
-                        }
-                        Text("0987654321", fontSize = 11.sp, color = ColorAccentMint, fontFamily = FontFamily.Monospace)
-                    }
                 }
             }
 
@@ -321,11 +295,7 @@ fun BankLoginScreen(
 
             // Settings button
             IconButton(onClick = { showSettingsDialog = true }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Lan, contentDescription = null, tint = ColorTextMuted, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Cài đặt Máy Chủ", fontSize = 11.sp, color = ColorTextMuted)
-                }
+
             }
         }
     }
@@ -443,24 +413,7 @@ fun BankRegisterScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Welcome Bonus Banner
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF0F291E),
-                border = androidx.compose.foundation.BorderStroke(1.dp, ColorAccentGreen.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.CardGiftcard, contentDescription = null, tint = ColorAccentGreen, modifier = Modifier.size(24.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text("Quà Tặng Mở Thẻ Khởi Nghiệp", color = ColorAccentMint, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Text("Tặng ngay 100.000 Token (≈ 1.000.000 VNĐ) vào ví", color = ColorTextPrimary, fontSize = 11.sp)
-                    }
-                }
-            }
+
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -626,6 +579,7 @@ fun BankRegisterScreen(
     }
 }
 
+
 @Composable
 fun PaymentPinDialog(
     amountTokens: Double,
@@ -634,14 +588,42 @@ fun PaymentPinDialog(
     onConfirmPin: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var pinInput by remember { mutableStateOf("") }
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        PaymentPinDialogContent(
+            amountTokens = amountTokens,
+            amountVnd = amountVnd,
+            orderId = orderId,
+            onConfirmPin = onConfirmPin,
+            onDismiss = onDismiss
+        )
+    }
+}
+
+@Composable
+fun PaymentPinDialogContent(
+    amountTokens: Double,
+    amountVnd: Double,
+    orderId: String,
+    onConfirmPin: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var pinInput by remember { mutableStateOf("652") }
     val formatVnd = NumberFormat.getNumberInstance(Locale.forLanguageTag("vi-VN"))
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = Color(0xFF131A22),
+    Surface(
+        color = Color(0xFF131A22),
         shape = RoundedCornerShape(24.dp),
-        title = {
+        border = androidx.compose.foundation.BorderStroke(1.dp, ColorCardBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp)
+        ) {
+            // Title Header
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                 Box(
                     modifier = Modifier
@@ -666,128 +648,191 @@ fun PaymentPinDialog(
                     fontFamily = FontFamily.Monospace
                 )
             }
-        },
-        text = {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+
+            // Amount Preview Box
+            Surface(
+                color = Color(0xFF1B2430),
+                shape = RoundedCornerShape(16.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, ColorCardBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Amount Preview Box
-                Surface(
-                    color = Color(0xFF1B2430),
-                    shape = RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, ColorCardBorder),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "${formatVnd.format(amountTokens.toLong())} Token",
-                            color = ColorAccentGreen,
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Monospace
-                        )
-                        Text(
-                            text = "≈ ${formatVnd.format(amountVnd.toLong())} VNĐ (Tỷ giá 1:10)",
-                            color = ColorTextSecondary,
-                            fontSize = 12.sp
-                        )
-                    }
-                }
-
-                // 6 Pin Dots
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    (0..5).forEach { index ->
-                        val isFilled = index < pinInput.length
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .clip(CircleShape)
-                                .background(if (isFilled) ColorAccentGreen else Color(0xFF2A3644))
-                                .border(1.dp, if (isFilled) ColorAccentMint else ColorCardBorder, CircleShape)
-                        )
-                    }
-                }
-
-                // Numeric Keypad Grid
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val rows = listOf(
-                        listOf("1", "2", "3"),
-                        listOf("4", "5", "6"),
-                        listOf("7", "8", "9"),
-                        listOf("C", "0", "DEL")
+                    Text(
+                        text = "${formatVnd.format(amountTokens.toLong())} Token",
+                        color = ColorAccentGreen,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Black,
+                        fontFamily = FontFamily.Monospace
                     )
+                    Text(
+                        text = "≈ ${formatVnd.format(amountVnd.toLong())} VNĐ ",
+                        color = ColorTextSecondary,
+                        fontSize = 12.sp
+                    )
+                }
+            }
 
-                    rows.forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            row.forEach { key ->
-                                Surface(
-                                    modifier = Modifier
-                                        .size(64.dp, 48.dp)
-                                        .clickable {
-                                            when (key) {
-                                                "C" -> pinInput = ""
-                                                "DEL" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
-                                                else -> {
-                                                    if (pinInput.length < 6) {
-                                                        val next = pinInput + key
-                                                        pinInput = next
-                                                        if (next.length == 6) {
-                                                            onConfirmPin(next)
-                                                        }
+            // 6 Pin Dots
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                (0..5).forEach { index ->
+                    val isFilled = index < pinInput.length
+                    Box(
+                        modifier = Modifier
+                            .size(14.dp)
+                            .clip(CircleShape)
+                            .background(if (isFilled) ColorAccentGreen else Color(0xFF2A3644))
+                            .border(1.dp, if (isFilled) ColorAccentMint else ColorCardBorder, CircleShape)
+                    )
+                }
+            }
+
+            // Numeric Keypad Grid
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                val rows = listOf(
+                    listOf("1", "2", "3"),
+                    listOf("4", "5", "6"),
+                    listOf("7", "8", "9"),
+                    listOf("C", "0", "DEL")
+                )
+
+                rows.forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { key ->
+                            Surface(
+                                modifier = Modifier
+                                    .size(64.dp, 48.dp)
+                                    .clickable {
+                                        when (key) {
+                                            "C" -> pinInput = ""
+                                            "DEL" -> if (pinInput.isNotEmpty()) pinInput = pinInput.dropLast(1)
+                                            else -> {
+                                                if (pinInput.length < 6) {
+                                                    val next = pinInput + key
+                                                    pinInput = next
+                                                    if (next.length == 6) {
+                                                        onConfirmPin(next)
                                                     }
                                                 }
                                             }
-                                        },
-                                    color = if (key in listOf("C", "DEL")) Color(0xFF1B2430) else Color(0xFF202A38),
-                                    shape = RoundedCornerShape(12.dp)
-                                ) {
-                                    Box(contentAlignment = Alignment.Center) {
-                                        Text(
-                                            text = key,
-                                            color = if (key in listOf("C", "DEL")) ColorTextSecondary else ColorTextPrimary,
-                                            fontSize = 16.sp,
-                                            fontWeight = FontWeight.Bold
-                                        )
-                                    }
+                                        }
+                                    },
+                                color = if (key in listOf("C", "DEL")) Color(0xFF1B2430) else Color(0xFF202A38),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = key,
+                                        color = if (key in listOf("C", "DEL")) ColorTextSecondary else ColorTextPrimary,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
                                 }
                             }
                         }
                     }
                 }
+            }
 
-                Text(
-                    text = "Mã PIN của bạn hoặc Master PIN: 652001",
-                    color = ColorTextMuted,
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = { if (pinInput.isNotEmpty()) onConfirmPin(pinInput) },
-                colors = ButtonDefaults.buttonColors(containerColor = ColorAccentGreen),
-                shape = RoundedCornerShape(12.dp),
-                enabled = pinInput.length in 4..6
+
+
+            // Action Buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Xác Nhận", color = Color.Black, fontWeight = FontWeight.Bold)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Hủy", color = ColorTextSecondary)
+                TextButton(onClick = onDismiss) {
+                    Text("Hủy", color = ColorTextSecondary)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(
+                    onClick = { if (pinInput.isNotEmpty()) onConfirmPin(pinInput) },
+                    colors = ButtonDefaults.buttonColors(containerColor = ColorAccentGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = pinInput.length in 4..6
+                ) {
+                    Text("Xác Nhận", color = Color.Black, fontWeight = FontWeight.Bold)
+                }
             }
         }
-    )
+    }
+}
+
+// ============================================================================
+// PREVIEW FUNCTIONS CHO ANDROID STUDIO (TRỰC QUAN HÓA GIAO DIỆN)
+// ============================================================================
+
+@Preview(
+    name = "1. Màn hình Đăng nhập MockBank",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun BankLoginScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            BankLoginScreen(
+                onLoginSuccess = { _, _ -> },
+                onNavigateToRegister = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "2. Màn hình Mở tài khoản eKYC",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 960,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun BankRegisterScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            BankRegisterScreen(
+                onRegisterSuccess = { _, _ -> },
+                onNavigateToLogin = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "3. Hộp thoại Xác thực PIN Thanh toán",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 680,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun PaymentPinDialogPreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ColorBg)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            PaymentPinDialogContent(
+                amountTokens = 13500.0,
+                amountVnd = 135000.0,
+                orderId = "ORD_98241",
+                onConfirmPin = {},
+                onDismiss = {}
+            )
+        }
+    }
 }

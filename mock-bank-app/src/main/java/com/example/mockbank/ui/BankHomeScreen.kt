@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -68,8 +70,22 @@ fun BankHomeScreen(
     onSwitchAccountClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val isInPreview = LocalInspectionMode.current
     val coroutineScope = rememberCoroutineScope()
-    var account by remember { mutableStateOf<AccountData?>(null) }
+    var account by remember {
+        mutableStateOf<AccountData?>(
+            if (isInPreview) {
+                AccountData(
+                    accountNumber = accountNumber,
+                    ownerName = "NGUYỄN VĂN A",
+                    phoneNumber = "0987654321",
+                    tokenBalance = 50000.0,
+                    vndBalance = 500000.0,
+                    isActive = true
+                )
+            } else null
+        )
+    }
     var isLoading by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var showSettingsDialog by remember { mutableStateOf(false) }
@@ -106,7 +122,9 @@ fun BankHomeScreen(
     }
 
     LaunchedEffect(Unit) {
-        refreshBalance()
+        if (!isInPreview) {
+            refreshBalance()
+        }
     }
 
     // Settings Dialog
@@ -334,11 +352,6 @@ fun BankHomeScreen(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.2.sp
                     )
-                    Text(
-                        text = "Tài khoản ảo",
-                        color = ColorTextSecondary,
-                        fontSize = 12.sp
-                    )
                 }
             }
 
@@ -481,7 +494,7 @@ private fun TitaniumBankCard(
                     )
                 }
                 Text(
-                    text = "≈ %,d VNĐ (Tỷ giá 1:10)".format(animatedBalance.toInt() * 10),
+                    text = "≈ %,d VNĐ".format(animatedBalance.toInt() * 10),
                     color = ColorTextSecondary,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Medium
@@ -494,28 +507,9 @@ private fun TitaniumBankCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = (account?.ownerName ?: "Khách Hàng Demo").uppercase(),
-                        color = ColorTextPrimary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
-                    )
-                    Text(
-                        text = account?.accountNumber ?: accountNumber,
-                        color = ColorTextMuted,
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
 
-                Text(
-                    text = "EXP: 12/29",
-                    color = ColorTextMuted,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace
-                )
+
+
             }
         }
     }
@@ -707,6 +701,61 @@ private fun TransactionRow(tx: RecentTxItem) {
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.SansSerif
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// PREVIEW FUNCTIONS CHO ANDROID STUDIO (TRỰC QUAN HÓA GIAO DIỆN)
+// ============================================================================
+
+@Preview(
+    name = "1. Trang chủ Ví MockBank (Full Screen)",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun BankHomeScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            BankHomeScreen(
+                accountNumber = "ACC_CUSTOMER_01",
+                onScanQrClick = {},
+                onSwitchAccountClick = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "2. Thẻ Ngân hàng Titanium Obsidian",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 260,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun TitaniumBankCardPreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ColorBg)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            TitaniumBankCard(
+                account = AccountData(
+                    accountNumber = "ACC_CUSTOMER_01",
+                    ownerName = "NGUYỄN VĂN A",
+                    tokenBalance = 125000.0
+                ),
+                accountNumber = "ACC_CUSTOMER_01",
+                isLoading = false
             )
         }
     }

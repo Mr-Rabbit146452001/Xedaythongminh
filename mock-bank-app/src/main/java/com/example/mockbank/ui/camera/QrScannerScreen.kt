@@ -5,7 +5,9 @@ import android.content.pm.PackageManager
 import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.camera.core.*
+import androidx.camera.core.CameraControl
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.core.*
@@ -31,6 +33,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,14 +53,20 @@ private val ColorCardSurface = Color(0xFF131A22)
 fun QrScannerScreen(
     onBack: () -> Unit,
     onQrScanned: (QrPayload) -> Unit,
-    onManualInputClick: () -> Unit
+    onManualInputClick: () -> Unit,
+    previewHasCameraPermission: Boolean? = null
 ) {
     val context = LocalContext.current
+    val isInPreview = LocalInspectionMode.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
     var hasCameraPermission by remember {
         mutableStateOf(
-            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            previewHasCameraPermission ?: if (isInPreview) {
+                true
+            } else {
+                ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            }
         )
     }
 
@@ -67,7 +77,7 @@ fun QrScannerScreen(
     }
 
     LaunchedEffect(Unit) {
-        if (!hasCameraPermission) {
+        if (!isInPreview && !hasCameraPermission) {
             permissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
@@ -122,8 +132,15 @@ fun QrScannerScreen(
                 .padding(innerPadding)
         ) {
             if (hasCameraPermission) {
-                // 1. CameraX Preview Layer
-                AndroidView(
+                // 1. CameraX Preview Layer (Ẩn phần cứng CameraX khi đang ở chế độ Preview trong IDE)
+                if (isInPreview) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color(0xFF101820))
+                    )
+                } else {
+                    AndroidView(
                     modifier = Modifier.fillMaxSize(),
                     factory = { ctx ->
                         val previewView = PreviewView(ctx).apply {
@@ -136,7 +153,7 @@ fun QrScannerScreen(
                         cameraProviderFuture.addListener({
                             val cameraProvider = cameraProviderFuture.get()
 
-                            val preview = Preview.Builder().build().also {
+                            val preview = androidx.camera.core.Preview.Builder().build().also {
                                 it.setSurfaceProvider(previewView.surfaceProvider)
                             }
 
@@ -167,6 +184,7 @@ fun QrScannerScreen(
                         previewView
                     }
                 )
+                }
 
                 // 2. Viewfinder & Animated Laser Scanner Overlay
                 ViewfinderOverlay(
@@ -342,6 +360,53 @@ private fun ViewfinderOverlay(
                 start = Offset(left + 10.dp.toPx(), laserY),
                 end = Offset(right - 10.dp.toPx(), laserY),
                 strokeWidth = 2.5.dp.toPx()
+            )
+        }
+    }
+}
+
+
+// ============================================================================
+// PREVIEW FUNCTIONS CHO ANDROID STUDIO (TRỰC QUAN HÓA GIAO DIỆN)
+// ============================================================================
+
+@Preview(
+    name = "1. Màn hình Quét QR Xe Đẩy (Khung ngắm Laser)",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF000000
+)
+@Composable
+fun QrScannerScreenActivePreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+            QrScannerScreen(
+                onBack = {},
+                onQrScanned = {},
+                onManualInputClick = {},
+                previewHasCameraPermission = true
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "2. Màn hình Yêu cầu Quyền Camera",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF000000
+)
+@Composable
+fun QrScannerScreenPermissionPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+            QrScannerScreen(
+                onBack = {},
+                onQrScanned = {},
+                onManualInputClick = {},
+                previewHasCameraPermission = false
             )
         }
     }

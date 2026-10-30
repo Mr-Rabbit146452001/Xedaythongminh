@@ -24,9 +24,7 @@ import {
   Award, 
   ChevronLeft,
   KeyRound,
-  Zap,
   ShoppingBag,
-  Gift,
   Building2,
   CreditCard
 } from 'lucide-react';
@@ -112,14 +110,7 @@ export default function CustomerLoginPage() {
     setShowConfirmPassword(false);
   };
 
-  // 1. Fill demo VIP user
-  const handleFillDemoUser = () => {
-    setPhoneNumber('0987654321');
-    setPassword('123456');
-    clearNotifications();
-  };
-
-  // 2. Handle Login
+  // 1. Handle Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     clearNotifications();
@@ -148,7 +139,7 @@ export default function CustomerLoginPage() {
     }
   };
 
-  // 3. Handle Register
+  // 2. Handle Register
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     clearNotifications();
@@ -178,7 +169,7 @@ export default function CustomerLoginPage() {
       );
       if (res.success && res.customer) {
         setCurrentUser(res.customer);
-        setSuccessMessage('Đăng ký thành công! Bạn được tặng 50.000 Token vào ví.');
+        setSuccessMessage('Đăng ký tài khoản thành công!');
         setTimeout(() => {
           router.push('/customer');
         }, 1500);
@@ -192,7 +183,7 @@ export default function CustomerLoginPage() {
     }
   };
 
-  // 4. Handle Forgot Password
+  // 3. Handle Forgot Password
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     clearNotifications();
@@ -241,7 +232,6 @@ export default function CustomerLoginPage() {
       setLoading(false);
     }
   };
-
 
   // Xử lý kiểm tra tài khoản MockBank theo CCCD và SĐT
   const handleCheckBankLink = async (e: React.FormEvent) => {
@@ -313,7 +303,7 @@ export default function CustomerLoginPage() {
     }
   };
 
-  // 5. Handle Logout
+  // 4. Handle Logout
   const handleLogout = () => {
     CustomerApiService.clearStoredCustomer();
     setCurrentUser(null);
@@ -424,145 +414,126 @@ export default function CustomerLoginPage() {
                   </div>
                 </div>
               </div>
-
-              {/* Perks & Vouchers */}
-              {currentUser.vouchers && currentUser.vouchers.length > 0 && (
-                <div className="mt-3.5 pt-3 border-t border-gray-200">
-                  <div className="text-[11px] font-black text-[#1A1A1A] mb-1.5 flex items-center gap-1.5">
-                    <Gift className="w-3.5 h-3.5 text-pink-600" />
-                    <span>Ưu đãi & Voucher khả dụng</span>
-                  </div>
-                  <div className="space-y-1">
-                    {currentUser.vouchers.map((v, i) => (
-                      <div key={i} className="text-xs font-bold text-pink-900 bg-pink-50 border border-pink-200 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                        <span className="w-1.5 h-1.5 rounded-full bg-pink-500"></span>
-                        <span className="truncate">{v}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
-            
-              {/* KHỐI LIÊN KẾT TÀI KHOẢN MOCKBANK & MÃ PIN THANH TOÁN */}
-              <div className="mt-3.5 pt-3 border-t border-gray-200 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#E3F2FD] border border-blue-200 flex items-center justify-center text-[#0D47A1]">
-                      <Building2 className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h4 className="text-xs font-black text-[#0D47A1] uppercase tracking-wider">
-                        Ngân Hàng MockBank
-                      </h4>
-                      <p className="text-[10px] font-semibold text-[#666666]">
-                        Liên kết & Đặt PIN thanh toán
-                      </p>
-                    </div>
+            {/* KHỐI LIÊN KẾT TÀI KHOẢN MOCKBANK & MÃ PIN THANH TOÁN */}
+            <div className="mt-3.5 pt-3 border-t border-gray-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#E3F2FD] border border-blue-200 flex items-center justify-center text-[#0D47A1]">
+                    <Building2 className="w-3.5 h-3.5" />
                   </div>
-                  {currentUser.linkedBankAccount ? (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-sm">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                      Đã Liên Kết
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
-                      Chưa Liên Kết
-                    </span>
-                  )}
+                  <div>
+                    <h4 className="text-xs font-black text-[#0D47A1] uppercase tracking-wider">
+                      Ngân Hàng MockBank
+                    </h4>
+                    <p className="text-[10px] font-semibold text-[#666666]">
+                      Liên kết & Đặt PIN thanh toán
+                    </p>
+                  </div>
                 </div>
-
-                {currentUser.linkedBankAccount && !showBankLinkForm ? (
-                  <div className="p-3 rounded-2xl bg-[#F0F7FF] border border-blue-200 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-gray-500 font-semibold">Tài khoản:</span>
-                      <span className="font-mono font-black text-[#0D47A1]">{currentUser.linkedBankAccount}</span>
-                    </div>
-                    {currentUser.cccd && (
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500 font-semibold">CCCD:</span>
-                        <span className="font-mono font-bold text-gray-800">
-                          {currentUser.cccd.slice(0, 4)}••••{currentUser.cccd.slice(-4)}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-xs pt-1 border-t border-blue-200/60">
-                      <span className="text-gray-500 font-semibold">PIN Thanh toán:</span>
-                      <span className="font-bold text-emerald-700 flex items-center gap-1">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                        Đã kích hoạt (6 số)
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setLinkPhone(currentUser.phoneNumber || '');
-                        setLinkCccd(currentUser.cccd || '');
-                        setShowBankLinkForm(true);
-                      }}
-                      className="w-full mt-1.5 py-1.5 rounded-xl bg-white border border-blue-200 text-[#0D47A1] hover:bg-blue-50 text-[11px] font-bold shadow-sm transition-all"
-                    >
-                      Đổi tài khoản MockBank liên kết
-                    </button>
-                  </div>
+                {currentUser.linkedBankAccount ? (
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-sm">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    Đã Liên Kết
+                  </span>
                 ) : (
-                  <form onSubmit={handleCheckBankLink} className="space-y-2.5 p-3 rounded-2xl bg-gray-50 border border-gray-200">
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
-                        Số CCCD (12 chữ số)
-                      </label>
-                      <div className="relative">
-                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#0D47A1]" />
-                        <input
-                          type="text"
-                          value={linkCccd}
-                          onChange={(e) => setLinkCccd(e.target.value.replace(/\D/g, '').slice(0, 12))}
-                          placeholder="Ví dụ: 001201012345"
-                          className="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1A1A1A] font-mono font-bold focus:outline-none focus:border-[#0D47A1]"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
-                        Số điện thoại mở tài khoản
-                      </label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#0D47A1]" />
-                        <input
-                          type="tel"
-                          value={linkPhone}
-                          onChange={(e) => setLinkPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
-                          placeholder="Ví dụ: 0987654321"
-                          className="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1A1A1A] font-mono font-bold focus:outline-none focus:border-[#0D47A1]"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-2 pt-1">
-                      {currentUser.linkedBankAccount && (
-                        <button
-                          type="button"
-                          onClick={() => setShowBankLinkForm(false)}
-                          className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-700 text-[11px] font-bold hover:bg-gray-100 transition-all"
-                        >
-                          Hủy
-                        </button>
-                      )}
-                      <button
-                        type="submit"
-                        disabled={isCheckingBank}
-                        className="flex-1 py-2 rounded-xl bg-[#0D47A1] hover:bg-[#1565C0] text-white text-[11px] font-black shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
-                      >
-                        {isCheckingBank ? 'Đang kiểm tra...' : 'Xác Minh & Nhập PIN'}
-                      </button>
-                    </div>
-                  </form>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
+                    Chưa Liên Kết
+                  </span>
                 )}
               </div>
+
+              {currentUser.linkedBankAccount && !showBankLinkForm ? (
+                <div className="p-3 rounded-2xl bg-[#F0F7FF] border border-blue-200 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-gray-500 font-semibold">Tài khoản:</span>
+                    <span className="font-mono font-black text-[#0D47A1]">{currentUser.linkedBankAccount}</span>
+                  </div>
+                  {currentUser.cccd && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 font-semibold">CCCD:</span>
+                      <span className="font-mono font-bold text-gray-800">
+                        {currentUser.cccd.slice(0, 4)}••••{currentUser.cccd.slice(-4)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs pt-1 border-t border-blue-200/60">
+                    <span className="text-gray-500 font-semibold">PIN Thanh toán:</span>
+                    <span className="font-bold text-emerald-700 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Đã kích hoạt (6 số)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLinkPhone(currentUser.phoneNumber || '');
+                      setLinkCccd(currentUser.cccd || '');
+                      setShowBankLinkForm(true);
+                    }}
+                    className="w-full mt-1.5 py-1.5 rounded-xl bg-white border border-blue-200 text-[#0D47A1] hover:bg-blue-50 text-[11px] font-bold shadow-sm transition-all"
+                  >
+                    Đổi tài khoản MockBank liên kết
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleCheckBankLink} className="space-y-2.5 p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                      Số CCCD (12 chữ số)
+                    </label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#0D47A1]" />
+                      <input
+                        type="text"
+                        value={linkCccd}
+                        onChange={(e) => setLinkCccd(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                        placeholder="Ví dụ: 001201012345"
+                        className="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1A1A1A] font-mono font-bold focus:outline-none focus:border-[#0D47A1]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                      Số điện thoại mở tài khoản
+                    </label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#0D47A1]" />
+                      <input
+                        type="tel"
+                        value={linkPhone}
+                        onChange={(e) => setLinkPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                        placeholder="Ví dụ: 0987654321"
+                        className="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1A1A1A] font-mono font-bold focus:outline-none focus:border-[#0D47A1]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-1">
+                    {currentUser.linkedBankAccount && (
+                      <button
+                        type="button"
+                        onClick={() => setShowBankLinkForm(false)}
+                        className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-700 text-[11px] font-bold hover:bg-gray-100 transition-all"
+                      >
+                        Hủy
+                      </button>
+                    )}
+                    <button
+                      type="submit"
+                      disabled={isCheckingBank}
+                      className="flex-1 py-2 rounded-xl bg-[#0D47A1] hover:bg-[#1565C0] text-white text-[11px] font-black shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      {isCheckingBank ? 'Đang kiểm tra...' : 'Xác Minh & Nhập PIN'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
 
             {/* Quick Actions */}
             <div className="space-y-2.5">
@@ -582,6 +553,16 @@ export default function CustomerLoginPage() {
                 <span>Đăng Xuất Tài Khoản</span>
               </button>
             </div>
+
+            <PinModal
+              isOpen={isPinModalOpen}
+              onClose={() => setIsPinModalOpen(false)}
+              onConfirm={handleConfirmBankPin}
+              title="Nhập mã PIN ngân hàng (6 số) để xác nhận liên kết"
+              amountToken={0}
+              amountVnd={0}
+              isLoading={isCheckingBank}
+            />
           </div>
         ) : (
           /* AUTH FORMS (LOGIN / REGISTER / FORGOT) */
@@ -626,7 +607,7 @@ export default function CustomerLoginPage() {
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="0987654321"
+                      placeholder="Nhập số điện thoại của bạn"
                       className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-3 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
@@ -682,40 +663,6 @@ export default function CustomerLoginPage() {
                     </>
                   )}
                 </button>
-
-                {/* Quick Demo Fill Buttons from CSDL */}
-                <div className="pt-3 border-t border-gray-200">
-                  <div className="text-[11px] font-bold text-[#666666] mb-2 flex items-center gap-1">
-                    <Zap className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Chọn nhanh tài khoản mẫu từ CSDL:</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => { setPhoneNumber('0987654321'); setPassword('123456'); clearNotifications(); }}
-                      className="py-2 px-2 rounded-xl bg-[#E3F2FD] border border-blue-200 hover:bg-blue-100 text-[11px] text-[#0D47A1] font-bold transition-all text-center truncate shadow-sm active:scale-95"
-                      title="Nguyễn Văn A - Hội viên Vàng"
-                    >
-                      <span className="font-black text-amber-600">Vàng</span> • A
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setPhoneNumber('0909123456'); setPassword('123456'); clearNotifications(); }}
-                      className="py-2 px-2 rounded-xl bg-[#E3F2FD] border border-blue-200 hover:bg-blue-100 text-[11px] text-[#0D47A1] font-bold transition-all text-center truncate shadow-sm active:scale-95"
-                      title="Trần Thị B - Hội viên Kim Cương"
-                    >
-                      <span className="font-black text-purple-600">Kim Cương</span> • B
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => { setPhoneNumber('0918889999'); setPassword('123456'); clearNotifications(); }}
-                      className="py-2 px-2 rounded-xl bg-[#E3F2FD] border border-blue-200 hover:bg-blue-100 text-[11px] text-[#0D47A1] font-bold transition-all text-center truncate shadow-sm active:scale-95"
-                      title="Lê Hoàng Long - Hội viên VIP"
-                    >
-                      <span className="font-black text-emerald-700">VIP</span> • Long
-                    </button>
-                  </div>
-                </div>
               </form>
             )}
 
@@ -724,17 +671,17 @@ export default function CustomerLoginPage() {
               <form onSubmit={handleRegister} className="space-y-3.5">
                 {/* Full name */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                     Họ và tên
                   </label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type="text"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Nguyễn Văn A"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all"
+                      placeholder="Nhập họ và tên"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] transition-all"
                       required
                     />
                   </div>
@@ -742,17 +689,17 @@ export default function CustomerLoginPage() {
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                     Số điện thoại
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       placeholder="0912345678"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
                   </div>
@@ -760,23 +707,23 @@ export default function CustomerLoginPage() {
 
                 {/* Password */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                     Mật khẩu (tối thiểu 6 ký tự)
                   </label>
                   <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-10 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -785,46 +732,40 @@ export default function CustomerLoginPage() {
 
                 {/* Confirm password */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                     Xác nhận mật khẩu
                   </label>
                   <div className="relative">
-                    <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type={showConfirmPassword ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="••••••••"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-10 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 p-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
                     >
                       {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
                 </div>
 
-                {/* Gift Callout */}
-                <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2 text-xs text-emerald-300">
-                  <Coins className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>Tặng ngay <b>50.000 Token</b> và <b>100 điểm thưởng</b> khi đăng ký!</span>
-                </div>
-
                 {/* Submit Register */}
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#0D47A1] hover:bg-[#1565C0] text-white font-black text-sm shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
-                      <span>TẠO TÀI KHOẢN & NHẬN QUÀ</span>
+                      <span>ĐĂNG KÝ TÀI KHOẢN</span>
                       <ArrowRight className="w-4 h-4 stroke-[2.5]" />
                     </>
                   )}
@@ -835,23 +776,23 @@ export default function CustomerLoginPage() {
             {/* TAB 3: FORGOT PASSWORD */}
             {mode === 'forgot' && (
               <form onSubmit={handleForgotPassword} className="space-y-3.5">
-                <div className="text-xs text-slate-400 mb-2">
+                <div className="text-xs text-[#666666] mb-2">
                   Nhập số điện thoại đã đăng ký để nhận mã xác thực và đặt mật khẩu mới.
                 </div>
 
                 {/* Phone */}
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                     Số điện thoại tài khoản
                   </label>
                   <div className="relative">
-                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                     <input
                       type="tel"
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
-                      placeholder="0987654321"
-                      className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 font-mono transition-all"
+                      placeholder="Nhập số điện thoại"
+                      className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] focus:ring-1 focus:ring-[#0D47A1] font-mono transition-all"
                       required
                     />
                   </div>
@@ -861,51 +802,51 @@ export default function CustomerLoginPage() {
                 {otpSent && (
                   <>
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
-                        Mã xác thực OTP (Demo: 888888)
+                      <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
+                        Mã xác thực OTP
                       </label>
                       <div className="relative">
-                        <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                         <input
                           type="text"
                           value={otp}
                           onChange={(e) => setOtp(e.target.value)}
                           placeholder="888888"
-                          className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-emerald-400 font-bold font-mono tracking-widest focus:outline-none focus:border-emerald-500 transition-all"
+                          className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#0D47A1] font-bold font-mono tracking-widest focus:outline-none focus:border-[#0D47A1] transition-all"
                           required
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                         Mật khẩu mới
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                         <input
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-all"
+                          className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] font-mono transition-all"
                           required
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      <label className="block text-xs font-bold text-[#1A1A1A] mb-1">
                         Nhập lại mật khẩu mới
                       </label>
                       <div className="relative">
-                        <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <ShieldCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#666666]" />
                         <input
                           type="password"
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                           placeholder="••••••••"
-                          className="w-full bg-slate-950/90 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono transition-all"
+                          className="w-full bg-[#F8F9FA] border border-[#E0E0E0] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#1A1A1A] placeholder-slate-400 focus:outline-none focus:border-[#0D47A1] font-mono transition-all"
                           required
                         />
                       </div>
@@ -917,10 +858,10 @@ export default function CustomerLoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:opacity-95 text-slate-950 font-black text-sm shadow-lg shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
+                  className="w-full py-3.5 px-4 rounded-2xl bg-[#0D47A1] hover:bg-[#1565C0] text-white font-black text-sm shadow-lg shadow-blue-900/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-2"
                 >
                   {loading ? (
-                    <div className="w-5 h-5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   ) : (
                     <>
                       <span>{otpSent ? 'XÁC NHẬN ĐỔI MẬT KHẨU' : 'GỬI MÃ XÁC THỰC OTP'}</span>
@@ -932,7 +873,7 @@ export default function CustomerLoginPage() {
                 <button
                   type="button"
                   onClick={() => switchMode('login')}
-                  className="w-full py-2.5 text-xs text-slate-400 hover:text-slate-200 font-medium transition-colors text-center"
+                  className="w-full py-2.5 text-xs text-[#666666] hover:text-[#1A1A1A] font-bold transition-colors text-center"
                 >
                   ← Quay lại Đăng nhập
                 </button>

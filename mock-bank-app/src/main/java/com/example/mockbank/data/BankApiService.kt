@@ -116,9 +116,11 @@ object BankApiClient {
     private var cachedService: BankApi? = null
 
     fun init(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val savedUrl = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
-        updateBaseUrl(context, savedUrl)
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val savedUrl = prefs.getString(KEY_BASE_URL, DEFAULT_BASE_URL) ?: DEFAULT_BASE_URL
+            updateBaseUrl(context, savedUrl)
+        } catch (_: Throwable) {}
     }
 
     fun updateBaseUrl(context: Context, newUrl: String) {
@@ -129,48 +131,70 @@ object BankApiClient {
         baseUrl = formatted
         cachedService = null
 
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(KEY_BASE_URL, formatted).apply()
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit().putString(KEY_BASE_URL, formatted).apply()
+        } catch (_: Throwable) {}
     }
 
     fun saveAuthSession(context: Context, account: AccountData, pin: String) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString(KEY_AUTH_ACCOUNT, account.accountNumber)
-            .putString(KEY_AUTH_NAME, account.ownerName)
-            .putString(KEY_AUTH_PHONE, account.phoneNumber ?: "")
-            .putString(KEY_AUTH_PIN, pin)
-            .apply()
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit()
+                .putString(KEY_AUTH_ACCOUNT, account.accountNumber)
+                .putString(KEY_AUTH_NAME, account.ownerName)
+                .putString(KEY_AUTH_PHONE, account.phoneNumber ?: "")
+                .putString(KEY_AUTH_PIN, pin)
+                .apply()
+        } catch (_: Throwable) {}
     }
 
     fun getSavedAccount(context: Context): String? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_AUTH_ACCOUNT, null)
+        return try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.getString(KEY_AUTH_ACCOUNT, null)
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     fun getSavedOwnerName(context: Context): String? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_AUTH_NAME, null)
+        return try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.getString(KEY_AUTH_NAME, null)
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     fun getSavedPhone(context: Context): String? {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_AUTH_PHONE, null)
+        return try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.getString(KEY_AUTH_PHONE, null)
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     fun getSavedPin(context: Context): String {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        return prefs.getString(KEY_AUTH_PIN, "652001") ?: "652001"
+        return try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.getString(KEY_AUTH_PIN, "652001") ?: "652001"
+        } catch (_: Throwable) {
+            "652001"
+        }
     }
 
     fun clearAuthSession(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit()
-            .remove(KEY_AUTH_ACCOUNT)
-            .remove(KEY_AUTH_NAME)
-            .remove(KEY_AUTH_PHONE)
-            .remove(KEY_AUTH_PIN)
-            .apply()
+        try {
+            val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            prefs.edit()
+                .remove(KEY_AUTH_ACCOUNT)
+                .remove(KEY_AUTH_NAME)
+                .remove(KEY_AUTH_PHONE)
+                .remove(KEY_AUTH_PIN)
+                .apply()
+        } catch (_: Throwable) {}
     }
 
     fun getService(): BankApi {

@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.mockbank.data.BankApiClient
 import com.example.mockbank.data.PayQrRequest
@@ -34,6 +35,7 @@ import com.example.mockbank.ui.BankHomeScreen
 import com.example.mockbank.ui.BankLoginScreen
 import com.example.mockbank.ui.BankRegisterScreen
 import com.example.mockbank.ui.PaymentPinDialog
+import com.example.mockbank.ui.PaymentPinDialogContent
 import androidx.compose.ui.platform.LocalContext
 import com.example.mockbank.ui.camera.QrScannerScreen
 import kotlinx.coroutines.launch
@@ -72,8 +74,9 @@ class MainActivity : ComponentActivity() {
 fun BankAppNavigation() {
     val context = LocalContext.current
     var currentAccount by remember { mutableStateOf(BankApiClient.getSavedAccount(context) ?: "ACC_CUSTOMER_01") }
-    var currentPin by remember { mutableStateOf(BankApiClient.getSavedPin(context)) }
-    var currentScreen by remember { mutableStateOf(if (BankApiClient.getSavedAccount(context) != null) "home" else "login") }
+    var currentPin by remember { mutableStateOf("") }
+    // Mỗi lần mở app đều bắt buộc đăng nhập tài khoản
+    var currentScreen by remember { mutableStateOf("login") }
     var activeQrPayload by remember { mutableStateOf<QrPayload?>(null) }
     var lastTxId by remember { mutableStateOf<String?>(null) }
     var lastAmountPaid by remember { mutableStateOf(13500.0) }
@@ -219,7 +222,7 @@ fun BankAppNavigation() {
  * Màn hình nhập mã đơn hàng thủ công (Dự phòng khi chạy trên máy ảo hoặc camera hỏng)
  */
 @Composable
-private fun ManualOrderInputScreen(
+fun ManualOrderInputScreen(
     onBack: () -> Unit,
     onSubmit: (orderId: String, amount: Double) -> Unit
 ) {
@@ -319,7 +322,7 @@ private fun ManualOrderInputScreen(
  * Nhận dữ liệu thực tế được quét từ mã QR xe đẩy.
  */
 @Composable
-private fun PaymentConfirmationScreen(
+fun PaymentConfirmationScreen(
     payload: QrPayload,
     defaultPin: String = "652001",
     onDismiss: () -> Unit,
@@ -403,11 +406,7 @@ private fun PaymentConfirmationScreen(
                     letterSpacing = (-0.5).sp
                 )
                 // Tỷ giá quy đổi: 1 Token = 10 VNĐ
-                Text(
-                    text = "Quy đổi: ≈ ${formatVnd.format((payload.amount * 10).toLong())} VNĐ (Tỷ giá 1:10)",
-                    color = ColorTextSecondary,
-                    fontSize = 13.sp
-                )
+
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -528,7 +527,7 @@ private fun PaymentConfirmationScreen(
  * Màn hình Biên nhận Thanh toán thành công (Digital Receipt)
  */
 @Composable
-private fun PaymentSuccessScreen(
+fun PaymentSuccessScreen(
     orderId: String,
     amountPaid: Double,
     txId: String,
@@ -575,12 +574,7 @@ private fun PaymentSuccessScreen(
                 letterSpacing = 0.5.sp
             )
             Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Đã trừ -${formatVnd.format(amountPaid.toLong())} Token từ ví cá nhân",
-                color = ColorAccentGreen,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+
 
             Spacer(modifier = Modifier.height(28.dp))
 
@@ -646,5 +640,182 @@ private fun ReceiptRow(
             fontWeight = if (isHighlighted) FontWeight.Bold else FontWeight.Normal,
             fontFamily = if (isMono) FontFamily.Monospace else FontFamily.Default
         )
+    }
+}
+
+// ============================================================================
+// PREVIEW FUNCTIONS CHO ANDROID STUDIO (TẤT CẢ 8 MÀN HÌNH APP MOCKBANK)
+// ============================================================================
+
+@Preview(
+    name = "1. Màn hình Đăng nhập MockBank",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun MainLoginScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            BankLoginScreen(
+                onLoginSuccess = { _, _ -> },
+                onNavigateToRegister = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "2. Màn hình Mở tài khoản eKYC",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 960,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun MainRegisterScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            BankRegisterScreen(
+                onRegisterSuccess = { _, _ -> },
+                onNavigateToLogin = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "3. Trang chủ Ví MockBank",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun MainHomeScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            BankHomeScreen(
+                accountNumber = "ACC_CUSTOMER_01",
+                onScanQrClick = {},
+                onSwitchAccountClick = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "4. Màn hình Quét QR Xe Đẩy",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF000000
+)
+@Composable
+fun MainQrScannerScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+            QrScannerScreen(
+                onBack = {},
+                onQrScanned = {},
+                onManualInputClick = {},
+                previewHasCameraPermission = true
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "5. Màn hình Nhập Mã Đơn Thủ Công",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun ManualOrderInputScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            ManualOrderInputScreen(
+                onBack = {},
+                onSubmit = { _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "6. Màn hình Xác Nhận Chuyển Token",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun PaymentConfirmationScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            PaymentConfirmationScreen(
+                payload = QrPayload(
+                    orderId = "ORD_98241",
+                    amount = 13500.0,
+                    toAccount = "ACC_STORE_MAIN",
+                    storeName = "Siêu Thị Xe Đẩy Thông Minh"
+                ),
+                defaultPin = "652001",
+                onDismiss = {},
+                onConfirmPayment = { _, _, _, _, _ -> }
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "7. Hộp thoại Nhập Mã PIN Thanh Toán",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 680,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun MainPinDialogPreview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(ColorBg)
+                .padding(20.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            PaymentPinDialogContent(
+                amountTokens = 13500.0,
+                amountVnd = 135000.0,
+                orderId = "ORD_98241",
+                onConfirmPin = {},
+                onDismiss = {}
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "8. Màn hình Biên Nhận Thanh Toán Thành Công",
+    showBackground = true,
+    widthDp = 412,
+    heightDp = 892,
+    backgroundColor = 0xFF090D11
+)
+@Composable
+fun PaymentSuccessScreenPreview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxSize(), color = ColorBg) {
+            PaymentSuccessScreen(
+                orderId = "ORD_98241",
+                amountPaid = 13500.0,
+                txId = "TX_1793390012",
+                onBackHome = {}
+            )
+        }
     }
 }

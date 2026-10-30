@@ -1,7 +1,8 @@
 const pool = require('./db');
 
 /**
- * Module khởi tạo & đồng bộ cơ sở dữ liệu Khách Hàng trong PostgreSQL
+ * Module khởi tạo & đồng bộ cấu trúc cơ sở dữ liệu Khách Hàng trong PostgreSQL
+ * (Đã loại bỏ toàn bộ tài khoản khách hàng demo mẫu theo yêu cầu dự án)
  */
 async function initCustomersDatabase() {
   const client = await pool.connect();
@@ -66,109 +67,14 @@ async function initCustomersDatabase() {
       )
     `);
 
-    // 4. Danh sách dữ liệu mẫu đầy đủ các phân khúc khách hàng
-    const sampleCustomers = [
-      {
-        id: 'CUSTOMER_888',
-        name: 'Nguyễn Văn A',
-        membershiplevel: 'Hội viên Vàng',
-        points: 3820,
-        phonenumber: '0987654321',
-        password: '123456',
-        email: 'nguyenvana@gmail.com',
-        total_spent: 38200000,
-        tokenBalance: 150000,
-        accountNumber: 'ACC_CUSTOMER_01'
-      },
-      {
-        id: 'CUSTOMER_999',
-        name: 'Trần Thị B',
-        membershiplevel: 'Hội viên Kim Cương',
-        points: 8900,
-        phonenumber: '0909123456',
-        password: '123456',
-        email: 'tranthib@gmail.com',
-        total_spent: 89000000,
-        tokenBalance: 350000,
-        accountNumber: 'ACC_CUSTOMER_999'
-      },
-      {
-        id: 'CUSTOMER_003',
-        name: 'Lê Hoàng Long',
-        membershiplevel: 'Hội viên VIP',
-        points: 5400,
-        phonenumber: '0918889999',
-        password: '123456',
-        email: 'hoanglong.le@gmail.com',
-        total_spent: 54000000,
-        tokenBalance: 500000,
-        accountNumber: 'ACC_CUSTOMER_003'
-      },
-      {
-        id: 'CUSTOMER_004',
-        name: 'Phạm Thu Hà',
-        membershiplevel: 'Hội viên Bạc',
-        points: 650,
-        phonenumber: '0977112233',
-        password: '123456',
-        email: 'thuha.pham@gmail.com',
-        total_spent: 6500000,
-        tokenBalance: 80000,
-        accountNumber: 'ACC_CUSTOMER_004'
-      },
-      {
-        id: 'CUSTOMER_005',
-        name: 'Đỗ Minh Khôi',
-        membershiplevel: 'Hội viên Thân Thiết',
-        points: 280,
-        phonenumber: '0933556677',
-        password: '123456',
-        email: 'minhkhoi.do@gmail.com',
-        total_spent: 2800000,
-        tokenBalance: 60000,
-        accountNumber: 'ACC_CUSTOMER_005'
-      },
-      {
-        id: 'CUSTOMER_006',
-        name: 'Hoàng Mai Anh',
-        membershiplevel: 'Hội viên Mới',
-        points: 100,
-        phonenumber: '0966443322',
-        password: '123456',
-        email: 'maianh.hoang@gmail.com',
-        total_spent: 1000000,
-        tokenBalance: 50000,
-        accountNumber: 'ACC_CUSTOMER_006'
-      }
-    ];
+    // 4. Dọn dẹp các tài khoản demo mẫu cũ nếu còn sót lại trong CSDL
+    const demoIds = ['CUSTOMER_888', 'CUSTOMER_999', 'CUSTOMER_003', 'CUSTOMER_004', 'CUSTOMER_005', 'CUSTOMER_006'];
+    const demoBankAccounts = ['ACC_CUSTOMER_01', 'ACC_CUSTOMER_999', 'ACC_CUSTOMER_003', 'ACC_CUSTOMER_004', 'ACC_CUSTOMER_005', 'ACC_CUSTOMER_006'];
 
-    for (const c of sampleCustomers) {
-      // Upsert vào bảng Customers
-      await client.query(`
-        INSERT INTO Customers (id, name, membershiplevel, points, phonenumber, password, email, total_spent)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        ON CONFLICT (id) DO UPDATE SET
-          name = EXCLUDED.name,
-          membershiplevel = EXCLUDED.membershiplevel,
-          points = EXCLUDED.points,
-          phonenumber = EXCLUDED.phonenumber,
-          password = EXCLUDED.password,
-          email = EXCLUDED.email,
-          total_spent = EXCLUDED.total_spent
-      `, [c.id, c.name, c.membershiplevel, c.points, c.phonenumber, c.password, c.email, c.total_spent]);
+    await client.query('DELETE FROM Customers WHERE id = ANY($1::text[])', [demoIds]).catch(() => {});
+    await client.query('DELETE FROM bank_accounts WHERE account_number = ANY($1::text[])', [demoBankAccounts]).catch(() => {});
 
-      // Khởi tạo tài khoản ví ngân hàng số dư Token
-      await client.query(`
-        INSERT INTO bank_accounts (account_number, owner_name, user_ref_id, token_balance, pin, is_active)
-        VALUES ($1, $2, $3, $4, '652001', TRUE)
-        ON CONFLICT (account_number) DO UPDATE SET
-          owner_name = EXCLUDED.owner_name,
-          user_ref_id = EXCLUDED.user_ref_id,
-          token_balance = EXCLUDED.token_balance
-      `, [c.accountNumber, c.name, c.id, c.tokenBalance]);
-    }
-
-    console.log(`✅ Đã khởi tạo và đồng bộ thành công ${sampleCustomers.length} khách hàng mẫu vào CSDL PostgreSQL!`);
+    console.log('✅ Đã khởi tạo cấu trúc bảng Customers & dọn sạch tài khoản demo mẫu!');
   } catch (err) {
     console.error('❌ Lỗi initCustomersDatabase:', err.message);
   } finally {

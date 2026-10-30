@@ -10,9 +10,7 @@ import {
   Receipt, 
   CheckCircle2, 
   AlertCircle, 
-  ArrowRight,
-  Wallet,
-  Sparkles
+  Wallet
 } from 'lucide-react';
 import PinModal from '@/components/customer/PinModal';
 import { CustomerApiService, CustomerCartSummary, BankAccount } from '@/services/customerApi';
@@ -31,7 +29,11 @@ export default function CustomerCheckoutPage() {
       const storedCartSession = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined;
       const [cartData, accData] = await Promise.all([
         CustomerApiService.getCart(storedCartSession),
-        (CustomerApiService.getStoredCustomer()?.id ? CustomerApiService.getAccount('ACC_' + CustomerApiService.getStoredCustomer()!.id).catch(() => CustomerApiService.getAccount('ACC_CUSTOMER_01')) : CustomerApiService.getAccount('ACC_CUSTOMER_01'))
+        (() => {
+          const storedCust = CustomerApiService.getStoredCustomer();
+          const targetAcc = storedCust?.linkedBankAccount;
+          return targetAcc ? CustomerApiService.getAccount(targetAcc).catch(() => null) : Promise.resolve(null);
+        })()
       ]);
       setCart(cartData);
       setAccount(accData);
@@ -50,7 +52,13 @@ export default function CustomerCheckoutPage() {
     setErrorMsg('');
 
     try {
-      // 1. Tạo chuỗi QR giả lập đơn hàng
+      const storedCust = CustomerApiService.getStoredCustomer();
+      const fromAcc = account ? account.accountNumber : (storedCust?.linkedBankAccount || '');
+      if (!fromAcc) {
+        throw new Error('Vui lòng liên kết tài khoản ngân hàng MockBank tại mục Ví Token trước khi thanh toán.');
+      }
+
+      // 1. Tạo chuỗi QR đơn hàng
       const orderId = 'ORD_' + Date.now();
       const qrData = JSON.stringify({
         orderId,
@@ -61,15 +69,13 @@ export default function CustomerCheckoutPage() {
       });
 
       // 2. Gọi API thanh toán Mock Bank
-      const fromAcc = account ? account.accountNumber : 'ACC_CUSTOMER_01';
       const payRes = await CustomerApiService.payQr(qrData, pin || '652001', fromAcc);
       if (!payRes.success) {
         throw new Error(payRes.message || payRes.errorCode || 'Thanh toán thất bại');
       }
 
       // 3. Hoàn tất đơn hàng trên Shop Server (xóa giỏ, kích hoạt isPaid=true đồng bộ lên Tablet)
-      const storedCust = CustomerApiService.getStoredCustomer();
-      const currentCustId = storedCust?.id || 'CUST_001';
+      const currentCustId = storedCust?.id || 'GUEST';
       const storedCartSession = typeof window !== 'undefined' ? (localStorage.getItem('smartcart_cart_session') || localStorage.getItem('smartcart_session_id') || undefined) : undefined;
       const currentSessionId = cart?.sessionId || storedCartSession || undefined;
       await CustomerApiService.checkout('QR_TOKEN', currentCustId, currentSessionId, orderId);
@@ -87,8 +93,7 @@ export default function CustomerCheckoutPage() {
         totalVnd: totalAmount,
         totalToken: tokenAmount,
         balanceAfter: payRes.data?.tokenBalanceAfter ?? (currentTokenBalance - tokenAmount),
-        paidAt: new Date().toLocaleString('vi-VN'),
-        gateBarcode: 'EXIT_' + Math.random().toString(36).substring(2, 10).toUpperCase()
+        paidAt: new Date().toLocaleString('vi-VN')
       });
     } catch (e: any) {
       setErrorMsg(e.message || 'Lỗi xử lý thanh toán');
@@ -150,8 +155,6 @@ export default function CustomerCheckoutPage() {
               <span className="font-mono font-bold text-[#0D47A1]">{receiptData.balanceAfter.toLocaleString('vi-VN')} Token</span>
             </div>
           </div>
-
-
         </div>
 
         <button
@@ -229,7 +232,7 @@ export default function CustomerCheckoutPage() {
           </div>
           <div>
             <span className="text-[11px] text-[#666666] block font-semibold">
-              Ví thanh toán ({account?.accountNumber || 'ACC_CUSTOMER_01'})
+              Ví thanh toán ({account?.accountNumber || 'Chưa liên kết'})
             </span>
             <span className="text-sm font-bold text-[#1A1A1A] font-mono">
               Số dư: <b className="text-emerald-700">{currentTokenBalance.toLocaleString('vi-VN')} Token</b>
@@ -241,14 +244,16 @@ export default function CustomerCheckoutPage() {
             href="/customer/wallet"
             className="px-3.5 py-2 rounded-xl bg-[#FFEBEE] border border-[#D32F2F]/40 text-xs font-bold text-[#D32F2F] active:scale-95 transition-all"
           >
-            Nạp thêm
+            {account ? 'Nạp thêm' : 'Liên kết ví'}
           </Link>
         )}
       </div>
 
       {!isBalanceEnough && (
         <div className="p-3 rounded-2xl bg-[#FFEBEE] border border-[#D32F2F]/30 text-xs text-[#D32F2F] text-center font-bold">
-          Số dư Token không đủ để thanh toán. Vui lòng vào mục Ví Token để bơm thêm tiền.
+          {account
+            ? 'Số dư Token không đủ để thanh toán. Vui lòng vào mục Ví Token để rút thêm Token.'
+            : 'Chưa liên kết tài khoản ngân hàng MockBank. Vui lòng vào mục Ví Token để liên kết.'}
         </div>
       )}
 

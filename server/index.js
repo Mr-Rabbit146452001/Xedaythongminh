@@ -866,15 +866,11 @@ app.post('/api/payment/auto-checkout', async (req, res) => {
       });
     }
 
-    // Áp dụng voucher / chiết khấu hội viên (KHÔNG TÍNH VAT THEO YÊU CẦU)
-    // Nếu khách hàng chưa đăng nhập (GUEST hoặc không có tài khoản), không áp dụng voucher (discount = 0)
-    let discountAmount = 0;
+    // Đã xóa toàn bộ voucher / chiết khấu khuyến mãi thanh toán cho thành viên theo yêu cầu
+    const discountAmount = 0;
     const isCustomerLoggedIn = targetCustomer && targetCustomer !== 'GUEST' && targetCustomer !== 'ANONYMOUS';
-    if (isCustomerLoggedIn) {
-      discountAmount = Math.round(totalAmount * 0.1);
-    }
     const taxAmount = 0;
-    const finalAmount = Math.max(0, totalAmount - discountAmount);
+    const finalAmount = totalAmount;
     const pointsEarned = isCustomerLoggedIn ? Math.floor(finalAmount / 1000) : 0;
 
     // Xác định tên phương thức thanh toán
@@ -1084,28 +1080,14 @@ app.post('/api/customers/:id/sync-cart', async (req, res) => {
     }
     const customer = result.rows[0];
 
-    let vouchers = ["Voucher giảm 50K cho đơn hàng từ 500K", "Miễn phí gửi xe"];
-    let promotions = ["Tặng 1 bình nước khi mua 2 hộp sữa"];
-    const level = (customer.membershiplevel || '').toLowerCase();
-    if (level.includes('kim cương') || level.includes('vip')) {
-      vouchers = ["Voucher đặc quyền VIP giảm 20%", "Miễn phí giao hàng tận nhà 100%", "Ưu tiên tại quầy thanh toán riêng"];
-      promotions = ["Tặng giỏ quà Tết tri ân khách hàng VIP", "Nhân đôi điểm tích lũy toàn bộ đơn hàng"];
-    } else if (level.includes('vàng')) {
-      vouchers = ["Voucher giảm 100K cho đơn từ 1 triệu", "Miễn phí gửi xe 12 tháng"];
-      promotions = ["Tặng bình giữ nhiệt cao cấp", "Tặng bánh kẹo nhập khẩu"];
-    } else if (level.includes('bạc')) {
-      vouchers = ["Voucher giảm 30K cho đơn từ 300K"];
-      promotions = ["Tặng 1 hộp sữa tươi tiệt trùng"];
-    }
-
     const customerDto = {
       id: customer.id,
       name: customer.name,
       membershipLevel: customer.membershiplevel || 'Hội viên Thân Thiết',
       points: customer.points || 0,
       phoneNumber: customer.phonenumber || '',
-      vouchers: vouchers,
-      promotions: promotions
+      vouchers: [],
+      promotions: []
     };
 
     const existingSync = activeSessions.get(sessionId) || {};
@@ -1132,25 +1114,12 @@ app.get('/api/customer', async (req, res) => {
   const customerId = id || 'CUSTOMER_888';
 
   try {
-    const result = await pool.query('SELECT id, name, membershiplevel, points, phonenumber FROM Customers WHERE id = $1', [customerId]);
+    const result = await pool.query('SELECT * FROM Customers WHERE id = $1', [customerId]);
     if (result.rows.length === 0) {
       return res.status(404).json({ status: 'Lỗi', message: 'Khách hàng không tồn tại' });
     }
 
     const customer = result.rows[0];
-    let vouchers = ["Voucher giảm 50K cho đơn hàng từ 500K", "Miễn phí gửi xe"];
-    let promotions = ["Tặng 1 bình nước khi mua 2 hộp sữa"];
-    const level = (customer.membershiplevel || '').toLowerCase();
-    if (level.includes('kim cương') || level.includes('vip')) {
-      vouchers = ["Voucher đặc quyền VIP giảm 20%", "Miễn phí giao hàng tận nhà 100%", "Ưu tiên tại quầy thanh toán riêng"];
-      promotions = ["Tặng giỏ quà Tết tri ân khách hàng VIP", "Nhân đôi điểm tích lũy toàn bộ đơn hàng"];
-    } else if (level.includes('vàng')) {
-      vouchers = ["Voucher giảm 100K cho đơn từ 1 triệu", "Miễn phí gửi xe 12 tháng"];
-      promotions = ["Tặng bình giữ nhiệt cao cấp", "Tặng bánh kẹo nhập khẩu"];
-    } else if (level.includes('bạc')) {
-      vouchers = ["Voucher giảm 30K cho đơn từ 300K"];
-      promotions = ["Tặng 1 hộp sữa tươi tiệt trùng"];
-    }
 
     res.json({
       status: 'Thành công',
@@ -1160,8 +1129,8 @@ app.get('/api/customer', async (req, res) => {
         membershipLevel: customer.membershiplevel,
         points: customer.points,
         phoneNumber: customer.phonenumber,
-        vouchers: vouchers,
-        promotions: promotions
+        vouchers: [],
+        promotions: []
       }
     });
   } catch (err) {
@@ -1203,24 +1172,28 @@ app.get('/api/auth/session', (req, res) => {
 
 // Cho phép Web App Khách Hàng xác nhận đăng nhập xe đẩy (Hỗ trợ /api/auth/confirm-login, /api/auth/session/scan, /api/auth/pair)
 app.post(['/api/auth/confirm-login', '/api/auth/session/scan', '/api/auth/pair'], async (req, res) => {
-  const { sessionId, customerId = 'CUSTOMER_888' } = req.body || {};
+  const { sessionId, customerId } = req.body || {};
+  if (!customerId) {
+    return res.status(400).json({ status: 'Lỗi', message: 'Thiếu mã khách hàng (customerId)' });
+  }
   try {
-    const result = await pool.query('SELECT id, name, membershiplevel, points, phonenumber FROM Customers WHERE id = $1', [customerId]);
-    const customer = result.rows[0] || {
-      id: customerId,
-      name: 'Khách Hàng Demo (Nguyễn Văn A)',
-      membershiplevel: 'VIP',
-      points: 1200,
-      phonenumber: '0987654321'
-    };
+    const result = await pool.query('SELECT * FROM Customers WHERE id = $1', [customerId]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ status: 'Lỗi', message: 'Không tìm thấy tài khoản khách hàng' });
+    }
+    const customer = result.rows[0];
     const customerDto = {
       id: customer.id,
       name: customer.name,
-      membershipLevel: customer.membershiplevel || 'VIP',
+      membershipLevel: customer.membershiplevel || 'Hội viên Thân Thiết',
       points: customer.points || 0,
       phoneNumber: customer.phonenumber || '',
-      vouchers: ["Voucher giảm 50K cho đơn hàng từ 500K"],
-      promotions: ["Tặng 1 bình nước giữ nhiệt khi mua 2 hộp sữa"]
+      vouchers: [],
+      promotions: [],
+      linkedBankAccount: customer.linked_bank_account || null,
+      cccd: customer.cccd || null,
+      hasPaymentPin: Boolean(customer.payment_pin),
+      paymentPin: customer.payment_pin || '652001'
     };
 
     if (sessionId) {
@@ -1266,9 +1239,17 @@ app.post([
     }
 
     // Lấy số dư ví Token từ bank_accounts nếu có
-    let tokenBalance = 50000;
+    let tokenBalance = 0;
     try {
-      const bankRes = await pool.query('SELECT token_balance FROM bank_accounts WHERE user_ref_id = $1 OR account_number = $2', [customer.id, 'ACC_CUSTOMER_01']);
+      let bankRes;
+      if (customer.linked_bank_account) {
+        bankRes = await pool.query('SELECT token_balance FROM bank_accounts WHERE account_number = $1', [customer.linked_bank_account]);
+      } else {
+        bankRes = await pool.query('SELECT token_balance FROM bank_accounts WHERE user_ref_id = $1', [customer.id]);
+        if (bankRes.rows.length === 0 && customer.id === 'CUSTOMER_888') {
+          bankRes = await pool.query('SELECT token_balance FROM bank_accounts WHERE account_number = $1', ['ACC_CUSTOMER_01']);
+        }
+      }
       if (bankRes.rows.length > 0) {
         tokenBalance = parseFloat(bankRes.rows[0].token_balance);
       }
@@ -1281,8 +1262,8 @@ app.post([
       membershipLevel: customer.membershiplevel || 'Hội viên Thân Thiết',
       points: customer.points || 0,
       tokenBalance: tokenBalance,
-      vouchers: ["Voucher giảm 50K cho đơn từ 500K", "Miễn phí gửi xe"],
-      promotions: ["Tặng 1 bình nước khi mua 2 hộp sữa"],
+      vouchers: [],
+      promotions: [],
       linkedBankAccount: customer.linked_bank_account || null,
       cccd: customer.cccd || null,
       hasPaymentPin: Boolean(customer.payment_pin),
@@ -1351,8 +1332,8 @@ app.post([
       membershipLevel: 'Hội viên Mới',
       points: 100,
       tokenBalance: 50000,
-      vouchers: ["Voucher chào mừng 30K", "Tặng 50.000 Token"],
-      promotions: ["Ưu đãi khách hàng mới"]
+      vouchers: [],
+      promotions: []
     };
 
     if (sessionId) {
@@ -1422,8 +1403,12 @@ app.get('/api/auth/simulate-scan', async (req, res) => {
       membershipLevel: customer.membershiplevel,
       points: customer.points,
       phoneNumber: customer.phonenumber,
-      vouchers: ["Voucher giảm 50K cho đơn hàng từ 500K"],
-      promotions: ["Tặng 1 bình nước giữ nhiệt khi mua 2 hộp sữa"]
+      vouchers: [],
+      promotions: [],
+      linkedBankAccount: customer.linked_bank_account || null,
+      cccd: customer.cccd || null,
+      hasPaymentPin: Boolean(customer.payment_pin),
+      paymentPin: customer.payment_pin || '652001'
     };
 
     if (sessionId && activeSessions.has(sessionId)) {
@@ -1471,6 +1456,14 @@ app.post(['/api/customer/link-bank', '/api/auth/customer/link-bank'], async (req
       [accountNumber, cleanCccd, cleanPin, customerId || '', cleanPhone || '']
     );
 
+    // Cập nhật liên kết 2 chiều vào bank_accounts
+    if (customerId) {
+      await pool.query(
+        'UPDATE bank_accounts SET user_ref_id = $1, phone_number = COALESCE(phone_number, $2), id_card_number = COALESCE(id_card_number, $3) WHERE account_number = $4',
+        [customerId, cleanPhone, cleanCccd, accountNumber]
+      ).catch(() => {});
+    }
+
     res.json({
       status: 'Thành công',
       message: 'Liên kết tài khoản MockBank và cập nhật mã PIN thanh toán thành công!',
@@ -1479,6 +1472,34 @@ app.post(['/api/customer/link-bank', '/api/auth/customer/link-bank'], async (req
         cccd: cleanCccd,
         hasPaymentPin: true
       }
+    });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+
+// 11.2e. API Hủy liên kết tài khoản ngân hàng MockBank
+app.post(['/api/customer/unlink-bank', '/api/auth/customer/unlink-bank'], async (req, res) => {
+  const { customerId, phoneNumber } = req.body || {};
+  try {
+    const custRes = await pool.query(
+      'SELECT id, linked_bank_account FROM Customers WHERE id = $1 OR phonenumber = $2',
+      [customerId || '', phoneNumber || '']
+    );
+    if (custRes.rows.length > 0) {
+      const linkedAcc = custRes.rows[0].linked_bank_account;
+      await pool.query(
+        'UPDATE Customers SET linked_bank_account = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 OR phonenumber = $2',
+        [customerId || '', phoneNumber || '']
+      );
+      if (linkedAcc) {
+        await pool.query('UPDATE bank_accounts SET user_ref_id = NULL WHERE account_number = $1', [linkedAcc]).catch(() => {});
+      }
+    }
+    res.json({
+      status: 'Thành công',
+      message: 'Đã hủy liên kết tài khoản ngân hàng MockBank thành công!'
     });
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });
@@ -1530,7 +1551,7 @@ app.post('/api/payment/create-qr-session', async (req, res) => {
     if (reqFinalAmount && parseFloat(reqFinalAmount) > 0) {
       finalAmount = Math.round(parseFloat(reqFinalAmount));
     } else {
-      finalAmount = Math.round(totalAmount * 0.9);
+      finalAmount = Math.round(totalAmount);
     }
 
     // Tỷ giá quy đổi: 1 Token = 10 VNĐ (tối thiểu 1 Token)
