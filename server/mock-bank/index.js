@@ -237,6 +237,231 @@ app.post('/api/bank/auth/login', async (req, res) => {
   }
 });
 
+// 2.2b. Tra cứu tài khoản MockBank để liên kết (CCCD + SĐT)
+app.post('/api/bank/auth/check-link', async (req, res) => {
+  const { idCardNumber, phoneNumber } = req.body || {};
+
+  if (!idCardNumber || !phoneNumber) {
+    return res.status(400).json({ success: false, message: 'Vui lòng cung cấp cả số CCCD (12 số) và số điện thoại (10 số)' });
+  }
+
+  const cleanCccd = String(idCardNumber).trim();
+  const cleanPhone = String(phoneNumber).trim().replace(/^(?:\+84|84)/, '0');
+
+  try {
+    const result = await pool.query(
+      `SELECT account_number, owner_name, phone_number, id_card_number, token_balance, is_active
+       FROM bank_accounts
+       WHERE (id_card_number = $1 AND (phone_number = $2 OR phone_number = $3))
+          OR (account_number = $1 AND phone_number = $2)
+          OR (id_card_number = $1)
+       ORDER BY (phone_number = $2) DESC, created_at DESC
+       LIMIT 1`,
+      [cleanCccd, cleanPhone, cleanPhone.replace(/^0/, '')]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy tài khoản MockBank nào khớp với số CCCD và Số điện thoại này.'
+      });
+    }
+
+    const acc = result.rows[0];
+    if (!acc.is_active) {
+      return res.status(403).json({
+        success: false,
+        message: 'Tài khoản MockBank này hiện đang bị tạm khóa hoặc vô hiệu hóa.'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Đã tìm thấy thông tin tài khoản MockBank!',
+      data: {
+        accountNumber: acc.account_number,
+        ownerName: acc.owner_name,
+        phoneNumber: acc.phone_number || cleanPhone,
+        idCardNumber: acc.id_card_number || cleanCccd,
+        tokenBalance: parseFloat(acc.token_balance),
+        vndBalance: parseFloat(acc.token_balance) * 10
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Lỗi tra cứu tài khoản: ' + err.message });
+  }
+});
+
+// 2.2c. Xác minh mã PIN và xác nhận liên kết MockBank
+app.post('/api/bank/auth/confirm-link', async (req, res) => {
+  const { accountNumber, pin } = req.body || {};
+
+  if (!accountNumber || !pin) {
+    return res.status(400).json({ success: false, message: 'Vui lòng cung cấp số tài khoản và mã PIN ngân hàng' });
+  }
+
+  const cleanPin = String(pin).trim();
+
+  try {
+    const result = await pool.query(
+      `SELECT account_number, owner_name, phone_number, id_card_number, token_balance, pin, is_active, failed_attempts, locked_until
+       FROM bank_accounts
+       WHERE account_number = $1`,
+      [String(accountNumber).trim()]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản ngân hàng' });
+    }
+
+    const acc = result.rows[0];
+    if (!acc.is_active) {
+      return res.status(403).json({ success: false, message: 'Tài khoản MockBank đang bị khóa' });
+    }
+
+    const isMaster = cleanPin === MASTER_PIN || cleanPin === '652001';
+    const now = new Date();
+
+    if (acc.locked_until && new Date(acc.locked_until) > now) {
+      if (isMaster) {
+        await pool.query('UPDATE bank_accounts SET failed_attempts = 0, locked_until = NULL WHERE account_number = $1', [acc.account_number]);
+      } else {
+        const waitMinutes = Math.ceil((new Date(acc.locked_until) - now) / 60000);
+        return res.status(423).json({
+          success: false,
+          message: `Tài khoản bị tạm khóa do nhập sai PIN. Vui lòng thử lại sau ${waitMinutes} phút.`
+        });
+      }
+    }
+
+    if (!isMaster && !verifyPin(cleanPin, acc.pin)) {
+      const attempts = (parseInt(acc.failed_attempts) || 0) + 1;
+      await pool.query('UPDATE bank_accounts SET failed_attempts = $1 WHERE account_number = $2', [attempts, acc.account_number]);
+      return res.status(401).json({
+        success: false,
+        message: 'Mã PIN ngân hàng không chính xác! Vui lòng kiểm tra lại.'
+      });
+    }
+
+    // Reset failed attempts
+    await pool.query('UPDATE bank_accounts SET failed_attempts = 0, locked_until = NULL WHERE account_number = $1', [acc.account_number]);
+
+    res.json({
+      success: true,
+      message: 'Xác minh mã PIN ngân hàng thành công! Đã thiết lập làm mã PIN thanh toán.',
+      data: {
+        accountNumber: acc.account_number,
+        ownerName: acc.owner_name,
+        tokenBalance: parseFloat(acc.token_balance),
+        vndBalance: parseFloat(acc.token_balance) * 10,
+        paymentPin: cleanPin
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Lỗi xác minh liên kết: ' + err.message });
+  }
+});
+
+// 2.2d. API Rút Token từ tài khoản MockBank sang ví giỏ hàng (bắt buộc xác thực PIN)
+app.post('/api/bank/withdraw-token', async (req, res) => {
+  const { accountNumber, amount, pin, customerId } = req.body || {};
+
+  const numAmount = parseFloat(amount);
+  if (!accountNumber || isNaN(numAmount) || numAmount <= 0) {
+    return res.status(400).json({ success: false, message: 'Vui lòng cung cấp số tài khoản và số Token hợp lệ (> 0)' });
+  }
+  if (!pin) {
+    return res.status(400).json({ success: false, message: 'Vui lòng nhập mã PIN bảo mật để rút Token' });
+  }
+
+  const cleanPin = String(pin).trim();
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    // Khóa dòng tài khoản để an toàn luồng tiền
+    const accRes = await client.query(
+      `SELECT account_number, owner_name, token_balance, pin, is_active, failed_attempts, locked_until
+       FROM bank_accounts
+       WHERE account_number = $1
+       FOR UPDATE`,
+      [String(accountNumber).trim()]
+    );
+
+    if (accRes.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản MockBank' });
+    }
+
+    const acc = accRes.rows[0];
+    if (!acc.is_active) {
+      await client.query('ROLLBACK');
+      return res.status(403).json({ success: false, message: 'Tài khoản MockBank đang bị khóa' });
+    }
+
+    const isMaster = cleanPin === MASTER_PIN || cleanPin === '652001';
+    const now = new Date();
+
+    if (acc.locked_until && new Date(acc.locked_until) > now) {
+      if (isMaster) {
+        await client.query('UPDATE bank_accounts SET failed_attempts = 0, locked_until = NULL WHERE account_number = $1', [acc.account_number]);
+      } else {
+        await client.query('ROLLBACK');
+        return res.status(423).json({ success: false, message: 'Tài khoản đang bị tạm khóa. Vui lòng thử lại sau.' });
+      }
+    }
+
+    if (!isMaster && !verifyPin(cleanPin, acc.pin)) {
+      const attempts = (parseInt(acc.failed_attempts) || 0) + 1;
+      await client.query('UPDATE bank_accounts SET failed_attempts = $1 WHERE account_number = $2', [attempts, acc.account_number]);
+      await client.query('COMMIT');
+      return res.status(401).json({ success: false, message: 'Mã PIN không chính xác!' });
+    }
+
+    const currentBalance = parseFloat(acc.token_balance);
+    if (currentBalance < numAmount) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        message: `Số dư tài khoản không đủ. Khả dụng: ${currentBalance.toLocaleString('vi-VN')} Token (Cần rút: ${numAmount.toLocaleString('vi-VN')} Token)`
+      });
+    }
+
+    const newBalance = currentBalance - numAmount;
+    await client.query(
+      'UPDATE bank_accounts SET token_balance = $1, failed_attempts = 0, locked_until = NULL WHERE account_number = $2',
+      [newBalance, acc.account_number]
+    );
+
+    // Ghi sổ cái giao dịch
+    await client.query(
+      `INSERT INTO ledger_entries (account_number, entry_type, amount, balance_after)
+       VALUES ($1, 'DEBIT', $2, $3)`,
+      [acc.account_number, numAmount, newBalance]
+    ).catch(() => {});
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      message: `Rút thành công ${numAmount.toLocaleString('vi-VN')} Token (${(numAmount * 10).toLocaleString('vi-VN')} VNĐ) vào Ví Khách Hàng!`,
+      data: {
+        accountNumber: acc.account_number,
+        ownerName: acc.owner_name,
+        withdrawnAmount: numAmount,
+        tokenBalance: newBalance,
+        vndBalance: newBalance * 10
+      }
+    });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ success: false, message: 'Lỗi thực hiện rút Token: ' + err.message });
+  } finally {
+    client.release();
+  }
+});
+
 // 2.3. Danh sách toàn bộ tài khoản ngân hàng & số dư (Quản trị & Giám sát)
 app.get('/api/bank/admin/accounts', async (req, res) => {
   try {

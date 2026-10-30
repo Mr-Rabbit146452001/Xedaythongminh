@@ -16,6 +16,10 @@ const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
+app.use((req, res, next) => {
+  res.setHeader('ngrok-skip-browser-warning', 'true');
+  next();
+});
 
 // FastAPI Proxy (Đặt trước express.json() để body stream nguyên vẹn sang FastAPI cổng 8000)
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -992,10 +996,10 @@ app.get('/api/auth/session', (req, res) => {
   activeSessions.set(sessionId, { authStatus: 'pending', customer: null });
 
   // Xác định domain thực tế (Ngrok hoặc LAN host) để dẫn trực tiếp vào Web App Khách Hàng
-  const host = req.get('x-forwarded-host') || req.get('host') || '127.0.0.1:3000';
-  const proto = req.get('x-forwarded-proto') || (req.secure ? 'https' : 'http');
+  let host = process.env.PUBLIC_URL ? (new URL(process.env.PUBLIC_URL)).host : (req.get('x-forwarded-host') || req.get('host') || '127.0.0.1:3000');
+  let proto = process.env.PUBLIC_URL ? (new URL(process.env.PUBLIC_URL)).protocol.replace(':', '') : (req.get('x-forwarded-proto') || (host.includes('ngrok') ? 'https' : (req.secure ? 'https' : 'http')));
   const baseUrl = `${proto}://${host}`;
-  const loginUrl = `${baseUrl}/customer/login?session=${sessionId}&stroller=STR_001`;
+  const loginUrl = `${baseUrl}/customer/login?session=${sessionId}&stroller=STR_001&ngrok-skip-browser-warning=true`;
 
   res.json({ 
     status: 'Thành công', 
@@ -1081,7 +1085,11 @@ app.post([
       points: customer.points || 0,
       tokenBalance: tokenBalance,
       vouchers: ["Voucher giảm 50K cho đơn từ 500K", "Miễn phí gửi xe"],
-      promotions: ["Tặng 1 bình nước khi mua 2 hộp sữa"]
+      promotions: ["Tặng 1 bình nước khi mua 2 hộp sữa"],
+      linkedBankAccount: customer.linked_bank_account || null,
+      cccd: customer.cccd || null,
+      hasPaymentPin: Boolean(customer.payment_pin),
+      paymentPin: customer.payment_pin || '652001'
     };
 
     if (sessionId) {
@@ -1217,6 +1225,42 @@ app.get('/api/auth/simulate-scan', async (req, res) => {
       }
     }
     res.json({ status: 'Thành công', message: 'Đã quét QR thành công!', customer: customerDto });
+  } catch (err) {
+    res.status(500).json({ status: 'Lỗi', message: err.message });
+  }
+});
+
+// 11.2d. API Lưu thông tin liên kết ngân hàng & cập nhật mã PIN thanh toán
+app.post(['/api/customer/link-bank', '/api/auth/customer/link-bank'], async (req, res) => {
+  const { customerId, phoneNumber, accountNumber, cccd, paymentPin } = req.body || {};
+  if (!accountNumber || !paymentPin) {
+    return res.status(400).json({ status: 'Lỗi', message: 'Thiếu số tài khoản hoặc mã PIN ngân hàng' });
+  }
+
+  try {
+    const cleanPin = String(paymentPin).trim();
+    const cleanCccd = cccd ? String(cccd).trim() : null;
+    const cleanPhone = phoneNumber ? String(phoneNumber).trim() : null;
+
+    await pool.query(
+      `UPDATE Customers
+       SET linked_bank_account = $1,
+           cccd = COALESCE($2, cccd),
+           payment_pin = $3,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $4 OR phonenumber = $5`,
+      [accountNumber, cleanCccd, cleanPin, customerId || '', cleanPhone || '']
+    );
+
+    res.json({
+      status: 'Thành công',
+      message: 'Liên kết tài khoản MockBank và cập nhật mã PIN thanh toán thành công!',
+      data: {
+        accountNumber,
+        cccd: cleanCccd,
+        hasPaymentPin: true
+      }
+    });
   } catch (err) {
     res.status(500).json({ status: 'Lỗi', message: err.message });
   }

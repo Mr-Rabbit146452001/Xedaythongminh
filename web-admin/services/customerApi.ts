@@ -43,6 +43,10 @@ export interface CustomerUser {
   tokenBalance: number;
   vouchers?: string[];
   promotions?: string[];
+  linkedBankAccount?: string;
+  cccd?: string;
+  hasPaymentPin?: boolean;
+  paymentPin?: string;
 }
 
 export interface PayResult {
@@ -307,6 +311,85 @@ export const CustomerApiService = {
       }
     }
     return { success: false, message: 'Không thể kết nối máy chủ' };
+  },
+
+  // 12. Kiem tra tai khoan MockBank de lien ket (CCCD & SDT)
+  async checkBankLink(idCardNumber: string, phoneNumber: string): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/bank/auth/check-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idCardNumber, phoneNumber })
+      });
+      const data = await res.json();
+      return data;
+    } catch (e: any) {
+      return { success: false, message: 'Lỗi kết nối MockBank Server: ' + e.message };
+    }
+  },
+
+  // 13. Xac minh PIN ngan hang & Hoan tat lien ket
+  async confirmBankLink(accountNumber: string, pin: string, idCardNumber?: string, phoneNumber?: string, customerId?: string): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/bank/auth/confirm-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountNumber, pin, idCardNumber, phoneNumber })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Dong bo luu lai vao ho so khach hang tren Shop Server
+        try {
+          await fetch(getBaseUrl() + '/api/customer/link-bank', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              customerId,
+              phoneNumber,
+              accountNumber,
+              cccd: idCardNumber,
+              paymentPin: pin
+            })
+          });
+        } catch (_) {}
+
+        // Cap nhat localStorage
+        const stored = this.getStoredCustomer();
+        if (stored) {
+          stored.linkedBankAccount = accountNumber;
+          if (idCardNumber) stored.cccd = idCardNumber;
+          stored.hasPaymentPin = true;
+          stored.paymentPin = pin;
+          this.setStoredCustomer(stored);
+        }
+      }
+      return data;
+    } catch (e: any) {
+      return { success: false, message: 'Lỗi xác minh mã PIN ngân hàng: ' + e.message };
+    }
+  },
+
+  // 14. Rut Token tu tai khoan MockBank sang vi gio hang (xac thuc bang PIN)
+  async withdrawToken(accountNumber: string, amount: number, pin: string, customerId?: string): Promise<{ success: boolean; message: string; data?: any }> {
+    try {
+      const res = await fetch(getBaseUrl() + '/api/bank/withdraw-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accountNumber, amount, pin, customerId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Cap nhat tokenBalance trong stored customer neu co
+        const stored = this.getStoredCustomer();
+        if (stored) {
+          stored.tokenBalance = (stored.tokenBalance || 0) + amount;
+          this.setStoredCustomer(stored);
+        }
+      }
+      return data;
+    } catch (e: any) {
+      return { success: false, message: 'Lỗi kết nối khi rút Token: ' + e.message };
+    }
   },
 
   // Helpers quan ly phien dang nhap khach hang tai LocalStorage

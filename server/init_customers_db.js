@@ -31,6 +31,9 @@ async function initCustomersDatabase() {
       { name: 'email', type: 'VARCHAR(255)' },
       { name: 'total_spent', type: 'NUMERIC DEFAULT 0' },
       { name: 'avatar', type: 'TEXT' },
+      { name: 'linked_bank_account', type: 'VARCHAR(50)' },
+      { name: 'cccd', type: 'VARCHAR(20)' },
+      { name: 'payment_pin', type: 'VARCHAR(255) DEFAULT \'652001\'' },
       { name: 'created_at', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' },
       { name: 'updated_at', type: 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP' }
     ];

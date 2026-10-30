@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import PinModal from '@/components/customer/PinModal';
 import { useRouter } from 'next/navigation';
 import { 
   CustomerApiService, 
@@ -25,7 +26,9 @@ import {
   KeyRound,
   Zap,
   ShoppingBag,
-  Gift
+  Gift,
+  Building2,
+  CreditCard
 } from 'lucide-react';
 
 type AuthMode = 'login' | 'register' | 'forgot';
@@ -52,24 +55,36 @@ export default function CustomerLoginPage() {
   const [strollerId, setStrollerId] = useState('STR_001');
   const [sessionId, setSessionId] = useState<string>('STR_001');
 
-  useEffect(() => {
-    const user = CustomerApiService.getStoredCustomer();
-    if (user) {
-      setCurrentUser(user);
-    }
+  // Bank Linking States
+  const [linkCccd, setLinkCccd] = useState('');
+  const [linkPhone, setLinkPhone] = useState('');
+  const [isCheckingBank, setIsCheckingBank] = useState(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [matchedBankAccount, setMatchedBankAccount] = useState<any>(null);
+  const [showBankLinkForm, setShowBankLinkForm] = useState(false);
 
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const sId = params.get('session');
       const strId = params.get('stroller');
 
       if (sId) {
+        // Quét QR phiên mới từ xe đẩy -> Luôn xóa sạch phiên cũ, bắt buộc đăng nhập mới
+        CustomerApiService.clearStoredCustomer();
+        setCurrentUser(null);
+        setMode('login');
         setSessionId(sId);
         localStorage.setItem('smartcart_session_id', sId);
-        if (user) {
-          CustomerApiService.confirmLogin(sId, user.id);
+      } else {
+        const stored = CustomerApiService.getStoredCustomer();
+        if (stored) {
+          setCurrentUser(stored);
+          if (stored.phoneNumber) setLinkPhone(stored.phoneNumber);
+          if (stored.cccd) setLinkCccd(stored.cccd);
         }
       }
+
       if (strId) {
         setStrollerId(strId);
         localStorage.setItem('smartcart_stroller_id', strId);
@@ -219,6 +234,77 @@ export default function CustomerLoginPage() {
     }
   };
 
+
+  // Xử lý kiểm tra tài khoản MockBank theo CCCD và SĐT
+  const handleCheckBankLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearNotifications();
+
+    const cleanCccd = linkCccd.trim();
+    const cleanPhone = linkPhone.trim();
+
+    if (!cleanCccd || !/^\d{9,12}$/.test(cleanCccd)) {
+      setErrorMessage('Số CCCD phải từ 9 đến 12 chữ số hợp lệ.');
+      return;
+    }
+    if (!cleanPhone || !/^\d{9,11}$/.test(cleanPhone)) {
+      setErrorMessage('Số điện thoại phải từ 9 đến 11 chữ số hợp lệ.');
+      return;
+    }
+
+    setIsCheckingBank(true);
+    try {
+      const res = await CustomerApiService.checkBankLink(cleanCccd, cleanPhone);
+      if (res.success && res.data) {
+        setMatchedBankAccount(res.data);
+        setIsPinModalOpen(true);
+      } else {
+        setErrorMessage(res.message || 'Không tìm thấy tài khoản MockBank với CCCD và SĐT này.');
+      }
+    } catch (err: any) {
+      setErrorMessage('Lỗi kết nối MockBank: ' + err.message);
+    } finally {
+      setIsCheckingBank(false);
+    }
+  };
+
+  // Xác nhận mã PIN ngân hàng & gán làm mã PIN thanh toán
+  const handleConfirmBankPin = async (pin: string) => {
+    if (!matchedBankAccount) return;
+    setIsCheckingBank(true);
+    try {
+      const res = await CustomerApiService.confirmBankLink(
+        matchedBankAccount.accountNumber,
+        pin,
+        linkCccd.trim(),
+        linkPhone.trim(),
+        currentUser?.id
+      );
+      if (res.success) {
+        setSuccessMessage('Liên kết tài khoản MockBank thành công! Mã PIN đã được thiết lập làm PIN thanh toán.');
+        setIsPinModalOpen(false);
+        setShowBankLinkForm(false);
+        if (currentUser) {
+          const updated = {
+            ...currentUser,
+            linkedBankAccount: matchedBankAccount.accountNumber,
+            cccd: linkCccd.trim(),
+            hasPaymentPin: true,
+            paymentPin: pin
+          };
+          setCurrentUser(updated);
+          CustomerApiService.setStoredCustomer(updated);
+        }
+      } else {
+        setErrorMessage(res.message || 'Mã PIN ngân hàng không chính xác.');
+      }
+    } catch (err: any) {
+      setErrorMessage('Lỗi xác nhận mã PIN: ' + err.message);
+    } finally {
+      setIsCheckingBank(false);
+    }
+  };
+
   // 5. Handle Logout
   const handleLogout = () => {
     CustomerApiService.clearStoredCustomer();
@@ -349,6 +435,126 @@ export default function CustomerLoginPage() {
                 </div>
               )}
             </div>
+
+            
+              {/* KHỐI LIÊN KẾT TÀI KHOẢN MOCKBANK & MÃ PIN THANH TOÁN */}
+              <div className="mt-3.5 pt-3 border-t border-gray-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#E3F2FD] border border-blue-200 flex items-center justify-center text-[#0D47A1]">
+                      <Building2 className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-[#0D47A1] uppercase tracking-wider">
+                        Ngân Hàng MockBank
+                      </h4>
+                      <p className="text-[10px] font-semibold text-[#666666]">
+                        Liên kết & Đặt PIN thanh toán
+                      </p>
+                    </div>
+                  </div>
+                  {currentUser.linkedBankAccount ? (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 shadow-sm">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Đã Liên Kết
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 shadow-sm">
+                      Chưa Liên Kết
+                    </span>
+                  )}
+                </div>
+
+                {currentUser.linkedBankAccount && !showBankLinkForm ? (
+                  <div className="p-3 rounded-2xl bg-[#F0F7FF] border border-blue-200 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500 font-semibold">Tài khoản:</span>
+                      <span className="font-mono font-black text-[#0D47A1]">{currentUser.linkedBankAccount}</span>
+                    </div>
+                    {currentUser.cccd && (
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-gray-500 font-semibold">CCCD:</span>
+                        <span className="font-mono font-bold text-gray-800">
+                          {currentUser.cccd.slice(0, 4)}••••{currentUser.cccd.slice(-4)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-blue-200/60">
+                      <span className="text-gray-500 font-semibold">PIN Thanh toán:</span>
+                      <span className="font-bold text-emerald-700 flex items-center gap-1">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        Đã kích hoạt (6 số)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLinkPhone(currentUser.phoneNumber || '');
+                        setLinkCccd(currentUser.cccd || '');
+                        setShowBankLinkForm(true);
+                      }}
+                      className="w-full mt-1.5 py-1.5 rounded-xl bg-white border border-blue-200 text-[#0D47A1] hover:bg-blue-50 text-[11px] font-bold shadow-sm transition-all"
+                    >
+                      Đổi tài khoản MockBank liên kết
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleCheckBankLink} className="space-y-2.5 p-3 rounded-2xl bg-gray-50 border border-gray-200">
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                        Số CCCD (12 chữ số)
+                      </label>
+                      <div className="relative">
+                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#0D47A1]" />
+                        <input
+                          type="text"
+                          value={linkCccd}
+                          onChange={(e) => setLinkCccd(e.target.value.replace(/\D/g, '').slice(0, 12))}
+                          placeholder="Ví dụ: 001201012345"
+                          className="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1A1A1A] font-mono font-bold focus:outline-none focus:border-[#0D47A1]"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-gray-700 mb-1">
+                        Số điện thoại mở tài khoản
+                      </label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#0D47A1]" />
+                        <input
+                          type="tel"
+                          value={linkPhone}
+                          onChange={(e) => setLinkPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
+                          placeholder="Ví dụ: 0987654321"
+                          className="w-full bg-white border border-gray-300 rounded-xl pl-8 pr-3 py-2 text-xs text-[#1A1A1A] font-mono font-bold focus:outline-none focus:border-[#0D47A1]"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 pt-1">
+                      {currentUser.linkedBankAccount && (
+                        <button
+                          type="button"
+                          onClick={() => setShowBankLinkForm(false)}
+                          className="flex-1 py-2 rounded-xl border border-gray-300 text-gray-700 text-[11px] font-bold hover:bg-gray-100 transition-all"
+                        >
+                          Hủy
+                        </button>
+                      )}
+                      <button
+                        type="submit"
+                        disabled={isCheckingBank}
+                        className="flex-1 py-2 rounded-xl bg-[#0D47A1] hover:bg-[#1565C0] text-white text-[11px] font-black shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
+                      >
+                        {isCheckingBank ? 'Đang kiểm tra...' : 'Xác Minh & Nhập PIN'}
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
 
             {/* Quick Actions */}
             <div className="space-y-2.5">
