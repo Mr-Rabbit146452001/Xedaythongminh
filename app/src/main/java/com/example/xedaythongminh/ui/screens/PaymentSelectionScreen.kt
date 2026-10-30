@@ -375,34 +375,7 @@ fun PaymentSelectionScreen(
                             )
                         }
                         
-                        Spacer(modifier = Modifier.height(10.dp))
-                        
-                        GlassButton(
-                            onClick = { 
-                                appViewModel.unlockCart()
-                                appViewModel.clearRfidGateEvent()
-                                navController.popBackStack() 
-                            },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            shape = RoundedCornerShape(14.dp),
-                            variant = GlassButtonVariant.Secondary
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = PrimaryBlue,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.btn_back_to_cart),
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = PrimaryBlue
-                            )
-                        }
+
                     }
                 }
             }

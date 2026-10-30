@@ -385,9 +385,9 @@ fun OrderSummarySection(
     summary: CartSummary,
     userState: User?,
     formatVnd: (Long) -> String,
-    onAutoPayment: () -> Unit,
-    onOtherPayment: () -> Unit,
-    onOpenRemoveDialog: () -> Unit,
+    onAutoPayment: () -> Unit = {},
+    onOtherPayment: () -> Unit = {},
+    onOpenRemoveDialog: () -> Unit = {},
     onContinueShopping: () -> Unit
 ) {
     Card(
@@ -451,66 +451,18 @@ fun OrderSummarySection(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Action Buttons
-            val isGuest = userState == null
-            if (!isGuest) {
-                // Khách hàng có tài khoản: Cho phép chọn Thanh toán tự động / nhanh
-                GlassButton(
-                    onClick = onAutoPayment,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    variant = GlassButtonVariant.Primary
-                ) {
-                    Icon(Icons.Default.Bolt, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Thanh toán nhanh", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                GlassButton(
-                    onClick = onOtherPayment,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    variant = GlassButtonVariant.Secondary
-                ) {
-                    Icon(Icons.Default.CreditCard, contentDescription = "Other Pay", tint = PrimaryBlue, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Phương thức thanh toán khác", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
-                }
-            } else {
-                // Khách vãng lai: ẨN hoàn toàn nút Thanh toán nhanh, chỉ hiển thị nút Chọn phương thức thanh toán
-                GlassButton(
-                    onClick = onOtherPayment,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    variant = GlassButtonVariant.Primary
-                ) {
-                    Icon(Icons.Default.CreditCard, contentDescription = "Pay", tint = Color.White, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Chọn phương thức thanh toán", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
+            // Action Button: Tiếp tục mua sắm (Thanh toán chỉ kích hoạt tự động qua cổng an ninh RFID hoặc Web Khách Hàng)
             GlassButton(
                 onClick = onContinueShopping,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp),
+                    .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                variant = GlassButtonVariant.Ghost
+                variant = GlassButtonVariant.Primary
             ) {
-                Icon(Icons.Default.AddShoppingCart, contentDescription = "Continue", modifier = Modifier.size(18.dp), tint = PrimaryBlue)
+                Icon(Icons.Default.AddShoppingCart, contentDescription = "Continue", modifier = Modifier.size(20.dp), tint = Color.White)
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Tiếp tục mua sắm", fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = PrimaryBlue)
+                Text("Tiếp tục mua sắm", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color.White)
             }
         }
     }
